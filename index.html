@@ -1524,11 +1524,63 @@
     gap: 10px;
   }
 
+  .live-pos-count-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 1.2em;
+  }
+
+  .live-pos-count-row[hidden] { display: none !important; }
+
   .live-pos-count {
     font-size: 11px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--text-dim);
+  }
+
+  .live-pos-edit-btn {
+    flex-shrink: 0;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+    transition: color 0.12s;
+  }
+
+  .live-pos-edit-btn:hover {
+    color: var(--text);
+  }
+
+  .live-pos-edit-btn:focus-visible {
+    outline: 1px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .live-pos-cell-input {
+    width: 100%;
+    box-sizing: border-box;
+    font: inherit;
+    font-size: 11px;
+    padding: 3px 5px;
+    border: 1px solid var(--border-light);
+    border-radius: 3px;
+    background: var(--surface);
+    color: var(--text);
+  }
+
+  .live-pos-table--edit-mode tbody tr {
+    cursor: default;
   }
 
   .live-pos-admin {
@@ -3824,12 +3876,15 @@
         <div class="db-widget-body">
           <div id="livePosAdminBar" class="live-pos-admin" data-admin-only>
             <input type="file" id="livePosFileInput" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" hidden>
-            <button type="button" class="live-pos-upload-btn" id="livePosUploadBtn">Upload POSITION LIST (Excel)</button>
+            <button type="button" class="live-pos-upload-btn" id="livePosUploadBtn">Upload Daily</button>
             <span class="live-pos-meta" id="livePosMeta"></span>
           </div>
-          <div class="live-pos-count" id="livePosCount" aria-live="polite"></div>
+          <div class="live-pos-count-row" id="livePosCountRow" hidden>
+            <div class="live-pos-count" id="livePosCount" aria-live="polite"></div>
+            <button type="button" class="live-pos-edit-btn" id="livePosTableEditBtn" hidden>EDIT</button>
+          </div>
           <div id="livePosError" class="live-pos-error" hidden role="alert"></div>
-          <div id="livePosEmpty" class="live-pos-empty">No fleet position list loaded yet. Admin can upload the POSITION LIST KPLER workbook (sheet &quot;KPLER&quot;). After load, Admin and Ops set ETA OPEN (DD/MM/YYYY date, Open, leave blank or type n/a for N/A); values survive daily re-upload until you change them.</div>
+          <div id="livePosEmpty" class="live-pos-empty">No fleet position list loaded yet. Admin can upload the POSITION LIST KPLER workbook (sheet &quot;KPLER&quot;). After load, use EDIT to change any column except vessel names. ETA OPEN survives daily re-upload by vessel name.</div>
           <div id="livePosTableWrap" class="live-pos-table-wrap" hidden>
             <table class="live-pos-table live-pos-table--kpler" id="livePosTable" aria-label="Fleet positions">
               <thead id="livePosThead"></thead>
@@ -4315,6 +4370,7 @@ let isAdmin = false;
 let isOps = false;
 let hydratedUserId = null;
 let livePosStored = null;
+let livePosTableEditMode = false;
 let twelveDataApiKey = '';
 
 const APP_DATA_KEYS = {
@@ -4379,6 +4435,7 @@ async function loadAllData() {
 async function loadVesselPositions() {
   const v = await loadAppDataJson(APP_DATA_KEYS.vessel_positions);
   livePosStored = v && typeof v === 'object' && Array.isArray(v.rows) ? livePosNormalizeStoredPayload(v) : null;
+  livePosTableEditMode = false;
   livePosSortReset();
   livePosRender();
 }
@@ -4784,6 +4841,7 @@ function livePosSortReset() {
 }
 
 function livePosOnHeaderClick(columnKey) {
+  if (livePosTableEditMode) return;
   if (livePosSortState.key === columnKey) {
     livePosSortState.dir = livePosSortState.dir === 'asc' ? 'desc' : 'asc';
   } else {
@@ -5151,8 +5209,68 @@ function livePosCanEdit() {
   return isAdmin;
 }
 
-function livePosCanEditEtaOpen() {
-  return isAdmin || isOps;
+function livePosCanEditTableCells() {
+  return !!currentUser && livePosTableEditMode;
+}
+
+function livePosCellDisplayToInput(v) {
+  if (v === null || v === undefined || v === '') return '';
+  const s = String(v).trim();
+  if (s === '—') return '';
+  return s;
+}
+
+function livePosBindCellInputStopPropagation(inp) {
+  inp.addEventListener('click', e => e.stopPropagation());
+  inp.addEventListener('keydown', e => e.stopPropagation());
+}
+
+async function livePosTableSaveFromDom() {
+  const data = livePosStored;
+  if (!data || !currentUser) return;
+  const tbody = document.getElementById('livePosTbody');
+  if (!tbody) return;
+  const shipKey = livePosFindShipColumnKey(
+    data.format === 'kpler' && Array.isArray(data.headers) && data.headers.length
+      ? data.headers
+      : Object.keys(data.rows[0] || {})
+  );
+  let invalidEta = false;
+  tbody.querySelectorAll('tr[data-live-pos-vessel]').forEach(tr => {
+    const vessel = tr.getAttribute('data-live-pos-vessel');
+    const row = data.rows.find(r => String(r[shipKey] ?? '').trim() === vessel);
+    if (!row) return;
+    tr.querySelectorAll('input[data-live-pos-col]').forEach(inp => {
+      const col = inp.getAttribute('data-live-pos-col');
+      if (!col || col === shipKey) return;
+      if (col === LIVE_POS_ETA_OPEN_COLUMN) {
+        const parsed = livePosParseEtaOpenUserInput(inp.value);
+        if (!parsed.ok) invalidEta = true;
+        else row[col] = parsed.stored;
+      } else {
+        const v = inp.value.trim();
+        row[col] = v === '' || v === '—' ? '' : v;
+      }
+    });
+  });
+  if (invalidEta) {
+    livePosShowError('Invalid ETA OPEN. Use DD/MM/YYYY, Open, or blank/n/a for N/A.');
+    return;
+  }
+  livePosClearError();
+  livePosTableEditMode = false;
+  await livePosSave({ ...data, rows: data.rows });
+}
+
+function livePosOnTableEditBtnClick() {
+  if (!currentUser || !livePosStored?.rows?.length) return;
+  if (!livePosTableEditMode) {
+    livePosTableEditMode = true;
+    livePosClearError();
+    livePosRender();
+    return;
+  }
+  void livePosTableSaveFromDom();
 }
 
 function livePosLoad() {
@@ -5230,6 +5348,7 @@ function livePosHandleFile(file) {
         return;
       }
       livePosMergeEtaOpenFromPrevious(parsed.rows, livePosStored);
+      livePosTableEditMode = false;
       await livePosSave({
         format: 'kpler',
         updatedAt: Date.now(),
@@ -5293,12 +5412,16 @@ function livePosCloseDetail() {
 function livePosRender() {
   const emptyEl = document.getElementById('livePosEmpty');
   const wrap = document.getElementById('livePosTableWrap');
+  const tableEl = document.getElementById('livePosTable');
   const thead = document.getElementById('livePosThead');
   const tbody = document.getElementById('livePosTbody');
   const countEl = document.getElementById('livePosCount');
+  const countRow = document.getElementById('livePosCountRow');
+  const editBtn = document.getElementById('livePosTableEditBtn');
   const metaEl = document.getElementById('livePosMeta');
   if (!emptyEl || !wrap || !thead || !tbody) return;
 
+  if (!currentUser) livePosTableEditMode = false;
   livePosClearError();
   const data = livePosLoad();
 
@@ -5315,7 +5438,10 @@ function livePosRender() {
   if (!data || !data.rows.length) {
     emptyEl.hidden = false;
     wrap.hidden = true;
+    if (countRow) countRow.hidden = true;
     if (countEl) countEl.textContent = '';
+    if (editBtn) editBtn.hidden = true;
+    if (tableEl) tableEl.classList.remove('live-pos-table--edit-mode');
     thead.innerHTML = '';
     tbody.innerHTML = '';
     return;
@@ -5323,6 +5449,13 @@ function livePosRender() {
 
   emptyEl.hidden = true;
   wrap.hidden = false;
+  if (countRow) countRow.hidden = false;
+  if (tableEl) tableEl.classList.toggle('live-pos-table--edit-mode', livePosTableEditMode);
+  if (editBtn) {
+    const showEdit = !!currentUser;
+    editBtn.hidden = !showEdit;
+    if (showEdit) editBtn.textContent = livePosTableEditMode ? 'SAVE' : 'EDIT';
+  }
 
   const cols = livePosColsWithEtaOpenLast(
     data.format === 'kpler' && Array.isArray(data.headers) && data.headers.length
@@ -5347,22 +5480,26 @@ function livePosRender() {
     const th = document.createElement('th');
     th.textContent = k;
     th.scope = 'col';
-    th.className = 'live-pos-th-sortable';
-    th.tabIndex = 0;
-    th.title = 'Sort column';
-    if (livePosSortState.key === k) {
-      th.classList.add('live-pos-th-sorted');
-      th.setAttribute('aria-sort', livePosSortState.dir === 'asc' ? 'ascending' : 'descending');
-    } else {
+    if (livePosTableEditMode) {
       th.setAttribute('aria-sort', 'none');
-    }
-    th.addEventListener('click', () => livePosOnHeaderClick(k));
-    th.addEventListener('keydown', e => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        livePosOnHeaderClick(k);
+    } else {
+      th.className = 'live-pos-th-sortable';
+      th.tabIndex = 0;
+      th.title = 'Sort column';
+      if (livePosSortState.key === k) {
+        th.classList.add('live-pos-th-sorted');
+        th.setAttribute('aria-sort', livePosSortState.dir === 'asc' ? 'ascending' : 'descending');
+      } else {
+        th.setAttribute('aria-sort', 'none');
       }
-    });
+      th.addEventListener('click', () => livePosOnHeaderClick(k));
+      th.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          livePosOnHeaderClick(k);
+        }
+      });
+    }
     hr.appendChild(th);
   });
   thead.innerHTML = '';
@@ -5374,6 +5511,7 @@ function livePosRender() {
     const vesselKeyRaw = String(row[shipKeyForComments] ?? '').trim();
     if (vesselKeyRaw) tr.setAttribute('data-live-pos-vessel', vesselKeyRaw);
     tr.addEventListener('click', e => {
+      if (livePosTableEditMode) return;
       if (e.target.closest('.live-pos-eta-input')) return;
       if (e.target.closest('input, textarea, button, select, a')) return;
       if (!vesselKeyRaw || !currentUser) return;
@@ -5386,18 +5524,17 @@ function livePosRender() {
         const iso = livePosEtaIsoFromRowCell(row[k]);
         const days = livePosDaysFromTodayTo(iso);
         const urgent = livePosEtaOpenIsUrgent(row['Charter Type'], days);
-        if (livePosCanEditEtaOpen()) {
+        if (livePosCanEditTableCells()) {
           const inp = document.createElement('input');
           inp.type = 'text';
           inp.className = 'live-pos-eta-input' + (urgent ? ' live-pos-eta-open--urgent' : '');
           inp.value = livePosEtaOpenToInputValue(row[k]);
+          inp.setAttribute('data-live-pos-col', k);
           inp.setAttribute('aria-label', 'ETA OPEN');
           inp.autocomplete = 'off';
           inp.placeholder = 'Enter ETA';
           inp.title = 'Daily re-upload keeps this until you change it. Leave blank or type n/a for N/A (fixed indefinitely). Open = not fixed. Dates show as DD MM YYYY to others.';
-          inp.addEventListener('click', e => e.stopPropagation());
-          inp.addEventListener('keydown', e => e.stopPropagation());
-          inp.addEventListener('blur', () => livePosEtaOpenCommitFromInput(inp, row, k));
+          livePosBindCellInputStopPropagation(inp);
           td.appendChild(inp);
         } else {
           const span = document.createElement('span');
@@ -5418,6 +5555,15 @@ function livePosRender() {
         td.appendChild(nameSpan);
         td.appendChild(iconSlot);
         td.title = disp === '—' ? '' : disp;
+      } else if (livePosCanEditTableCells()) {
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.className = 'live-pos-cell-input';
+        inp.setAttribute('data-live-pos-col', k);
+        inp.setAttribute('aria-label', k);
+        inp.value = livePosCellDisplayToInput(row[k]);
+        livePosBindCellInputStopPropagation(inp);
+        td.appendChild(inp);
       } else {
         const v = row[k];
         td.textContent = v === null || v === undefined || v === '' ? '—' : String(v);
@@ -5455,6 +5601,8 @@ function livePosInit() {
       }
     });
   }
+  const tableEditBtn = document.getElementById('livePosTableEditBtn');
+  if (tableEditBtn) tableEditBtn.addEventListener('click', livePosOnTableEditBtnClick);
   if (closeBtn) closeBtn.addEventListener('click', livePosCloseDetail);
   if (ov) {
     ov.addEventListener('click', e => {
