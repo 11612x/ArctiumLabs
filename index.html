@@ -8637,7 +8637,7 @@ function addLeg(chainId, defaults = {}) {
     distance: defaults.distance ?? 3000,
     directDays: defaults.directDays ?? 15,
     speed: defaults.speed ?? null,             // null = use vessel default by leg type
-    portDays: defaults.portDays ?? null,        // null = vessel default
+    portDays: defaults.portDays ?? (type === 'ballast' ? 0 : null), // null = vessel default (laden/spec); ballast = 0
     mode: defaults.mode || 'tce',              // tce | lumpsum (income mode)
     tceRate: defaults.tceRate ?? 22000,
     lumpsum: defaults.lumpsum ?? 1000000,
@@ -8695,6 +8695,7 @@ function updateLeg(chainId, legId, field, val) {
     if (leg.specBaseLumpsum == null) leg.specBaseLumpsum = 1000000;
     if (leg.specBullLumpsum == null) leg.specBullLumpsum = 1000000;
   }
+  if (field === 'type' && val === 'ballast' && leg.portDays == null) leg.portDays = 0;
   if (['type', 'mode', 'durationMode'].includes(field)) renderChains();
   debouncePersist('voy', () => { void saveVoyageChains(); });
 }
@@ -9099,7 +9100,7 @@ function renderLeg(chain, leg, idx) {
     </div>
 
     <div class="leg-grid">
-      <div class="field"><label>Port days (opt)</label><input ${numInputHtml(leg.portDays ?? '', 1, `updateLeg(${chain.id},${leg.id},'portDays',this.value.trim()===''?null:parseNum(this.value))`)} placeholder="default"></div>
+      <div class="field"><label>Total Port days</label><input ${numInputHtml(leg.portDays ?? '', 1, `updateLeg(${chain.id},${leg.id},'portDays',this.value.trim()===''?null:parseNum(this.value))`)} placeholder="default"></div>
       <div class="field"><label>Port cost LOADING $</label><input ${numInputHtml(leg.portCostFrom ?? '', 0, `updateLeg(${chain.id},${leg.id},'portCostFrom',this.value.trim()===''?null:parseNum(this.value))`)} placeholder="0"></div>
       <div class="field"><label>Port cost DISCHARGE $</label><input ${numInputHtml(leg.portCostTo ?? '', 0, `updateLeg(${chain.id},${leg.id},'portCostTo',this.value.trim()===''?null:parseNum(this.value))`)} placeholder="0"></div>
       <div class="field"><label>EXTRAS / Canal $</label><input ${numInputHtml(leg.canalCost, 0, `updateLeg(${chain.id},${leg.id},'canalCost',parseNum(this.value))`)}></div>
@@ -9210,7 +9211,7 @@ function computeLeg(leg, vd, isFirstLeg, isLastLeg, specOverrides = {}) {
   // Port days — POL counted on first leg only (or always — we treat each leg as POL + POD)
   // To avoid double-counting, we count only the POD port time (next leg's POL = this leg's POD).
   // EXCEPT first leg counts POL too.
-  const portDaysPerCall = leg.portDays ?? vd.portDays;
+  const portDaysPerCall = leg.portDays ?? (leg.type === 'ballast' ? 0 : vd.portDays);
   let portDays = portDaysPerCall; // POD always
   if (isFirstLeg) portDays += portDaysPerCall; // add POL on first leg
 
@@ -9843,7 +9844,7 @@ function renderChainResults(results, vd) {
         <td class="${rankTceBase.get(r.id)}">${fmtDay(r.tceBase)}</td>`;
     cmpHTML += `
       <tr>
-        <td><div class="tc-name-cell"><div class="tc-dot" style="background:${r.color}"></div>${r.label}${isBest?'<span class="best-badge">Best</span>':''}</div></td>
+        <td><div class="tc-name-cell"><div class="tc-dot" style="background:${r.color}"></div>${String(r.label || '').toUpperCase()}${isBest?'<span class="best-badge">Best</span>':''}</div></td>
         <td>${r.endPort}</td>
         <td>${r.totalDays.toFixed(1)}</td>
         <td>${fmt(r.totalCost)}</td>
