@@ -1,0 +1,770 @@
+:root {
+  --bg: #0d0f0e;
+  --surface: #141714;
+  --surface2: #1a1d1a;
+  --border: #252825;
+  --border-light: #2e322e;
+  --text: #e8ede8;
+  --text-dim: #b8beb8;
+  --text-muted: #949a94;
+  --accent: #a8b8a8;
+  --accent-dim: #5a6a5a;
+  --accent-glow: rgba(168,184,168,0.07);
+  --red: #b87878;
+  --amber: #b89858;
+  --blue: #7898b8;
+  --teal: #78b8a8;
+}
+
+html[data-ui-theme="light"] {
+  --bg: #e8ede8;
+  --surface: #dde3dd;
+  --surface2: #d3d9d3;
+  --border: #b8beb8;
+  --border-light: #a8aea8;
+  --text: #0d0f0e;
+  --text-dim: #2a2e2a;
+  --text-muted: #4a504a;
+  --accent: #6a8a6a;
+  --accent-dim: #4a6a4a;
+  --accent-glow: rgba(80,100,80,0.10);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body.bunker-standalone {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 15px;
+  line-height: 1.5;
+  min-height: 100vh;
+  padding: 16px 20px 24px;
+}
+
+#bunker-app input[type="number"]::-webkit-outer-spin-button,
+#bunker-app input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+#bunker-app input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+#bunker-app input.num-fmt {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+#bunker-app .card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 18px;
+}
+
+#bunker-app .card-title {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#bunker-app .card-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+#bunker-app .field { display: flex; flex-direction: column; gap: 4px; }
+
+#bunker-app .field label {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  min-height: 28px;
+  display: flex;
+  align-items: flex-end;
+  line-height: 1.2;
+}
+
+#bunker-app .field input, #bunker-app .field select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text);
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 14px;
+  padding: 6px 8px;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+
+#bunker-app .field input:focus, #bunker-app .field select:focus { border-color: var(--accent-dim); }
+
+body.bunker-standalone.arc-loading { overflow: hidden; }
+
+.arc-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background: rgba(13, 15, 14, 0.2);
+  pointer-events: all;
+}
+
+.arc-loading-overlay[hidden] { display: none !important; }
+
+@keyframes arc-loading-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.arc-loading-overlay__logo {
+  width: 72px;
+  height: 72px;
+  color: var(--text);
+  display: block;
+  transform-origin: center center;
+  animation: arc-loading-spin 1.5s steps(12) infinite;
+}
+
+#bunker-app .port-ac-wrap {
+    position: relative;
+    width: 100%;
+  }
+
+#bunker-app .route-port-wrap input {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+#bunker-app .route-port-wrap {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    position: relative;
+  }
+
+#bunker-app .route-port-wrap .port-meta {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    margin-top: 0.2rem;
+    min-height: 1em;
+    letter-spacing: normal;
+    text-transform: none;
+  }
+
+#bunker-app .route-port-wrap input.port-valid {
+    border-color: var(--accent-dim);
+  }
+
+#bunker-app .route-port-list {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    z-index: 25000;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    max-height: 220px;
+    overflow-y: auto;
+    display: none;
+    text-align: left;
+    text-transform: none;
+    letter-spacing: normal;
+  }
+
+#bunker-app .route-port-list.open { display: block; }
+
+#bunker-app .route-port-item {
+    padding: 8px 10px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+
+#bunker-app .route-port-item:last-child { border-bottom: none; }
+
+#bunker-app .route-port-item:hover,
+#bunker-app .route-port-item.active {
+    background: var(--accent-glow);
+    color: var(--accent);
+  }
+
+#bunker-app .route-port-empty {
+    padding: 8px 10px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  /* ════════════════════════════════════════════════════════════════════════ */
+  /* BUNKERS TAB                                                              */
+  /* ════════════════════════════════════════════════════════════════════════ */
+
+#bunker-app .bunker-layout {
+    max-width: 980px;
+    width: 100%;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+#bunker-app .bunker-toolbar {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+  }
+
+#bunker-app .bunker-toolbar-title {
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-align: center;
+  }
+
+#bunker-app .bunker-toolbar-side {
+    display: flex;
+    min-width: 96px;
+  }
+
+#bunker-app .bunker-toolbar-side.right {
+    justify-content: flex-end;
+  }
+
+#bunker-app .bunker-toolbar-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    padding: 6px 14px;
+    text-transform: uppercase;
+    transition: color 0.15s, border-color 0.15s;
+  }
+
+#bunker-app .bunker-toolbar-btn:hover {
+    border-color: var(--border-light);
+    color: var(--text-dim);
+  }
+
+#bunker-app .bunker-meta-grid {
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 1fr 1fr;
+    gap: 12px;
+  }
+
+#bunker-app .bunker-qty-bar {
+    display: flex;
+    gap: 24px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+
+#bunker-app .bunker-qty-info {
+    font-size: 12px;
+    color: var(--text-muted);
+    padding-bottom: 7px;
+  }
+
+#bunker-app #bunk-suppliers-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+#bunker-app .bunker-supplier {
+    overflow: hidden;
+    padding: 0;
+  }
+
+#bunker-app .bunker-supplier-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+
+#bunker-app .bunker-supplier-name {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid transparent;
+    color: var(--text);
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    outline: none;
+    padding: 2px 0;
+    width: min(240px, 100%);
+  }
+
+#bunker-app .bunker-supplier-name:focus {
+    border-bottom-color: var(--accent-dim);
+  }
+
+#bunker-app .bunker-supplier-head-right {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+#bunker-app .bunker-supplier-badge {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    padding: 3px 8px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+
+#bunker-app .bunker-supplier-badge.best {
+    color: var(--teal);
+    border-color: rgba(120,184,168,0.35);
+    background: rgba(120,184,168,0.08);
+  }
+
+#bunker-app .bunker-supplier-badge.worst {
+    color: var(--red);
+    border-color: rgba(184,120,120,0.35);
+    background: rgba(184,120,120,0.08);
+  }
+
+#bunker-app .bunker-btn-ghost {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    transition: color 0.15s;
+  }
+
+#bunker-app .bunker-btn-ghost:hover { color: var(--text-dim); }
+#bunker-app .bunker-btn-ghost.danger:hover { color: var(--red); }
+
+#bunker-app .bunker-quotes-wrap { overflow-x: auto; }
+
+#bunker-app .bunker-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+#bunker-app .bunker-table th {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 400;
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+#bunker-app .bunker-table td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+
+#bunker-app .bunker-table tbody tr:last-child td { border-bottom: none; }
+#bunker-app .bunker-table tbody tr:hover td { background: var(--surface2); }
+
+#bunker-app .bunker-round-tag {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+
+#bunker-app .bunker-table td input[type="number"],
+#bunker-app .bunker-table td input.num-fmt {
+    width: 88px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text);
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 14px;
+    padding: 6px 8px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+#bunker-app .bunker-table td input[type="number"]:focus,
+#bunker-app .bunker-table td input.num-fmt:focus {
+    border-color: var(--accent-dim);
+  }
+
+#bunker-app .bunker-table td input[type="number"]::placeholder,
+#bunker-app .bunker-table td input.num-fmt::placeholder {
+    color: var(--text-muted);
+  }
+
+#bunker-app .bunker-counter-check-label {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    line-height: 0;
+    vertical-align: middle;
+  }
+
+#bunker-app .bunker-counter-check-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+    opacity: 0;
+  }
+
+#bunker-app .bunker-counter-check-label:has(.bunker-counter-check-input:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+#bunker-app .bunker-counter-check-visual {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+#bunker-app .bunker-counter-check-icon {
+    display: inline-flex;
+  }
+
+#bunker-app .bunker-counter-check-checked {
+    display: none;
+  }
+
+#bunker-app .bunker-counter-check-input:checked ~ .bunker-counter-check-visual .bunker-counter-check-unchecked {
+    display: none;
+  }
+
+#bunker-app .bunker-counter-check-input:checked ~ .bunker-counter-check-visual .bunker-counter-check-checked {
+    display: inline-flex;
+  }
+
+#bunker-app .bunker-total-val {
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+
+#bunker-app .bunker-total-val.best { color: var(--teal); }
+#bunker-app .bunker-total-val.worst { color: var(--red); }
+
+#bunker-app .bunker-btn-add-round {
+    width: 100%;
+    padding: 10px 18px;
+    text-align: left;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+
+#bunker-app .bunker-btn-add-round:hover {
+    background: var(--surface2);
+    color: var(--text-dim);
+  }
+
+#bunker-app .bunker-btn-add-supplier {
+    width: 100%;
+    padding: 12px;
+    border: 1px dashed var(--border-light);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--text-dim);
+    cursor: pointer;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    transition: border-color 0.2s;
+  }
+
+#bunker-app .bunker-btn-add-supplier:hover {
+    border-color: var(--accent-dim);
+    color: var(--text-dim);
+    background: var(--bg);
+  }
+
+#bunker-app .bunker-counter-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin-bottom: 14px;
+  }
+
+#bunker-app .bunker-target-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+
+#bunker-app .bunker-target-row .field input {
+    width: 160px;
+  }
+
+#bunker-app .bunker-counter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+  }
+
+#bunker-app .bunker-counter-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 14px 16px;
+  }
+
+#bunker-app .bunker-cc-name {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-transform: uppercase;
+  }
+
+#bunker-app .bunker-cc-delta { font-size: 10px; }
+#bunker-app .bunker-cc-delta.neg { color: var(--teal); }
+#bunker-app .bunker-cc-delta.pos { color: var(--red); }
+
+#bunker-app .bunker-cc-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+  }
+
+#bunker-app .bunker-cc-key {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+#bunker-app .bunker-cc-val {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+#bunker-app .bunker-cc-was {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-align: right;
+  }
+
+#bunker-app .bunker-cc-total {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+#bunker-app .bunker-cc-total-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+#bunker-app .bunker-cc-total-val {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+#bunker-app .bunker-no-quote {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  @media (max-width: 900px) {
+    #bunker-app .bunker-meta-grid { grid-template-columns: 1fr 1fr; }
+  }
+  .bunker-export-surface {
+    position: fixed;
+    left: -10000px;
+    top: 0;
+    width: 900px;
+    padding: 6px 20px 16px;
+    background: transparent;
+    color: #000;
+    pointer-events: none;
+    z-index: -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+  }
+
+  .bunker-export-surface > * {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .bunker-export-surface,
+  .bunker-export-surface * {
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    color: #000 !important;
+    border-color: #000 !important;
+    -webkit-text-fill-color: #000 !important;
+    text-decoration-color: #000 !important;
+  }
+
+  .bunker-export-surface .card,
+  .bunker-export-surface .bunker-supplier,
+  .bunker-export-surface .bunker-supplier-badge {
+    border: 1px solid #000 !important;
+    border-radius: 0 !important;
+  }
+
+  .bunker-export-surface .bunker-quotes-wrap {
+    width: 100%;
+    overflow: visible;
+    padding: 0 18px 11px;
+    box-sizing: border-box;
+  }
+
+  .bunker-export-surface .bunker-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: 13px;
+    border: none !important;
+  }
+
+  .bunker-export-surface .bunker-table th,
+  .bunker-export-surface .bunker-table td {
+    padding: 11px 14px !important;
+    line-height: 1.35;
+    vertical-align: middle;
+    word-break: break-word;
+    border: none !important;
+  }
+
+  .bunker-export-surface .bunker-table th {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+
+  .bunker-export-surface .bunker-table th:nth-child(1),
+  .bunker-export-surface .bunker-table td:nth-child(1) { width: 14%; }
+  .bunker-export-surface .bunker-table th:nth-child(2),
+  .bunker-export-surface .bunker-table td:nth-child(2),
+  .bunker-export-surface .bunker-table th:nth-child(3),
+  .bunker-export-surface .bunker-table td:nth-child(3),
+  .bunker-export-surface .bunker-table th:nth-child(4),
+  .bunker-export-surface .bunker-table td:nth-child(4) { width: 18%; }
+  .bunker-export-surface .bunker-table th:nth-child(5),
+  .bunker-export-surface .bunker-table td:nth-child(5) { width: 10%; }
+  .bunker-export-surface .bunker-table th:nth-child(6),
+  .bunker-export-surface .bunker-table td:nth-child(6) { width: 22%; }
+
+  .bunker-export-surface .bunker-supplier {
+    padding: 0 !important;
+  }
+
+  .bunker-export-surface .bunker-supplier-head {
+    border-bottom: none !important;
+    padding: 11px 18px;
+  }
+
+  .bunker-export-surface .card-title::after {
+    background: #000 !important;
+    height: 1px;
+  }
+
+  .bunker-export-surface .bunker-supplier-badge,
+  .bunker-export-surface .bunker-round-tag {
+    background: transparent !important;
+    color: #000 !important;
+  }
+
+  .bunker-export-surface .bunker-round-tag {
+    border: none !important;
+  }
+
+  .bunker-export-surface .bunker-total-val.best,
+  .bunker-export-surface .bunker-total-val.worst,
+  .bunker-export-surface .bunker-supplier-badge.best,
+  .bunker-export-surface .bunker-supplier-badge.worst {
+    color: #000 !important;
+  }
+
+  .bunker-export-surface .export-default-value {
+    border: none !important;
+    font-size: 14px;
+    line-height: 1.35;
+    min-height: 0;
+    padding: 0;
+    width: 100%;
+  }
+
+  .bunker-export-surface .bunker-supplier-head .export-default-value {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
+  .bunker-export-surface .bunker-table .export-default-value {
+    text-align: right;
+  }
+
+  .bunker-export-surface .bunker-table td:first-child .export-default-value,
+  .bunker-export-surface .bunker-table td:nth-child(5) .export-default-value {
+    text-align: left;
+  }
+
+  .bunker-export-surface .bunker-table td:last-child,
+  .bunker-export-surface .bunker-table th:last-child {
+    text-align: right;
+  }

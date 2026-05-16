@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en" data-ui-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bunker Negotiator — Arctium Labs</title>
+<link rel="icon" href="Favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="bunkers.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="ports.js"></script>
+</head>
+<body class="bunker-standalone">
+<div id="bunker-app">
+  <div class="bunker-layout">
+    <div class="card bunker-toolbar">
+      <div class="bunker-toolbar-side">
+        <button class="bunker-toolbar-btn" type="button" onclick="bunkExportPDF()">Export</button>
+      </div>
+      <div class="bunker-toolbar-title">Bunker Negotiator</div>
+      <div class="bunker-toolbar-side right">
+        <button class="bunker-toolbar-btn" type="button" onclick="bunkResetAll()">Reset</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Delivery</div>
+      <div class="bunker-meta-grid">
+        <div class="field">
+          <label>Vessel</label>
+          <input type="text" id="bunk-vessel" onchange="bunkUpdateTitle()">
+        </div>
+        <div class="field port-ac-field">
+          <label>Port</label>
+          <div class="port-ac-wrap route-port-wrap">
+            <input type="text" id="bunk-port" autocomplete="off" placeholder="Search port…" onchange="bunkUpdateTitle()">
+            <div class="port-meta" id="bunk-port-meta"></div>
+            <div class="route-port-list" id="bunk-port-list"></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Delivery from</label>
+          <input type="text" id="bunk-date-from" placeholder="DD/MM/YY" maxlength="8" oninput="bunkFormatDateInput(this)" onchange="bunkUpdateTitle()">
+        </div>
+        <div class="field">
+          <label>Delivery to</label>
+          <input type="text" id="bunk-date-to" placeholder="DD/MM/YY" maxlength="8" oninput="bunkFormatDateInput(this)" onchange="bunkUpdateTitle()">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Quantities</div>
+      <div class="bunker-qty-bar">
+        <div class="field">
+          <label>FO qty (MT)</label>
+          <input type="text" inputmode="decimal" class="num-fmt" id="bunk-qty-fo" data-decimals="0" oninput="bunkRecalcAll()">
+        </div>
+        <div class="field">
+          <label>GO qty (MT)</label>
+          <input type="text" inputmode="decimal" class="num-fmt" id="bunk-qty-go" data-decimals="0" oninput="bunkRecalcAll()">
+        </div>
+        <div class="bunker-qty-info" id="bunk-qty-info">0 MT total</div>
+      </div>
+    </div>
+
+    <div id="bunk-suppliers-container"></div>
+
+    <button class="bunker-btn-add-supplier" type="button" onclick="bunkAddSupplier()">+ Add Supplier</button>
+
+    <div class="card bunker-counter-block">
+      <div class="card-title">Lump Sum Counter</div>
+      <div class="bunker-counter-desc">Enter a target total. Suggested FO/GO prices per supplier will scale proportionally to hit it.</div>
+      <div class="bunker-target-row">
+        <div class="field">
+          <label>Target ($)</label>
+          <input type="text" inputmode="decimal" class="num-fmt" id="bunk-target-lumpsum" data-decimals="0" placeholder="e.g. 450,000" oninput="bunkCalcCounters()">
+        </div>
+      </div>
+      <div id="bunk-counter-results"></div>
+    </div>
+  </div>
+</div>
+
+<div id="arcLoadingOverlay" class="arc-loading-overlay" hidden aria-hidden="true">
+  <svg class="arc-loading-overlay__logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true">
+    <rect x="29" y="29" width="6" height="6"></rect>
+    <line x1="32" y1="29" x2="32" y2="10"></line>
+    <line x1="32" y1="10" x2="38" y2="10"></line>
+    <line x1="32" y1="35" x2="32" y2="54"></line>
+    <line x1="32" y1="54" x2="26" y2="54"></line>
+    <line x1="35" y1="32" x2="54" y2="32"></line>
+    <line x1="54" y1="32" x2="54" y2="26"></line>
+    <line x1="29" y1="32" x2="10" y2="32"></line>
+    <line x1="10" y1="32" x2="10" y2="38"></line>
+    <line x1="35" y1="29" x2="46" y2="18"></line>
+    <line x1="46" y1="18" x2="46" y2="14"></line>
+    <line x1="29" y1="35" x2="18" y2="46"></line>
+    <line x1="18" y1="46" x2="18" y2="50"></line>
+    <line x1="35" y1="35" x2="46" y2="46"></line>
+    <line x1="46" y1="46" x2="50" y2="46"></line>
+    <line x1="29" y1="29" x2="18" y2="18"></line>
+    <line x1="18" y1="18" x2="14" y2="18"></line>
+  </svg>
+</div>
+
+<script src="bunkers-standalone-shared.js"></script>
+<script src="bunkers-tab.js"></script>
+</body>
+</html>

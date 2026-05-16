@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en" data-ui-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emissions Calculator — Arctium Labs</title>
+<link rel="icon" href="Favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="emissions.css">
+<style>
+:root {
+  --bg: #0d0f0e;
+  --surface: #141714;
+  --surface2: #1a1d1a;
+  --border: #252825;
+  --border-light: #2e322e;
+  --text: #e8ede8;
+  --text-dim: #b8beb8;
+  --text-muted: #949a94;
+  --accent: #a8b8a8;
+  --accent-dim: #5a6a5a;
+  --accent-glow: rgba(168,184,168,0.07);
+  --red: #b87878;
+  --teal: #78b8a8;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body.emissions-standalone {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 15px;
+  padding: 16px 20px 24px;
+  min-height: 100vh;
+}
+.emissions-standalone .layout {
+  display: grid;
+  grid-template-columns: minmax(420px, 520px) 1fr;
+  gap: 24px;
+  align-items: start;
+}
+.emissions-standalone .left-panel,
+.emissions-standalone .right-panel { display: flex; flex-direction: column; gap: 16px; }
+.emissions-standalone .card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 18px;
+}
+.emissions-standalone .card-title {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.emissions-standalone .card-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.emissions-standalone .field { display: flex; flex-direction: column; gap: 4px; }
+.emissions-standalone .field label {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.emissions-standalone .field input, .emissions-standalone .field select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  padding: 6px 8px;
+  width: 100%;
+}
+.emissions-standalone .run-btn {
+  background: var(--accent-glow);
+  border: 1px solid var(--accent-dim);
+  color: var(--accent);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  padding: 13px 16px;
+  text-transform: uppercase;
+  width: 100%;
+}
+.emissions-standalone .add-leg-btn {
+  background: transparent;
+  border: 1px dashed var(--border-light);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  margin-top: 10px;
+  padding: 8px;
+  width: 100%;
+}
+.emissions-standalone .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  color: var(--text-muted);
+  gap: 12px;
+}
+.emissions-standalone .section-title,
+.emissions-standalone .summary-table,
+.emissions-standalone .verdict-box { /* minimal; expand as needed */ }
+.emissions-standalone .section-title {
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin: 16px 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.emissions-standalone .summary-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.emissions-standalone .summary-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+.emissions-standalone .verdict-box {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+</style>
+<script src="ports.js"></script>
+<script src="bunkers-standalone-shared.js"></script>
+<script>
+function applyRoleUI() {
+  document.querySelectorAll('[data-admin-only]').forEach(el => { el.style.display = ''; });
+}
+document.addEventListener('input', e => {
+  if (e.target.matches('input.num-fmt')) sanitizeNumInputEl(e.target);
+}, true);
+document.addEventListener('blur', e => {
+  if (e.target.matches('input.num-fmt')) formatNumInputEl(e.target);
+}, true);
+</script>
+</head>
+<body class="emissions-standalone">
+<div id="emissions-app">
+<div class="layout">
+    <div class="left-panel">
+      <div class="card">
+        <div class="card-title">Voyage Details</div>
+        <div class="em-voyage-grid">
+          <div class="field span-2">
+            <label>Vessel name</label>
+            <input type="text" id="em-vessel" autocomplete="off">
+          </div>
+          <div class="field span-2">
+            <label>Route coverage</label>
+            <input type="hidden" id="em-voyage-type" value="100">
+            <div class="coverage-toggle">
+              <button type="button" class="active" data-coverage="100" onclick="emSetCoverage('100')">100%</button>
+              <button type="button" data-coverage="50" onclick="emSetCoverage('50')">50%</button>
+            </div>
+          </div>
+          <div class="field span-2">
+            <label>Compliance Year</label>
+            <select id="em-fuel-eu-year"></select>
+          </div>
+          <div class="field port-ac-field">
+            <label>Load Port</label>
+            <div class="port-ac-wrap route-port-wrap">
+              <input type="text" id="em-pol" autocomplete="off" placeholder="Search port…">
+              <div class="port-meta" id="em-pol-meta"></div>
+              <div class="route-port-list" id="em-pol-list"></div>
+            </div>
+          </div>
+          <div class="field port-ac-field">
+            <label>Discharge Port</label>
+            <div class="port-ac-wrap route-port-wrap">
+              <input type="text" id="em-pod" autocomplete="off" placeholder="Search port…">
+              <div class="port-meta" id="em-pod-meta"></div>
+              <div class="route-port-list" id="em-pod-list"></div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Voyage days</label>
+            <input type="text" inputmode="decimal" class="num-fmt" id="em-voyage-days" data-decimals="1">
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Fuel Consumption</div>
+        <div class="em-fuel-table-wrap">
+          <table class="em-fuel-table">
+            <thead>
+              <tr>
+                <th>TYPE</th>
+                <th>MT CONSUMED</th>
+                <th>EF</th>
+                <th>MT/ CO2</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="em-fuel-rows"></tbody>
+          </table>
+        </div>
+        <button class="add-leg-btn" type="button" onclick="emAddFuelRow()">+ Add Fuel</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">ETS Parameters</div>
+        <div class="field">
+          <label>EUA price €/tCO₂</label>
+          <input type="text" inputmode="decimal" class="num-fmt" id="em-eua-price" data-decimals="0" value="80">
+        </div>
+      </div>
+
+      <div class="spot-actions-wrap">
+        <div class="spot-actions">
+          <button class="run-btn" type="button" onclick="emCalcETS()">Calculate Emissions</button>
+          <button class="spot-reset-btn" type="button" onclick="emResetETS()" aria-label="Reset" title="Reset"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true"><path fill="#a8b8a8" d="M8.884 3.116a1.25 1.25 0 0 1 0 1.768L6.018 7.75H17.5c5.937 0 10.75 4.813 10.75 10.75S23.437 29.25 17.5 29.25S6.75 24.437 6.75 18.5a1.25 1.25 0 1 1 2.5 0a8.25 8.25 0 1 0 8.25-8.25H6.018l2.866 2.866a1.25 1.25 0 0 1-1.768 1.768l-5-5a1.25 1.25 0 0 1 0-1.768l5-5a1.25 1.25 0 0 1 1.768 0"/></svg></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="right-panel" id="emissionsResults">
+      <div class="empty-state">
+        <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" aria-hidden="true"><path fill="#a8b8a8" d="m249.46 122.18l-28.34-7.09a93.87 93.87 0 0 0-80.22-80.21l-7.08-28.34a6 6 0 0 0-11.64 0l-7.08 28.34a93.87 93.87 0 0 0-80.22 80.21l-28.34 7.09a6 6 0 0 0 0 11.64l28.34 7.09a93.87 93.87 0 0 0 80.22 80.21l7.08 28.34a6 6 0 0 0 11.64 0l7.08-28.34a93.87 93.87 0 0 0 80.22-80.21l28.34-7.09a6 6 0 0 0 0-11.64m-41.05-10.26L157 99.05l-12.92-51.46a81.87 81.87 0 0 1 64.33 64.33m-63-9.76L128 119.51l-17.36-17.35L128 32.74Zm-33.49-54.57L99.05 99.05l-51.46 12.87a81.87 81.87 0 0 1 64.33-64.33m-9.76 63.06L119.52 128l-17.36 17.35L32.74 128Zm-54.57 33.43L99.05 157l12.87 51.46a81.87 81.87 0 0 1-64.33-64.38m63.05 9.76L128 136.49l17.36 17.35L128 223.26Zm33.44 54.57L157 157l51.46-12.87a81.87 81.87 0 0 1-64.38 64.28m9.76-63.06L136.48 128l17.36-17.35L223.26 128Z"/></svg></div>
+        <div>Enter voyage details and calculate ETS</div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="emissions-tab.js"></script>
+</body>
+</html>
