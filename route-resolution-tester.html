@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Marnet resolution tester</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 900px;
+      margin: 24px auto;
+      padding: 0 16px;
+      background: #0f1210;
+      color: #e4ebe4;
+      line-height: 1.45;
+    }
+    h1 { font-size: 1.25rem; font-weight: 600; margin: 0 0 8px; }
+    .note {
+      font-size: 0.85rem;
+      color: #9aa89a;
+      margin-bottom: 20px;
+      padding: 10px 12px;
+      background: #1a1f1a;
+      border-radius: 8px;
+      border: 1px solid #2a322a;
+    }
+    .row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; align-items: flex-end; }
+    label { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; color: #9aa89a; }
+    input[type="text"] {
+      width: 200px;
+      padding: 8px 10px;
+      border: 1px solid #3a443a;
+      border-radius: 6px;
+      background: #0a0c0a;
+      color: inherit;
+      font-size: 0.95rem;
+    }
+    button {
+      padding: 9px 18px;
+      border: none;
+      border-radius: 6px;
+      background: #6a8a6a;
+      color: #0f1210;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    button:hover:not(:disabled) { filter: brightness(1.08); }
+    .nets { display: grid; gap: 10px; margin-bottom: 20px; }
+    .net-card {
+      padding: 10px 12px;
+      background: #1a1f1a;
+      border-radius: 8px;
+      border: 1px solid #2a322a;
+      font-size: 0.85rem;
+    }
+    .net-card strong { color: #b8c8b8; }
+    .net-card input[type="file"] { font-size: 0.8rem; margin-top: 6px; max-width: 100%; }
+    .status-ok { color: #7ab87a; }
+    .status-warn { color: #c8a86a; }
+    .status-err { color: #c88a8a; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      margin-top: 8px;
+    }
+    th, td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid #2a322a;
+    }
+    th { color: #9aa89a; font-weight: 500; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    td.num { font-variant-numeric: tabular-nums; }
+    #log {
+      margin-top: 16px;
+      font-size: 0.8rem;
+      color: #7a8a7a;
+      white-space: pre-wrap;
+      font-family: ui-monospace, monospace;
+    }
+  </style>
+</head>
+<body>
+  <h1>Marnet resolution tester</h1>
+  <p class="note">
+    Compares <strong>searoute-ts</strong> at 100 km (built-in), 20 km, and 5 km networks.
+    100 km works immediately. Place <code>20km.geojson</code> and <code>5km.geojson</code> next to this file,
+    or use the file pickers. Serve locally: <code>python -m http.server 3456</code> then open this page.
+    Port names use <code>ports.js</code> in this folder.
+  </p>
+
+  <div class="row">
+    <label>Origin port
+      <input type="text" id="port-from" value="HOUSTON" autocomplete="off">
+    </label>
+    <label>Destination port
+      <input type="text" id="port-to" value="LOME" autocomplete="off">
+    </label>
+    <button type="button" id="btn-run">Compare</button>
+  </div>
+
+  <div class="nets">
+    <div class="net-card" id="net-100">
+      <strong>100 km</strong> — bundled in searoute-ts (default)
+      <div class="net-status status-ok">Ready when engine loads</div>
+    </div>
+    <div class="net-card" id="net-20">
+      <strong>20 km</strong> — <code>20km.geojson</code>
+      <input type="file" id="file-20" accept=".geojson,.json,application/geo+json">
+      <div class="net-status status-warn">Not loaded</div>
+    </div>
+    <div class="net-card" id="net-5">
+      <strong>5 km</strong> — <code>5km.geojson</code>
+      <input type="file" id="file-5" accept=".geojson,.json,application/geo+json">
+      <div class="net-status status-warn">Not loaded</div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Resolution</th>
+        <th>Network load</th>
+        <th>Route (1st call)</th>
+        <th>Route (2nd call)</th>
+        <th>Distance (NM)</th>
+        <th>Waypoints</th>
+        <th>Detour ratio</th>
+      </tr>
+    </thead>
+    <tbody id="results-body">
+      <tr><td colspan="7" style="color:#6a7a6a">Run Compare to fill table</td></tr>
+    </tbody>
+  </table>
+
+  <div id="log"></div>
+
+  <script src="ports.js"></script>
+  <script type="module">
+    import seaRoute, { clearFinderCache } from 'https://esm.sh/searoute-ts@2.0.0';
+
+    const RESOLUTIONS = [
+      { km: 100, label: '100 km', network: null, statusEl: () => document.querySelector('#net-100 .net-status'), fileInput: null },
+      { km: 20, label: '20 km', network: null, statusEl: () => document.querySelector('#net-20 .net-status'), fileInput: () => document.getElementById('file-20'), fetchNames: ['20km.geojson', 'marnet-20km.geojson', 'marnet_plus_20km.geojson'] },
+      { km: 5, label: '5 km', network: null, statusEl: () => document.querySelector('#net-5 .net-status'), fileInput: () => document.getElementById('file-5'), fetchNames: ['5km.geojson', 'marnet-5km.geojson', 'marnet_plus_5km.geojson'] },
+    ];
+
+    const logEl = document.getElementById('log');
+    const tbody = document.getElementById('results-body');
+    const btn = document.getElementById('btn-run');
+
+    function log(msg) {
+      logEl.textContent += msg + '\n';
+    }
+
+    function clearLog() {
+      logEl.textContent = '';
+    }
+
+    function normalizeAntimeridian(fc) {
+      if (!fc?.features) return fc;
+      for (const f of fc.features) {
+        const coords = f.geometry?.coordinates;
+        if (!coords) continue;
+        for (const c of coords) {
+          if (c[0] === 180) c[0] = -180;
+        }
+      }
+      return fc;
+    }
+
+    function setNetStatus(res, html, cls) {
+      const el = res.statusEl();
+      if (!el) return;
+      el.innerHTML = html;
+      el.className = 'net-status ' + (cls || 'status-warn');
+    }
+
+    async function parseGeoJsonFile(file) {
+      const text = await file.text();
+      return normalizeAntimeridian(JSON.parse(text));
+    }
+
+    async function fetchGeoJson(url) {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
+      return normalizeAntimeridian(await res.json());
+    }
+
+    function isValidPort(p) {
+      if (!p || p.is_inactive) return false;
+      const lat = Number(p.lat);
+      const lon = Number(p.lon);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return false;
+      if (Math.abs(lat) < 0.01 && Math.abs(lon) < 0.01) return false;
+      return lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
+    }
+
+    function portSearchKeys(p) {
+      const keys = new Set();
+      if (p.name) keys.add(String(p.name).toLowerCase().trim());
+      if (p.port_name_full) keys.add(String(p.port_name_full).toLowerCase().trim());
+      if (p.value) keys.add(String(p.value).toLowerCase().trim());
+      return keys;
+    }
+
+    function isSecondaryPortName(name) {
+      return /offshore|terminal|ship canal|basin|anchorage|fpso|sbm|spm/i.test(name || '');
+    }
+
+    function findPort(query) {
+      const q = query.trim().toLowerCase();
+      if (!q) return null;
+      const ports = window.ARCTIUM_PORTS;
+      if (!Array.isArray(ports)) return null;
+
+      const valid = ports.filter(isValidPort);
+      const keyMatches = valid.filter((p) => portSearchKeys(p).has(q));
+      if (keyMatches.length === 1) return keyMatches[0];
+
+      const fullMatches = valid.filter((p) => {
+        const full = String(p.port_name_full || '').toLowerCase().trim();
+        const val = String(p.value || '').toLowerCase().trim();
+        return full === q || val === q;
+      });
+      if (fullMatches.length) {
+        const primary = fullMatches.filter((p) => !isSecondaryPortName(p.name));
+        const pool = primary.length ? primary : fullMatches;
+        const byFull = pool.filter((p) => String(p.port_name_full || '').toLowerCase().trim() === q);
+        if (byFull.length === 1) return byFull[0];
+        if (byFull.length > 1) return byFull[0];
+        if (pool.length === 1) return pool[0];
+        return pool[0];
+      }
+
+      const partial = valid.filter((p) => {
+        const name = String(p.name || '').toLowerCase();
+        const full = String(p.port_name_full || '').toLowerCase();
+        return name.includes(q) || full.includes(q);
+      });
+      const primaryPartial = partial.filter((p) => !isSecondaryPortName(p.name));
+      const pool = primaryPartial.length ? primaryPartial : partial;
+      if (pool.length === 1) return pool[0];
+
+      const starts = pool.filter((p) => String(p.name || '').toLowerCase().startsWith(q));
+      if (starts.length >= 1) return starts[0];
+
+      return null;
+    }
+
+    function portCoords(p) {
+      return [Number(p.lon), Number(p.lat)];
+    }
+
+    function runRoute(from, to, network) {
+      const opts = {
+        units: 'nauticalmiles',
+        returnPassages: true,
+        allowArctic: false,
+      };
+      if (network) opts.network = network;
+      return seaRoute(from, to, opts);
+    }
+
+    function fmtMs(ms) {
+      if (!Number.isFinite(ms)) return '—';
+      if (ms < 1000) return ms.toFixed(0) + ' ms';
+      return (ms / 1000).toFixed(2) + ' s';
+    }
+
+    function fmtNm(n) {
+      return Number.isFinite(n) ? n.toFixed(1) : '—';
+    }
+
+    async function ensureNetwork(res, loadTimings) {
+      if (res.km === 100) {
+        res.network = null;
+        setNetStatus(res, 'Using bundled default marnet_plus_100km', 'status-ok');
+        return;
+      }
+
+      if (res.network) return;
+
+      const fileInput = res.fileInput?.();
+      if (fileInput?.files?.[0]) {
+        const t0 = performance.now();
+        res.network = await parseGeoJsonFile(fileInput.files[0]);
+        const loadMs = performance.now() - t0;
+        loadTimings[res.km] = loadMs;
+        const n = res.network.features?.length ?? 0;
+        setNetStatus(res, `Loaded from file (${n.toLocaleString()} features, ${fmtMs(loadMs)})`, 'status-ok');
+        return;
+      }
+
+      if (res.fetchNames?.length) {
+        let lastErr = null;
+        for (const name of res.fetchNames) {
+          try {
+            const t0 = performance.now();
+            res.network = await fetchGeoJson(name);
+            const loadMs = performance.now() - t0;
+            loadTimings[res.km] = loadMs;
+            const n = res.network.features?.length ?? 0;
+            setNetStatus(res, `Auto-loaded ${name} (${n.toLocaleString()} features, ${fmtMs(loadMs)})`, 'status-ok');
+            return;
+          } catch (e) {
+            lastErr = e;
+          }
+        }
+        const hint = res.fetchNames[0];
+        setNetStatus(res, `Missing: pick a file or add ${hint} beside this HTML`, 'status-warn');
+        throw new Error(res.label + ': no network — ' + (lastErr?.message || 'file not found'));
+      }
+    }
+
+    document.getElementById('file-20').addEventListener('change', async (e) => {
+      const res = RESOLUTIONS.find((r) => r.km === 20);
+      res.network = null;
+      if (e.target.files[0]) {
+        try {
+          const t0 = performance.now();
+          res.network = await parseGeoJsonFile(e.target.files[0]);
+          const ms = performance.now() - t0;
+          setNetStatus(res, `File ready (${res.network.features?.length?.toLocaleString()} features, ${fmtMs(ms)})`, 'status-ok');
+        } catch (err) {
+          setNetStatus(res, 'Parse error: ' + err.message, 'status-err');
+        }
+      }
+    });
+
+    document.getElementById('file-5').addEventListener('change', async (e) => {
+      const res = RESOLUTIONS.find((r) => r.km === 5);
+      res.network = null;
+      if (e.target.files[0]) {
+        try {
+          const t0 = performance.now();
+          res.network = await parseGeoJsonFile(e.target.files[0]);
+          const ms = performance.now() - t0;
+          setNetStatus(res, `File ready (${res.network.features?.length?.toLocaleString()} features, ${fmtMs(ms)})`, 'status-ok');
+        } catch (err) {
+          setNetStatus(res, 'Parse error: ' + err.message, 'status-err');
+        }
+      }
+    });
+
+    btn.addEventListener('click', async () => {
+      clearLog();
+      btn.disabled = true;
+      tbody.innerHTML = '';
+
+      if (!Array.isArray(window.ARCTIUM_PORTS)) {
+        tbody.innerHTML =
+          '<tr><td colspan="7" class="status-err">ports.js did not load. Run from a local server (not file://), e.g. <code>python -m http.server 3456</code></td></tr>';
+        btn.disabled = false;
+        return;
+      }
+
+      const fromName = document.getElementById('port-from').value;
+      const toName = document.getElementById('port-to').value;
+      const pFrom = findPort(fromName);
+      const pTo = findPort(toName);
+
+      if (!pFrom) {
+        tbody.innerHTML =
+          '<tr><td colspan="7" class="status-err">Origin port not found: ' +
+          fromName +
+          ' — try HOUSTON, Houston, or an exact name from ports.js</td></tr>';
+        btn.disabled = false;
+        return;
+      }
+      if (!pTo) {
+        tbody.innerHTML =
+          '<tr><td colspan="7" class="status-err">Destination port not found: ' +
+          toName +
+          ' — try LOME or an exact name from ports.js</td></tr>';
+        btn.disabled = false;
+        return;
+      }
+
+      const from = portCoords(pFrom);
+      const to = portCoords(pTo);
+      log('From: ' + (pFrom.name || pFrom.port_name_full) + ' [' + from.join(', ') + ']');
+      log('To:   ' + (pTo.name || pTo.port_name_full) + ' [' + to.join(', ') + ']');
+      log('');
+
+      const loadTimings = { 100: 0 };
+
+      for (const res of RESOLUTIONS) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + res.label + '</td><td colspan="6">Loading…</td>';
+        tbody.appendChild(tr);
+
+        try {
+          await ensureNetwork(res, loadTimings);
+          clearFinderCache();
+
+          const t1 = performance.now();
+          const route1 = runRoute(from, to, res.network);
+          const calc1 = performance.now() - t1;
+
+          const t2 = performance.now();
+          runRoute(from, to, res.network);
+          const calc2 = performance.now() - t2;
+
+          const props = route1.properties;
+          const wps = route1.geometry?.coordinates?.length ?? 0;
+          const loadCell = res.km === 100 ? '—' : fmtMs(loadTimings[res.km] || 0);
+
+          tr.innerHTML =
+            '<td><strong>' + res.label + '</strong></td>' +
+            '<td class="num">' + loadCell + '</td>' +
+            '<td class="num">' + fmtMs(calc1) + '</td>' +
+            '<td class="num">' + fmtMs(calc2) + '</td>' +
+            '<td class="num">' + fmtNm(props.length) + '</td>' +
+            '<td class="num">' + wps + '</td>' +
+            '<td class="num">' + (props.detourRatio != null ? props.detourRatio.toFixed(3) : '—') + '</td>';
+
+          log(res.label + ': ' + fmtNm(props.length) + ' NM, calc1=' + fmtMs(calc1) + ', calc2=' + fmtMs(calc2));
+          if (res.km !== 100 && loadTimings[res.km]) {
+            log('  network load: ' + fmtMs(loadTimings[res.km]));
+          }
+        } catch (e) {
+          tr.innerHTML =
+            '<td>' + res.label + '</td>' +
+            '<td colspan="6" class="status-err">' + e.message + '</td>';
+          log(res.label + ': ERROR — ' + e.message);
+        }
+      }
+
+      btn.disabled = false;
+    });
+
+    setNetStatus(RESOLUTIONS[0], 'searoute-ts ready (default 100 km)', 'status-ok');
+    log('Engine loaded. Use Compare when ready.');
+  </script>
+</body>
+</html>
