@@ -14,6 +14,7 @@
   --amber: #b89858;
   --blue: #7898b8;
   --teal: #78b8a8;
+  --input-bg: #000000;
 }
 
 html[data-ui-theme="light"] {
@@ -28,6 +29,13 @@ html[data-ui-theme="light"] {
   --accent: #6a8a6a;
   --accent-dim: #4a6a4a;
   --accent-glow: rgba(80,100,80,0.10);
+  --input-bg: #ffffff;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="hidden"]):not([type="color"]),
+select,
+textarea {
+  background-color: var(--input-bg);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -97,7 +105,7 @@ body.bunker-standalone {
 }
 
 #bunker-app .field input, #bunker-app .field select {
-  background: var(--bg);
+  background: var(--input-bg);
   border: 1px solid var(--border);
   border-radius: 3px;
   color: var(--text);
@@ -410,7 +418,7 @@ body.bunker-standalone.arc-loading { overflow: hidden; }
 #bunker-app .bunker-table td input[type="number"],
 #bunker-app .bunker-table td input.num-fmt {
     width: 88px;
-    background: var(--bg);
+    background: var(--input-bg);
     border: 1px solid var(--border);
     border-radius: 3px;
     color: var(--text);

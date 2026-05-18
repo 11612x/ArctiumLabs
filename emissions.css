@@ -92,7 +92,7 @@ box-sizing: border-box;
 
 #emissions-app .em-fuel-table select,
 #emissions-app .em-fuel-table input {
-    background: var(--bg);
+    background: var(--input-bg);
     border: 1px solid var(--border);
     border-radius: 3px;
     color: var(--text);
@@ -171,7 +171,7 @@ box-sizing: border-box;
 }
 
 #emissions-app .em-phase-value {
-    background: var(--bg);
+    background: var(--input-bg);
     border: 1px solid var(--border);
     border-radius: 3px;
     color: var(--text-dim);

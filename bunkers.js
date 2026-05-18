@@ -398,7 +398,12 @@ function clearRoutePortField(inputId, metaId) {
   if (meta) meta.textContent = '';
 }
 const ARC_LOADING_MIN_MS = 1500;
+const ARC_LOADING_PAINT_MS = 15;
 let arcLoadingDepth = 0;
+
+function arcLoadingPaintBuffer() {
+  return new Promise((resolve) => setTimeout(resolve, ARC_LOADING_PAINT_MS));
+}
 
 function showArcLoading() {
   arcLoadingDepth++;
@@ -424,6 +429,7 @@ function hideArcLoading() {
 
 async function withArcLoading(task) {
   showArcLoading();
+  await arcLoadingPaintBuffer();
   const started = performance.now();
   try {
     return await task();

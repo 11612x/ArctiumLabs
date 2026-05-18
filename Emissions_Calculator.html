@@ -21,6 +21,26 @@
   --accent-glow: rgba(168,184,168,0.07);
   --red: #b87878;
   --teal: #78b8a8;
+  --input-bg: #000000;
+}
+html[data-ui-theme="light"] {
+  --bg: #e8ede8;
+  --surface: #dde3dd;
+  --surface2: #d3d9d3;
+  --border: #b8beb8;
+  --border-light: #a8aea8;
+  --text: #0d0f0e;
+  --text-dim: #2a2e2a;
+  --text-muted: #4a504a;
+  --accent: #6a8a6a;
+  --accent-dim: #4a6a4a;
+  --accent-glow: rgba(80, 100, 80, 0.10);
+  --input-bg: #ffffff;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="hidden"]):not([type="color"]),
+select,
+textarea {
+  background-color: var(--input-bg);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body.emissions-standalone {
@@ -69,7 +89,7 @@ body.emissions-standalone {
   color: var(--text-muted);
 }
 .emissions-standalone .field input, .emissions-standalone .field select {
-  background: var(--bg);
+  background: var(--input-bg);
   border: 1px solid var(--border);
   border-radius: 3px;
   color: var(--text);
@@ -255,6 +275,7 @@ document.addEventListener('blur', e => {
 </script>
 <script src="eca-zones.js"></script>
 <script src="route-engine.js"></script>
+<script src="arc-loading.js"></script>
 <script src="emissions-tab.js"></script>
 </body>
 </html>

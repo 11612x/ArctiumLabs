@@ -1,0 +1,34 @@
+﻿python : Traceback (most recent call last):
+At C:\Users\apa\AppData\Local\Temp\ps-script-e768ca06-d1ef-464c-925d-2be3f49710b4.ps1:81 char:1
++ python -c "
++ ~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "<string>", line 33, in <module>
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.12_3.12.2800.0_x64__qbz5n2kfra8p0\Lib\encodings\
+cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u0263' in position 25: character maps to <undefined>
+Previous cargos: 28
+To-load rows: 26
+   UN 1202. 
+ULSD - 10 ppm, Diesel fuel, ADO, AGO, 0-15% FAME c
+   UN 1202. 
+ULSD - 50 ppm, Diesel fuel, ADO, AGO, 0-15% FAME c
+   UN 1202. 
+Detergent Addivated 10ppm diesel fuel, V-Power Die
+   UN 1223 & UN 1202. 
+Synthetic distillate, drilling fluid, GT
+   UN 1202. 
+DYED & UNDYED gas oil/IGO, 500 or 2000 ppm S, 0-15
+   UN 1203. 
+10ppm Gasoline & gasoline component, PU10, SUL10, 
+   UN 1203. 
+up to 500ppm S gasoline/gasoline component, PULG, 
+   UN 1223. 
+Kerosene, Burning oil,
+   UN 1993 & UN 3295. 
+Synthetic Aviation Fuel Blend Component 
+   

@@ -1,0 +1,1619 @@
+<!DOCTYPE html>
+<html lang="en" data-ui-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tank Cleaning - Arctium Lab</title>
+<style>
+  :root {
+    --bg: #0d0f0e;
+    --surface: #141714;
+    --surface2: #1a1d1a;
+    --border: #252825;
+    --border-light: #2e322e;
+    --text: #e8ede8;
+    --text-dim: #b8beb8;
+    --text-muted: #949a94;
+    --accent: #a8b8a8;
+    --accent-dim: #5a6a5a;
+    --accent-glow: rgba(168, 184, 168, 0.07);
+    --red: #b87878;
+    --amber: #b89858;
+    --blue: #7898b8;
+    --teal: #78b8a8;
+    --input-bg: #000000;
+  }
+
+  html[data-ui-theme="light"] {
+    --bg: #e8ede8;
+    --surface: #dde3dd;
+    --surface2: #d3d9d3;
+    --border: #b8beb8;
+    --border-light: #a8aea8;
+    --text: #0d0f0e;
+    --text-dim: #2a2e2a;
+    --text-muted: #4a504a;
+    --accent: #6a8a6a;
+    --accent-dim: #4a6a4a;
+    --accent-glow: rgba(80, 100, 80, 0.10);
+    --input-bg: #ffffff;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="hidden"]):not([type="color"]),
+  select,
+  textarea {
+    background-color: var(--input-bg);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.55;
+    min-height: 100vh;
+  }
+
+  .page-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .page-header h1 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .page-header .subtitle {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+    margin-top: 0.35rem;
+    text-transform: uppercase;
+  }
+
+  .page-tabs {
+    padding: 0.85rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .db-seg {
+    display: inline-flex;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--surface2);
+  }
+
+  .db-layout-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    padding: 10px 16px;
+    text-transform: uppercase;
+    transition: color 0.15s, background 0.15s;
+  }
+
+  .db-layout-btn:hover {
+    color: var(--text-dim);
+    background: var(--surface);
+  }
+
+  .db-layout-btn.active {
+    color: var(--accent);
+    background: var(--surface);
+  }
+
+  .db-layout-btn + .db-layout-btn {
+    border-left: 1px solid var(--border);
+  }
+
+  .tc-panel { display: none; min-height: calc(100vh - 140px); }
+  .tc-panel.active { display: block; }
+
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(320px, 400px) 1fr;
+    gap: 0;
+  }
+
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  .panel-left {
+    border-right: 1px solid var(--border);
+    padding: 1rem;
+    overflow-y: auto;
+  }
+
+  .panel-right {
+    padding: 1rem 1.25rem;
+    overflow-y: auto;
+  }
+
+  .tab-scroll {
+    padding: 1rem 1.25rem;
+    overflow: auto;
+    max-height: calc(100vh - 140px);
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .card-title {
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 0.85rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .field { margin-bottom: 0.75rem; }
+
+  .field label {
+    display: block;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 0.3rem;
+  }
+
+  .field select,
+  .field input[type="search"] {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.78rem;
+    padding: 0.5rem 0.55rem;
+  }
+
+  .field select { cursor: pointer; }
+
+  .field select:focus,
+  .field input:focus {
+    outline: none;
+    border-color: var(--accent-dim);
+    box-shadow: 0 0 0 2px var(--accent-glow);
+  }
+
+  .run-btn {
+    background: var(--accent);
+    border: none;
+    border-radius: 4px;
+    color: #0d0f0e;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    margin-top: 0.25rem;
+    padding: 0.75rem;
+    text-transform: uppercase;
+    transition: opacity 0.15s;
+    width: 100%;
+  }
+
+  .run-btn:hover { opacity: 0.88; }
+  .run-btn:disabled { cursor: not-allowed; opacity: 0.45; }
+
+  .section-title {
+    align-items: center;
+    color: var(--text-dim);
+    display: flex;
+    font-size: 0.72rem;
+    gap: 0.65rem;
+    letter-spacing: 0.12em;
+    margin: 1rem 0 0.65rem;
+    text-transform: uppercase;
+  }
+
+  .section-title::after {
+    background: var(--border);
+    content: '';
+    flex: 1;
+    height: 1px;
+  }
+
+  .verdict-box {
+    align-items: flex-start;
+    border-radius: 6px;
+    display: flex;
+    gap: 0.85rem;
+    padding: 1rem 1.1rem;
+  }
+
+  .verdict-box--default { background: var(--accent-glow); border: 1px solid var(--accent-dim); }
+  .verdict-box--nc { background: rgba(184, 120, 120, 0.12); border: 1px solid var(--red); }
+  .verdict-box--seek { background: rgba(184, 152, 88, 0.12); border: 1px solid var(--amber); }
+  .verdict-box--same { background: rgba(120, 184, 168, 0.1); border: 1px solid var(--teal); }
+  .verdict-box--l3c { background: rgba(120, 152, 184, 0.1); border: 1px solid var(--blue); }
+
+  .verdict-box .v-tag {
+    flex-shrink: 0;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 0.2rem 0.45rem;
+    text-transform: uppercase;
+  }
+
+  .verdict-box--default .v-tag { color: var(--accent); }
+  .verdict-box--nc .v-tag { color: var(--red); }
+  .verdict-box--seek .v-tag { color: var(--amber); }
+  .verdict-box--same .v-tag { color: var(--teal); }
+  .verdict-box--l3c .v-tag { color: var(--blue); }
+
+  .verdict-box .v-text { flex: 1; min-width: 0; }
+
+  .verdict-box .v-title {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.35rem;
+    text-transform: uppercase;
+  }
+
+  .verdict-box--default .v-title { color: var(--accent); }
+  .verdict-box--nc .v-title { color: var(--red); }
+  .verdict-box--seek .v-title { color: var(--amber); }
+  .verdict-box--same .v-title { color: var(--teal); }
+  .verdict-box--l3c .v-title { color: var(--blue); }
+
+  .verdict-box .v-body { color: var(--text-dim); font-size: 0.8rem; line-height: 1.65; }
+
+  .code-list { display: flex; flex-direction: column; gap: 0.65rem; }
+
+  .code-block {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.65rem 0.75rem;
+  }
+
+  .code-block .code-head {
+    color: var(--accent);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.35rem;
+    text-transform: uppercase;
+  }
+
+  .code-block p {
+    color: var(--text-dim);
+    font-size: 0.76rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+  }
+
+  .notes-list {
+    color: var(--text-dim);
+    font-size: 0.76rem;
+    line-height: 1.65;
+    list-style: none;
+    padding: 0;
+  }
+
+  .notes-list li {
+    border-left: 2px solid var(--border-light);
+    margin-bottom: 0.45rem;
+    padding-left: 0.65rem;
+  }
+
+  /* Check report - larger, easier to read */
+  #resultsRoot .section-title {
+    font-size: 0.82rem;
+    margin-top: 1.15rem;
+  }
+
+  #resultsRoot .section-title:first-child {
+    margin-top: 0;
+  }
+
+  #resultsRoot .verdict-box {
+    padding: 1.15rem 1.25rem;
+  }
+
+  #resultsRoot .verdict-box .v-tag {
+    font-size: 0.72rem;
+    padding: 0.28rem 0.55rem;
+  }
+
+  #resultsRoot .verdict-box .v-title {
+    font-size: 0.95rem;
+    margin-bottom: 0.45rem;
+  }
+
+  #resultsRoot .verdict-box .v-body {
+    font-size: 0.95rem;
+    line-height: 1.7;
+  }
+
+  #resultsRoot .code-block {
+    padding: 0.85rem 1rem;
+  }
+
+  #resultsRoot .code-block .code-head {
+    font-size: 0.9rem;
+    margin-bottom: 0.45rem;
+  }
+
+  #resultsRoot .code-block p {
+    font-size: 0.92rem;
+    line-height: 1.65;
+  }
+
+  #resultsRoot .notes-list {
+    font-size: 0.92rem;
+    line-height: 1.7;
+  }
+
+  #resultsRoot .notes-list li {
+    margin-bottom: 0.55rem;
+    padding-left: 0.75rem;
+  }
+
+  .check-report-meta {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem 1.15rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .check-report-meta__row + .check-report-meta__row {
+    border-top: 1px solid var(--border);
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+  }
+
+  .check-report-meta__label {
+    color: var(--text-muted);
+    display: block;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.4rem;
+    text-transform: uppercase;
+  }
+
+  .check-report-meta__value {
+    color: var(--text);
+    font-size: 0.95rem;
+    line-height: 1.55;
+  }
+
+  .empty-state {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    padding: 2rem 0;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .hidden { display: none !important; }
+
+  /* Matrix tab */
+  #tabPanelMatrix .tab-scroll {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    max-height: calc(100vh - 132px);
+    padding: 0.75rem 1rem 1rem;
+  }
+
+  .matrix-toolbar {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem 1rem;
+    justify-content: space-between;
+  }
+
+  .matrix-hint {
+    color: var(--text-muted);
+    font-size: 0.62rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .matrix-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.65rem;
+  }
+
+  .matrix-legend span {
+    font-size: 0.58rem;
+    letter-spacing: 0.04em;
+    padding: 0.12rem 0.35rem;
+    text-transform: uppercase;
+  }
+
+  .matrix-viewport {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: grab;
+    flex: 1;
+    min-height: 320px;
+    overflow: auto;
+    overscroll-behavior: contain;
+    position: relative;
+    touch-action: none;
+    user-select: none;
+  }
+
+  .matrix-viewport.is-dragging {
+    cursor: grabbing;
+    user-select: none;
+  }
+
+  .matrix-viewport.is-dragging .mx-cell {
+    pointer-events: none;
+  }
+
+  .matrix-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.82rem;
+    width: max-content;
+    min-width: 100%;
+  }
+
+  .matrix-table th,
+  .matrix-table td {
+    border: 1px solid var(--border);
+    padding: 0.65rem 0.6rem;
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  .matrix-table th.corner,
+  .matrix-table th.row-head {
+    position: sticky;
+    background: var(--surface2);
+    z-index: 2;
+  }
+
+  .matrix-table th.corner {
+    left: 0;
+    top: 0;
+    z-index: 5;
+    width: 10.5rem;
+    max-width: 10.5rem;
+    padding: 0.75rem 0.85rem;
+    font-size: 0.74rem;
+    font-weight: 400;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+    line-height: 1.4;
+    text-transform: uppercase;
+  }
+
+  .matrix-table thead th.col-head {
+    background: var(--surface2);
+    color: var(--text-muted);
+    font-size: 0.76rem;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    line-height: 1.4;
+    min-width: 11rem;
+    padding: 0.7rem 0.65rem;
+    position: sticky;
+    top: 0;
+    white-space: normal;
+    word-break: break-word;
+    z-index: 3;
+  }
+
+  .matrix-table th.row-head {
+    left: 0;
+    z-index: 4;
+    font-weight: 400;
+    color: var(--text-dim);
+    width: 10.5rem;
+    max-width: 10.5rem;
+    font-size: 0.76rem;
+    line-height: 1.45;
+  }
+
+  .matrix-table td.mx-cell {
+    cursor: grab;
+    font-size: 0.76rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    line-height: 1.45;
+    width: 10.5rem;
+    max-width: 10.5rem;
+    transition: filter 0.12s;
+  }
+
+  .matrix-table .mx-cell-inner {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    overflow: hidden;
+    word-break: break-word;
+    text-align: center;
+    margin-inline: auto;
+    width: 100%;
+  }
+
+  .matrix-table td.mx-cell:hover { filter: brightness(1.12); }
+
+  .mx-wd { background: rgba(120, 184, 168, 0.35); color: var(--teal); }
+  .mx-ewd { background: rgba(120, 152, 184, 0.35); color: var(--blue); }
+  .mx-cw { background: rgba(168, 184, 168, 0.28); color: var(--accent); }
+  .mx-hw { background: rgba(184, 152, 88, 0.32); color: var(--amber); }
+  .mx-nc { background: rgba(184, 120, 120, 0.4); color: var(--red); }
+  .mx-seek { background: rgba(184, 152, 88, 0.28); color: var(--amber); font-style: italic; }
+  .mx-same { background: var(--surface); color: var(--text-muted); }
+  .mx-other { background: var(--surface2); color: var(--text-dim); }
+
+  /* Modal */
+  .mx-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+
+  .mx-modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    max-width: 520px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 1.1rem 1.25rem;
+  }
+
+  .mx-modal__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .mx-modal__title {
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .mx-modal__close {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0.15rem 0.45rem;
+  }
+
+  .mx-modal__close:hover { border-color: var(--border-light); color: var(--text); }
+
+  .mx-modal__section {
+    margin-bottom: 0.85rem;
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    line-height: 1.65;
+  }
+
+  .mx-modal__section strong {
+    display: block;
+    color: var(--text);
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.35rem;
+    text-transform: uppercase;
+  }
+
+  .mx-modal__badge {
+    display: inline-block;
+    background: var(--accent-glow);
+    border: 1px solid var(--accent-dim);
+    border-radius: 3px;
+    color: var(--accent);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.5rem;
+    padding: 0.2rem 0.45rem;
+    text-transform: uppercase;
+  }
+
+  .footnote-item {
+    border-left: 2px solid var(--border-light);
+    margin-bottom: 0.5rem;
+    padding-left: 0.6rem;
+  }
+
+  .footnote-item .sym {
+    color: var(--amber);
+    font-weight: 600;
+    margin-right: 0.35rem;
+  }
+
+  /* Definitions tab */
+  .def-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 0.65rem;
+    padding: 0.85rem 1rem;
+  }
+
+  .def-badge {
+    display: inline-block;
+    background: var(--accent-glow);
+    border: 1px solid var(--accent-dim);
+    border-radius: 3px;
+    color: var(--accent);
+    font-family: inherit;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.5rem;
+    padding: 0.15rem 0.4rem;
+    text-transform: uppercase;
+  }
+
+  .def-card p {
+    color: var(--text-dim);
+    font-size: 0.78rem;
+    line-height: 1.65;
+    white-space: pre-wrap;
+  }
+
+  /* Products table */
+  .summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .summary-table th {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 400;
+    white-space: nowrap;
+  }
+
+  .summary-table th.sortable {
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .summary-table th.sortable:hover {
+    color: var(--text-dim);
+    background: var(--surface2);
+  }
+
+  .summary-table th.sortable.sorted {
+    color: var(--accent);
+  }
+
+  .summary-table th .sort-mark {
+    display: inline-block;
+    font-size: 0.85em;
+    margin-left: 0.2rem;
+    opacity: 0.85;
+  }
+
+  .summary-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-dim);
+    vertical-align: top;
+    font-size: 0.76rem;
+    line-height: 1.45;
+  }
+
+  .summary-table td:first-child { color: var(--text); white-space: nowrap; }
+
+  .summary-table tr:last-child td { border-bottom: none; }
+  .summary-table tbody tr:hover td { background: var(--surface2); }
+
+  .avn-badge {
+    display: inline-block;
+    background: rgba(184, 120, 120, 0.2);
+    border: 1px solid var(--red);
+    border-radius: 3px;
+    color: var(--red);
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    margin-left: 0.35rem;
+    padding: 0.05rem 0.3rem;
+    vertical-align: middle;
+  }
+
+</style>
+</head>
+<body>
+  <header class="page-header">
+    <div>
+      <h1>Tank Cleaning</h1>
+      <p class="subtitle">Shell Ship Pre-Cargo Matrix - Issue 11.0 - April 2024 - White oils</p>
+    </div>
+  </header>
+
+  <nav class="page-tabs" aria-label="Tank cleaning sections">
+    <div class="db-seg" role="tablist">
+      <button type="button" class="db-layout-btn active" data-tc-tab="check" role="tab" aria-selected="true" aria-controls="tabPanelCheck">Check</button>
+      <button type="button" class="db-layout-btn" data-tc-tab="matrix" role="tab" aria-selected="false" aria-controls="tabPanelMatrix">Matrix</button>
+      <button type="button" class="db-layout-btn" data-tc-tab="definitions" role="tab" aria-selected="false" aria-controls="tabPanelDefinitions">Definitions</button>
+      <button type="button" class="db-layout-btn" data-tc-tab="products" role="tab" aria-selected="false" aria-controls="tabPanelProducts">Products</button>
+    </div>
+  </nav>
+
+  <section id="tabPanelCheck" class="tc-panel active" data-tc-panel="check" role="tabpanel">
+    <div class="layout">
+      <aside class="panel-left">
+        <section class="card">
+          <div class="card-title">Cargo selection</div>
+          <div class="field">
+            <label for="prevCargo">Previous cargo</label>
+            <select id="prevCargo"></select>
+          </div>
+          <div class="field">
+            <label for="loadCargo">Cargo to load</label>
+            <select id="loadCargo"></select>
+          </div>
+          <button type="button" class="run-btn" id="checkBtn" disabled>Check</button>
+        </section>
+      </aside>
+      <main class="panel-right">
+        <div id="emptyState" class="empty-state">Select previous and to-load cargo, then run check.</div>
+        <div id="resultsRoot" class="hidden">
+          <div class="section-title">Cargo combination</div>
+          <div id="checkReportMeta" class="check-report-meta"></div>
+          <div id="l3cSection" class="hidden">
+            <div class="section-title">L3C warning</div>
+            <div class="verdict-box verdict-box--l3c" id="l3cBox">
+              <span class="v-tag">L3C</span>
+              <div class="v-text">
+                <div class="v-title">Last 3 cargoes review required</div>
+                <div class="v-body" id="l3cBody"></div>
+              </div>
+            </div>
+          </div>
+          <div class="section-title">Procedure</div>
+          <div id="verdictBox" class="verdict-box verdict-box--default">
+            <span class="v-tag" id="verdictTag">-</span>
+            <div class="v-text">
+              <div class="v-title" id="verdictTitle">-</div>
+              <div class="v-body" id="verdictRaw"></div>
+            </div>
+          </div>
+          <div id="definitionsSection" class="hidden">
+            <div class="section-title">Key to definitions</div>
+            <div class="code-list" id="definitionsList"></div>
+          </div>
+          <div id="notesSection" class="hidden">
+            <div class="section-title">Conditional notes</div>
+            <ul class="notes-list" id="notesList"></ul>
+          </div>
+        </div>
+      </main>
+    </div>
+  </section>
+
+  <section id="tabPanelMatrix" class="tc-panel" data-tc-panel="matrix" role="tabpanel" hidden>
+    <div class="tab-scroll">
+      <div class="matrix-toolbar">
+        <p class="matrix-hint">Drag to pan - Double-click a cell for details - Shift + scroll horizontal</p>
+        <div class="matrix-legend" aria-hidden="true">
+          <span class="mx-wd">WD</span>
+          <span class="mx-ewd">EWD</span>
+          <span class="mx-cw">CW/CWM</span>
+          <span class="mx-hw">HW/HWM</span>
+          <span class="mx-nc">NC</span>
+          <span class="mx-seek">Guidance</span>
+          <span class="mx-same">Same</span>
+        </div>
+      </div>
+      <div class="matrix-viewport" id="matrixViewport" tabindex="0" aria-label="Compatibility matrix - drag to pan">
+        <div id="matrixTableWrap"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tabPanelDefinitions" class="tc-panel" data-tc-panel="definitions" role="tabpanel" hidden>
+    <div class="tab-scroll" id="definitionsTabRoot"></div>
+  </section>
+
+  <section id="tabPanelProducts" class="tc-panel" data-tc-panel="products" role="tabpanel" hidden>
+    <div class="tab-scroll">
+      <div class="field" style="max-width: 420px; margin-bottom: 1rem;">
+        <label for="productSearch">Filter products</label>
+        <input type="search" id="productSearch" placeholder="Search all columns..." autocomplete="off">
+      </div>
+      <div id="productsTableWrap"></div>
+    </div>
+  </section>
+
+  <div id="matrixModalRoot" class="hidden" aria-hidden="true"></div>
+
+  <script src="shell_precargo_matrix.js"></script>
+  <script src="arc-loading.js"></script>
+  <script>
+(function () {
+  const CODE_ORDER = [
+    'NC', 'Seek Guidance', 'Same Grade', 'Effectively the same grade',
+    'EWD-VP', 'EWD', 'HFWM', 'HFW', 'CFWM', 'CFW', 'HWM', 'HW',
+    'CWM', 'CW-VP', 'CW', 'VENT', 'WD'
+  ];
+
+  const DEFINITIONS_ORDER = [
+    'WD', 'EWD', 'EWD-VP', 'VENT', 'CW', 'CW-VP', 'CWM', 'CFW', 'CFWM',
+    'HW', 'HWM', 'HFW', 'HFWM', 'NC', 'Seek Guidance'
+  ];
+
+  const FOOTNOTE_SYMBOLS = ['??', '??', '**', '?', '?', '?', '?', '?', '?', '?', '?', '?', '?', '*'];
+
+  const CODE_PATTERN = new RegExp(
+    '\\b(' + CODE_ORDER.map((c) => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')\\b',
+    'gi'
+  );
+
+  const L3C_CRITICAL_PREVIOUS = new Set(['fame', 'veg_oils', 'lube_base']);
+
+  let DATA = null;
+  let matrixBuilt = false;
+  let definitionsBuilt = false;
+  let productsBuilt = false;
+  let productsRows = [];
+  let productsSortCol = 'matrix_title';
+  let productsSortDir = 1;
+
+  const PRODUCT_COLUMNS = [
+    { key: 'un_no', label: 'UN No' },
+    { key: 'matrix_title', label: 'Product' },
+    { key: 'generic_product', label: 'Generic Name' },
+    { key: 'grade_names', label: 'Grade Names' },
+    { key: 'flash_point_degC', label: 'Flash Point (C)' },
+    { key: 'density_kg_m3', label: 'Density (kg/m3)' },
+    { key: 'sulphur_ppm', label: 'Sulphur (ppm)' },
+    { key: 'characteristics', label: 'Characteristics' },
+  ];
+
+  const prevSelect = document.getElementById('prevCargo');
+  const loadSelect = document.getElementById('loadCargo');
+  const checkBtn = document.getElementById('checkBtn');
+  const emptyState = document.getElementById('emptyState');
+  const resultsRoot = document.getElementById('resultsRoot');
+  function receiveUiState(data) {
+    if (!data || data.type !== 'arctium-ui') return;
+    document.documentElement.setAttribute('data-ui-theme', data.theme === 'light' ? 'light' : 'dark');
+  }
+
+  window.addEventListener('message', (e) => receiveUiState(e.data));
+
+  function normText(s) {
+    return String(s || '').replace(/\s+/g, ' ').trim();
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+
+  function extractUnCodes(text) {
+    const unRe = /\bUN\s*(?:N\/A|\d{4})\b/gi;
+    const codes = [];
+    let m;
+    while ((m = unRe.exec(text)) !== null) {
+      const code = m[0].replace(/\s+/g, ' ').trim();
+      if (!codes.some((c) => c.toUpperCase() === code.toUpperCase())) codes.push(code);
+    }
+    return codes;
+  }
+
+
+  function formatDropdownLabel(label) {
+    const text = normText(label);
+    const codes = extractUnCodes(text);
+    if (!codes.length) return text;
+    const unRe = /\bUN\s*(?:N\/A|\d{4})\b/gi;
+    let product = text.replace(unRe, '');
+    product = product
+      .replace(/\s*&\s*/g, ' ')
+      .replace(/\s*\.\s*/g, '. ')
+      .replace(/\s{2,}/g, ' ')
+      .replace(/^[\s,.]+|[\s,.]+$/g, '')
+      .replace(/\.\s*$/, '')
+      .trim();
+    return product + ' - ' + codes.join(', ');
+  }
+
+  function shortCargoName(label) {
+    let t = normText(label);
+    t = t.replace(/\bUN\s*(?:N\/A|\d{4})\b/gi, '');
+    t = t.replace(/\s*&\s*/g, ' ');
+    t = t.replace(/\s*\.\s*/g, '. ');
+    t = t.replace(/[\u2020\u2021\u00a7\u03b8\u03b1\u03b2\u03b4\u03b5\u25ca\u0263*]+\s*/g, ' ');
+    t = t.replace(/\s{2,}/g, ' ').replace(/^[\s,.]+|[\s,.]+$/g, '').trim();
+    return t || normText(label);
+  }
+
+  function matrixHeaderLabel(label) {
+    return formatDropdownLabel(label);
+  }
+
+  function matrixCellText(raw) {
+    if (raw == null || String(raw).trim() === '') return [];
+    return String(raw)
+      .replace(/\r\n/g, '\n')
+      .split(/\n|;/)
+      .map((part) => part.replace(/\s+/g, ' ').trim())
+      .filter(Boolean);
+  }
+
+  function matrixCellHtml(raw) {
+    const parts = matrixCellText(raw);
+    if (!parts.length) return '<span class="mx-cell-inner">-</span>';
+    return '<span class="mx-cell-inner">' + escapeHtml(parts.join(' ')) + '</span>';
+  }
+
+  function matrixRowHeadHtml(label) {
+    return '<span class="mx-cell-inner">' + escapeHtml(matrixHeaderLabel(label)) + '</span>';
+  }
+
+  function fillSelect(el, products, placeholder) {
+    el.innerHTML = '';
+    const ph = document.createElement('option');
+    ph.value = '';
+    ph.textContent = placeholder;
+    el.appendChild(ph);
+    const sorted = [...products].sort((a, b) =>
+      formatDropdownLabel(a.label).localeCompare(formatDropdownLabel(b.label), undefined, { sensitivity: 'base' })
+    );
+    sorted.forEach((p) => {
+      const opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = formatDropdownLabel(p.label);
+      el.appendChild(opt);
+    });
+  }
+
+  function parseResult(raw) {
+    const text = normText(String(raw).replace(/\n/g, ' '));
+    const codes = [];
+    const seen = new Set();
+    const re = new RegExp(CODE_PATTERN.source, 'gi');
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      const canonical = CODE_ORDER.find((c) => c.toLowerCase() === m[1].toLowerCase()) || m[1];
+      const key = canonical.toUpperCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        codes.push(canonical);
+      }
+    }
+    const notes = [];
+    String(raw).split(/\n|;/).map((p) => p.trim()).filter(Boolean).forEach((part) => {
+      const stripped = part.replace(CODE_PATTERN, '').replace(/^[,\s]+|[,\s]+$/g, '').trim();
+      if (stripped.length > 3) notes.push(stripped);
+    });
+    if (!notes.length && text && !codes.length) notes.push(text);
+    return { text, codes, notes };
+  }
+
+  function primaryCode(raw) {
+    const parsed = parseResult(raw);
+    if (parsed.codes.length) return parsed.codes[0];
+    const t = parsed.text;
+    if (/seek guidance/i.test(t)) return 'Seek Guidance';
+    if (/effectively the same grade/i.test(t)) return 'Same Grade';
+    if (/same grade/i.test(t)) return 'Same Grade';
+    return '-';
+  }
+
+  function matrixCellClass(code) {
+    const u = code.toUpperCase();
+    if (u === 'NC') return 'mx-nc';
+    if (u.includes('SEEK')) return 'mx-seek';
+    if (u.includes('SAME') || u.includes('EFFECTIVELY')) return 'mx-same';
+    if (u === 'WD') return 'mx-wd';
+    if (u.includes('EWD')) return 'mx-ewd';
+    if (u === 'VENT' || u.startsWith('CW') || u.startsWith('CFW') || u === 'CWM' || u === 'CFWM' || u.includes('CWM') || u.includes('CFWM')) return 'mx-cw';
+    if (u.startsWith('HW') || u.startsWith('HFW') || u === 'HWM' || u === 'HFWM') return 'mx-hw';
+    return 'mx-other';
+  }
+
+  function findFootnotesInText(raw) {
+    const footnotes = DATA.footnotes || {};
+    const found = [];
+    const keys = [...Object.keys(footnotes)].sort((a, b) => b.length - a.length);
+    const text = String(raw);
+    keys.forEach((sym) => {
+      if (text.includes(sym)) found.push({ sym, text: footnotes[sym] });
+    });
+    return found;
+  }
+
+  function lookupDefinitionText(code) {
+    if (/same grade/i.test(code)) {
+      return 'No tank preparation beyond normal operational requirements - previous cargo is the same or effectively the same grade as cargo to be loaded.';
+    }
+    const defs = DATA.definitions || {};
+    const key = Object.keys(defs).find((k) => k.toLowerCase() === code.toLowerCase());
+    return key ? defs[key] : '';
+  }
+
+  function verdictKind(codes, text) {
+    const upper = text.toUpperCase();
+    if (codes.some((c) => c.toUpperCase() === 'NC') || /\bNC\b/.test(upper)) return 'nc';
+    if (codes.some((c) => /seek guidance/i.test(c)) || /seek guidance/i.test(text)) return 'seek';
+    if (codes.some((c) => /same grade/i.test(c)) || /effectively the same grade/i.test(text)) return 'same';
+    return 'default';
+  }
+
+  function lookupDefinitions(codes) {
+    const out = [];
+    codes.forEach((code) => {
+      const text = lookupDefinitionText(code);
+      if (text) out.push({ code, text });
+    });
+    return out;
+  }
+
+  function renderCheckReportMeta(prevId, loadId) {
+    const el = document.getElementById('checkReportMeta');
+    const prev = DATA.previous_cargoes.find((x) => x.id === prevId);
+    const load = DATA.to_load_cargoes.find((x) => x.id === loadId);
+    el.innerHTML =
+      '<div class="check-report-meta__row">' +
+      '<span class="check-report-meta__label">Previous cargo</span>' +
+      '<span class="check-report-meta__value">' + escapeHtml(formatDropdownLabel(prev ? prev.label : prevId)) + '</span>' +
+      '</div>' +
+      '<div class="check-report-meta__row">' +
+      '<span class="check-report-meta__label">Cargo to load</span>' +
+      '<span class="check-report-meta__value">' + escapeHtml(formatDropdownLabel(load ? load.label : loadId)) + '</span>' +
+      '</div>';
+  }
+
+  function renderL3c(loadId, prevId) {
+    const section = document.getElementById('l3cSection');
+    const body = document.getElementById('l3cBody');
+    const toLoad = DATA.to_load_cargoes.find((x) => x.id === loadId);
+    if (!toLoad?.aviation) {
+      section.classList.add('hidden');
+      return;
+    }
+    section.classList.remove('hidden');
+    const text = DATA.l3c_warning || '';
+    if (L3C_CRITICAL_PREVIOUS.has(prevId)) {
+      body.innerHTML = '<strong>Critical:</strong> ' + escapeHtml(text);
+    } else {
+      body.textContent = text;
+    }
+  }
+
+  function renderVerdict(kind, parsed) {
+    const box = document.getElementById('verdictBox');
+    const tag = document.getElementById('verdictTag');
+    const title = document.getElementById('verdictTitle');
+    const rawEl = document.getElementById('verdictRaw');
+
+    box.className = 'verdict-box verdict-box--' + (kind === 'nc' || kind === 'seek' || kind === 'same' ? kind : 'default');
+
+    if (kind === 'nc') {
+      tag.textContent = 'NC';
+      title.textContent = 'Not compatible';
+      rawEl.innerHTML =
+        '<strong>NOT COMPATIBLE</strong> - do not load without Seek Guidance from charterer.<br><br>' +
+        escapeHtml(parsed.text);
+      return;
+    }
+    if (kind === 'seek') {
+      tag.textContent = 'Guidance';
+      title.textContent = 'Seek guidance';
+      rawEl.textContent = parsed.text;
+      return;
+    }
+    if (kind === 'same') {
+      tag.textContent = 'Grade';
+      title.textContent = 'Same grade';
+      rawEl.textContent = parsed.text;
+      return;
+    }
+    tag.textContent = parsed.codes.length ? parsed.codes.join(', ') : 'Prep';
+    title.textContent = 'Cleaning procedure';
+    rawEl.textContent = parsed.text;
+  }
+
+  function renderCheckDefinitions(defs) {
+    const section = document.getElementById('definitionsSection');
+    const list = document.getElementById('definitionsList');
+    if (!defs.length) {
+      section.classList.add('hidden');
+      return;
+    }
+    section.classList.remove('hidden');
+    list.innerHTML = defs
+      .map(
+        (d) =>
+          '<article class="code-block"><div class="code-head">' +
+          escapeHtml(d.code) +
+          '</div><p>' +
+          escapeHtml(d.text) +
+          '</p></article>'
+      )
+      .join('');
+  }
+
+  function renderNotes(notes, codes) {
+    const section = document.getElementById('notesSection');
+    const list = document.getElementById('notesList');
+    const filtered = notes.filter((n) => {
+      const low = n.toLowerCase();
+      return !CODE_ORDER.some((c) => low === c.toLowerCase());
+    });
+    if (!filtered.length) {
+      section.classList.add('hidden');
+      return;
+    }
+    section.classList.remove('hidden');
+    list.innerHTML = filtered.map((n) => '<li>' + escapeHtml(n) + '</li>').join('');
+  }
+
+  async function runCheck() {
+    if (!DATA) return;
+    const prevId = prevSelect.value;
+    const loadId = loadSelect.value;
+    if (!prevId || !loadId) return;
+
+    const raw = DATA.matrix[loadId]?.[prevId];
+    if (raw === undefined) {
+      alert('No matrix entry for this combination.');
+      return;
+    }
+
+    const run = typeof withArcLoading === 'function' ? withArcLoading : async (task) => task();
+    await run(async () => {
+      emptyState.classList.add('hidden');
+      resultsRoot.classList.remove('hidden');
+
+      const parsed = parseResult(raw);
+      renderCheckReportMeta(prevId, loadId);
+      renderL3c(loadId, prevId);
+      renderVerdict(verdictKind(parsed.codes, parsed.text), parsed);
+      renderCheckDefinitions(lookupDefinitions(parsed.codes));
+      renderNotes(parsed.notes, parsed.codes);
+    });
+  }
+
+  checkBtn.addEventListener('click', runCheck);
+
+  function switchPageTab(tabId) {
+    document.querySelectorAll('.db-layout-btn').forEach((btn) => {
+      const on = btn.dataset.tcTab === tabId;
+      btn.classList.toggle('active', on);
+      btn.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    document.querySelectorAll('.tc-panel').forEach((panel) => {
+      const on = panel.dataset.tcPanel === tabId;
+      panel.classList.toggle('active', on);
+      panel.hidden = !on;
+    });
+    if (tabId === 'matrix' && !matrixBuilt) buildMatrixTable();
+    if (tabId === 'definitions' && !definitionsBuilt) buildDefinitionsTab();
+    if (tabId === 'products') {
+      if (!productsBuilt || (!(DATA.products || []).length && productsRows.length === 0)) {
+        productsBuilt = false;
+        buildProductsTab();
+      }
+    }
+  }
+
+  document.querySelectorAll('.db-layout-btn').forEach((btn) => {
+    btn.addEventListener('click', () => switchPageTab(btn.dataset.tcTab));
+  });
+
+  function openMatrixModal(loadRow, prevCol, raw) {
+    const code = primaryCode(raw);
+    const loadLabel = DATA.to_load_cargoes.find((x) => x.id === loadRow.id)?.label || loadRow.id;
+    const prevLabel = DATA.previous_cargoes.find((x) => x.id === prevCol.id)?.label || prevCol.id;
+    const footnotes = findFootnotesInText(raw);
+    const defText = lookupDefinitionText(code);
+
+    let footHtml = '';
+    if (footnotes.length) {
+      footHtml =
+        '<div class="mx-modal__section"><strong>Footnotes</strong>' +
+        footnotes
+          .map((f) => '<div class="footnote-item"><span class="sym">' + escapeHtml(f.sym) + '</span>' + escapeHtml(f.text) + '</div>')
+          .join('') +
+        '</div>';
+    }
+
+    const root = document.getElementById('matrixModalRoot');
+    root.className = 'mx-modal-backdrop';
+    root.hidden = false;
+    root.setAttribute('aria-hidden', 'false');
+    root.innerHTML =
+      '<div class="mx-modal" role="dialog" aria-modal="true" aria-labelledby="mxModalTitle">' +
+      '<div class="mx-modal__head">' +
+      '<div class="mx-modal__title" id="mxModalTitle">' + escapeHtml(shortCargoName(loadLabel)) + ' <- ' + escapeHtml(shortCargoName(prevLabel)) + '</div>' +
+      '<button type="button" class="mx-modal__close" id="mxModalClose" aria-label="Close">\u00d7</button>' +
+      '</div>' +
+      '<span class="mx-modal__badge">' + escapeHtml(code) + '</span>' +
+      '<div class="mx-modal__section"><strong>Full result</strong>' + escapeHtml(normText(String(raw).replace(/\n/g, ' '))) + '</div>' +
+      (defText ? '<div class="mx-modal__section"><strong>Definition</strong>' + escapeHtml(defText) + '</div>' : '') +
+      footHtml +
+      '</div>';
+
+    function closeModal() {
+      root.className = 'hidden';
+      root.hidden = true;
+      root.setAttribute('aria-hidden', 'true');
+      root.innerHTML = '';
+      document.removeEventListener('keydown', onKey);
+    }
+
+    function onKey(e) {
+      if (e.key === 'Escape') closeModal();
+    }
+
+    root.addEventListener('click', (e) => {
+      if (e.target === root) closeModal();
+    });
+    root.querySelector('.mx-modal').addEventListener('click', (e) => e.stopPropagation());
+    root.querySelector('#mxModalClose').addEventListener('click', closeModal);
+    document.addEventListener('keydown', onKey);
+  }
+
+  function buildMatrixTable() {
+    const wrap = document.getElementById('matrixTableWrap');
+    const prevCols = [...DATA.previous_cargoes].sort((a, b) =>
+      matrixHeaderLabel(a.label).localeCompare(matrixHeaderLabel(b.label), undefined, { sensitivity: 'base' })
+    );
+    const loadRows = [...DATA.to_load_cargoes].sort((a, b) =>
+      matrixHeaderLabel(a.label).localeCompare(matrixHeaderLabel(b.label), undefined, { sensitivity: 'base' })
+    );
+
+    let html = '<table class="matrix-table"><thead><tr><th class="corner">To load (rows) / Previous (cols)</th>';
+    prevCols.forEach((p) => {
+      html += '<th class="col-head" title="' + escapeHtml(p.label) + '">' + escapeHtml(matrixHeaderLabel(p.label)) + '</th>';
+    });
+    html += '</tr></thead><tbody>';
+
+    loadRows.forEach((row) => {
+      html += '<tr><th class="row-head" title="' + escapeHtml(row.label) + '">' + matrixRowHeadHtml(row.label) + '</th>';
+      prevCols.forEach((col) => {
+        const raw = DATA.matrix[row.id]?.[col.id] ?? '';
+        const code = primaryCode(raw);
+        const cls = matrixCellClass(code);
+        const cellTitle = matrixCellText(raw).join(' ') || '-';
+        html +=
+          '<td class="mx-cell ' + cls + '" data-load="' + escapeHtml(row.id) + '" data-prev="' + escapeHtml(col.id) + '" title="' + escapeHtml(cellTitle) + ' | Double-click for details">' +
+          matrixCellHtml(raw) +
+          '</td>';
+      });
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+
+    wrap.querySelectorAll('.mx-cell').forEach((cell) => {
+      cell.addEventListener('dblclick', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const loadId = cell.dataset.load;
+        const prevId = cell.dataset.prev;
+        const raw = DATA.matrix[loadId]?.[prevId];
+        openMatrixModal({ id: loadId }, { id: prevId }, raw);
+      });
+    });
+
+    matrixBuilt = true;
+  }
+
+  function initMatrixViewport(viewport) {
+    if (!viewport || viewport.dataset.panBound === '1') return;
+    viewport.dataset.panBound = '1';
+
+    let dragging = false;
+    let panning = false;
+    let startX = 0;
+    let startY = 0;
+    let scrollL = 0;
+    let scrollT = 0;
+
+    viewport.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      dragging = true;
+      panning = false;
+      startX = e.clientX;
+      startY = e.clientY;
+      scrollL = viewport.scrollLeft;
+      scrollT = viewport.scrollTop;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!dragging) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      if (!panning && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
+        panning = true;
+        viewport.classList.add('is-dragging');
+      }
+      if (!panning) return;
+      viewport.scrollLeft = scrollL - dx;
+      viewport.scrollTop = scrollT - dy;
+    });
+
+    const endDrag = () => {
+      if (!dragging) return;
+      dragging = false;
+      panning = false;
+      viewport.classList.remove('is-dragging');
+    };
+
+    window.addEventListener('mouseup', endDrag);
+
+    viewport.addEventListener(
+      'wheel',
+      (e) => {
+        if (e.shiftKey) {
+          e.preventDefault();
+          viewport.scrollLeft += e.deltaY;
+        }
+      },
+      { passive: false }
+    );
+
+    viewport.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1) return;
+      dragging = true;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      scrollL = viewport.scrollLeft;
+      scrollT = viewport.scrollTop;
+    }, { passive: true });
+
+    viewport.addEventListener('touchmove', (e) => {
+      if (!dragging || e.touches.length !== 1) return;
+      const dx = e.touches[0].clientX - startX;
+      const dy = e.touches[0].clientY - startY;
+      viewport.scrollLeft = scrollL - dx;
+      viewport.scrollTop = scrollT - dy;
+    }, { passive: true });
+
+    viewport.addEventListener('touchend', endDrag);
+  }
+
+  function buildDefinitionsTab() {
+    const root = document.getElementById('definitionsTabRoot');
+    const defs = DATA.definitions || {};
+    let html = '<div class="code-list">';
+    DEFINITIONS_ORDER.forEach((code) => {
+      if (!defs[code]) return;
+      html +=
+        '<article class="def-card"><span class="def-badge">' + escapeHtml(code) + '</span><p>' + escapeHtml(defs[code]) + '</p></article>';
+    });
+    html += '</div>';
+    html += '<div class="section-title">Footnotes &amp; special conditions</div>';
+    const footnotes = DATA.footnotes || {};
+    const keys = Object.keys(footnotes).sort((a, b) => {
+      const ia = FOOTNOTE_SYMBOLS.indexOf(a);
+      const ib = FOOTNOTE_SYMBOLS.indexOf(b);
+      if (ia >= 0 && ib >= 0) return ia - ib;
+      if (ia >= 0) return -1;
+      if (ib >= 0) return 1;
+      return a.localeCompare(b);
+    });
+    keys.forEach((sym) => {
+      html += '<article class="def-card"><span class="def-badge">' + escapeHtml(sym) + '</span><p>' + escapeHtml(footnotes[sym]) + '</p></article>';
+    });
+    root.innerHTML = html;
+    definitionsBuilt = true;
+  }
+
+  function productSortText(p, key) {
+    if (key === 'matrix_title') {
+      return ((p.matrix_title || '') + (p.aviation ? ' AVN' : '')).trim();
+    }
+    const v = p[key];
+    return v == null || v === '' ? '' : String(v);
+  }
+
+  function productRowHtml(p) {
+    const avn = p.aviation ? ' <span class="avn-badge">AVN</span>' : '';
+    return (
+      '<tr data-product-row>' +
+      '<td>' + escapeHtml(p.un_no || '-') + '</td>' +
+      '<td>' + escapeHtml(p.matrix_title || '-') + avn + '</td>' +
+      '<td>' + escapeHtml(p.generic_product || '-') + '</td>' +
+      '<td>' + escapeHtml(p.grade_names || '-') + '</td>' +
+      '<td>' + escapeHtml(p.flash_point_degC ?? '-') + '</td>' +
+      '<td>' + escapeHtml(p.density_kg_m3 ?? '-') + '</td>' +
+      '<td>' + escapeHtml(p.sulphur_ppm ?? '-') + '</td>' +
+      '<td>' + escapeHtml(p.characteristics || '-') + '</td>' +
+      '</tr>'
+    );
+  }
+
+  function sortedProducts() {
+    const col = productsSortCol;
+    const dir = productsSortDir;
+    return [...productsRows].sort((a, b) => {
+      const cmp = productSortText(a, col).localeCompare(productSortText(b, col), undefined, {
+        sensitivity: 'base',
+        numeric: true,
+      });
+      return dir * cmp;
+    });
+  }
+
+  function renderProductsTableHead() {
+    const thead = document.getElementById('productsTableHead');
+    if (!thead) return;
+    thead.innerHTML = PRODUCT_COLUMNS.map((col) => {
+      const sorted = col.key === productsSortCol;
+      const mark = sorted ? (productsSortDir > 0 ? '&#9650;' : '&#9660;') : '&#8693;';
+      const cls = 'sortable' + (sorted ? ' sorted' : '');
+      return (
+        '<th scope="col" class="' + cls + '" data-sort-col="' + escapeHtml(col.key) + '" aria-sort="' +
+        (sorted ? (productsSortDir > 0 ? 'ascending' : 'descending') : 'none') +
+        '">' + escapeHtml(col.label) + '<span class="sort-mark" aria-hidden="true">' + mark + '</span></th>'
+      );
+    }).join('');
+  }
+
+  function renderProductsTableBody() {
+    const tbody = document.getElementById('productsTableBody');
+    if (!tbody) return;
+    const rows = sortedProducts();
+    if (!rows.length) {
+      tbody.innerHTML =
+        '<tr><td colspan="' + PRODUCT_COLUMNS.length + '" class="empty-state" style="text-align:left;padding:1.5rem 0;">No products match.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(productRowHtml).join('');
+    applyProductSearch();
+  }
+
+  function applyProductSearch() {
+    const search = document.getElementById('productSearch');
+    if (!search) return;
+    const q = search.value.trim().toLowerCase();
+    document.querySelectorAll('#productsTableBody [data-product-row]').forEach((tr) => {
+      tr.style.display = !q || tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  }
+
+  function onProductHeaderClick(colKey) {
+    if (productsSortCol === colKey) {
+      productsSortDir = -productsSortDir;
+    } else {
+      productsSortCol = colKey;
+      productsSortDir = 1;
+    }
+    renderProductsTableHead();
+    renderProductsTableBody();
+  }
+
+  function buildProductsTab() {
+    const wrap = document.getElementById('productsTableWrap');
+    productsRows = DATA.products || [];
+
+    if (!productsRows.length) {
+      wrap.innerHTML =
+        '<p class="empty-state" style="text-align:left;">No products in loaded data. Hard-refresh the page (the offline matrix file may need updating).</p>';
+      productsBuilt = true;
+      return;
+    }
+
+    wrap.innerHTML =
+      '<table class="summary-table" id="productsTable">' +
+      '<thead><tr id="productsTableHead"></tr></thead>' +
+      '<tbody id="productsTableBody"></tbody></table>';
+
+    renderProductsTableHead();
+    renderProductsTableBody();
+
+    document.getElementById('productsTableHead').addEventListener('click', (e) => {
+      const th = e.target.closest('th[data-sort-col]');
+      if (!th) return;
+      onProductHeaderClick(th.dataset.sortCol);
+    });
+
+    const search = document.getElementById('productSearch');
+    if (!search.dataset.bound) {
+      search.dataset.bound = '1';
+      search.addEventListener('input', applyProductSearch);
+    }
+
+    productsBuilt = true;
+  }
+
+  async function loadMatrixData() {
+    if (window.SHELL_PRECARGO_MATRIX) {
+      const data = window.SHELL_PRECARGO_MATRIX;
+      if (!data.products || !data.products.length) {
+        try {
+          const res = await fetch('./shell_precargo_matrix.json');
+          if (res.ok) {
+            const full = await res.json();
+            if (full.products && full.products.length) data.products = full.products;
+          }
+        } catch (_) {
+          /* offline file:// ? use embedded data only */
+        }
+      }
+      return data;
+    }
+    const res = await fetch('./shell_precargo_matrix.json');
+    if (!res.ok) throw new Error(res.statusText || String(res.status));
+    return res.json();
+  }
+
+  async function init() {
+    try {
+      DATA = await loadMatrixData();
+    } catch (err) {
+      console.error(err);
+      return;
+    }
+
+    fillSelect(prevSelect, DATA.previous_cargoes, '-- Select previous cargo --');
+    fillSelect(loadSelect, DATA.to_load_cargoes, '-- Select cargo to load --');
+    checkBtn.disabled = false;
+
+    initMatrixViewport(document.getElementById('matrixViewport'));
+
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: 'arctium-tank-cleaning-ready' }, '*');
+    }
+  }
+
+  init();
+})();
+  </script>
+</body>
+</html>

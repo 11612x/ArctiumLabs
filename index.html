@@ -27,6 +27,7 @@
     --purple: #9878b8;
     --teal: #78b8a8;
     --colors: #a8b8a8, #7898b8, #b89858, #b87878, #9878b8;
+    --input-bg: #000000;
   }
 
   html[data-ui-theme="light"] {
@@ -41,6 +42,13 @@
     --accent: #6a8a6a;
     --accent-dim: #4a6a4a;
     --accent-glow: rgba(80,100,80,0.10);
+    --input-bg: #ffffff;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="hidden"]):not([type="color"]),
+  select,
+  textarea {
+    background-color: var(--input-bg);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -118,6 +126,53 @@
   .tab-btn.active {
     color: var(--accent);
     border-bottom-color: var(--accent);
+  }
+
+  .tab-more {
+    position: relative;
+    margin-bottom: -1px;
+  }
+
+  .tab-more-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 1px);
+    left: 50%;
+    transform: translateX(-50%);
+    min-width: 180px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 0;
+    z-index: 200;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  }
+
+  .tab-more:hover .tab-more-menu,
+  .tab-more.open .tab-more-menu {
+    display: block;
+  }
+
+  .tab-more-item {
+    display: block;
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    padding: 10px 18px;
+    text-align: left;
+    text-transform: uppercase;
+    transition: color 0.15s, background 0.15s;
+  }
+
+  .tab-more-item:hover,
+  .tab-more-item.active {
+    color: var(--accent);
+    background: var(--accent-glow);
   }
 
   .tab-panel { display: none; }
@@ -277,7 +332,7 @@
   }
 
   .field input, .field select {
-    background: var(--bg);
+    background: var(--input-bg);
     border: 1px solid var(--border);
     border-radius: 3px;
     color: var(--text);
@@ -578,6 +633,11 @@
     overflow: hidden;
   }
 
+  body.arc-loading iframe {
+    filter: blur(10px);
+    pointer-events: none;
+  }
+
   .arc-loading-overlay {
     position: fixed;
     inset: 0;
@@ -680,7 +740,7 @@
   .auth-card input[type="password"] {
     width: 100%;
     padding: 10px 12px;
-    background: var(--bg);
+    background: var(--input-bg);
     border: 1px solid var(--accent-dim);
     border-radius: 4px;
     color: var(--text);
@@ -1208,7 +1268,7 @@
     padding: 6px 10px;
     border-radius: 4px;
     border: 1px solid var(--border);
-    background: var(--surface2);
+    background: var(--input-bg);
     color: var(--text);
   }
 
@@ -1857,7 +1917,7 @@
     padding: 3px 5px;
     border: 1px solid var(--border-light);
     border-radius: 3px;
-    background: var(--surface);
+    background: var(--input-bg);
     color: var(--text);
   }
 
@@ -2033,7 +2093,7 @@
     padding: 3px 5px;
     border: 1px solid var(--border-light);
     border-radius: 3px;
-    background: var(--surface);
+    background: var(--input-bg);
     color: var(--text);
   }
 
@@ -2604,7 +2664,7 @@
 
   .live-pos-vc-title-input,
   .live-pos-vc-select {
-    background: var(--bg);
+    background: var(--input-bg);
     border: 1px solid var(--border);
     border-radius: 3px;
     color: var(--text);
@@ -2743,7 +2803,7 @@
     min-height: 4.5em;
     resize: vertical;
     box-sizing: border-box;
-    background: var(--bg);
+    background: var(--input-bg);
     border: 1px solid var(--border);
     border-radius: 3px;
     color: var(--text);
@@ -3059,6 +3119,40 @@
     border-bottom: 1px solid var(--border);
   }
 
+  #tab-voy .leg-header {
+    align-items: center;
+    padding-bottom: 1.65rem;
+  }
+
+  #tab-voy .leg-header .leg-type-select,
+  #tab-voy .leg-header .leg-port-input {
+    height: 32px;
+    box-sizing: border-box;
+    line-height: 1.25;
+  }
+
+  #tab-voy .leg-header .leg-ports {
+    align-items: center;
+  }
+
+  #tab-voy .leg-header .leg-ports .route-port-wrap {
+    align-self: center;
+    justify-content: center;
+  }
+
+  #tab-voy .leg-header .leg-ports .route-port-wrap .port-meta {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 2px);
+    margin-top: 0;
+  }
+
+  #tab-voy .leg-header .leg-arrow {
+    align-self: center;
+    line-height: 1;
+  }
+
   .leg-num {
     font-size: 11px;
     color: var(--text-muted);
@@ -3068,16 +3162,17 @@
   }
 
   .leg-type-select {
-    background: var(--bg);
+    background: var(--input-bg);
     border: 1px solid var(--border);
     border-radius: 3px;
     color: var(--text);
     font-family: 'Consolas', 'Courier New', monospace;
     font-size: 12px;
-    padding: 4px 6px;
+    padding: 0 8px;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     outline: none;
+    align-self: center;
   }
 
   .leg-ports {
@@ -3090,13 +3185,13 @@
   }
 
   .leg-port-input {
-    background: var(--bg);
+    background: var(--input-bg);
     border: 1px solid var(--border);
     border-radius: 3px;
     color: var(--text);
     font-family: 'Consolas', 'Courier New', monospace;
     font-size: 13px;
-    padding: 6px 8px;
+    padding: 0 8px;
     outline: none;
     width: 110px;
     text-transform: uppercase;
@@ -3187,6 +3282,10 @@
     padding: 8px 10px;
     font-size: 0.75rem;
     color: var(--text-muted);
+  }
+
+  #tab-voy .leg-ports .route-port-wrap {
+    position: relative;
   }
 
   #tab-voy .leg-ports .route-port-wrap .port-meta {
@@ -3337,7 +3436,7 @@
   }
 
   #tab-voy .spec-grid input {
-    background: var(--bg);
+    background: var(--input-bg);
     border: 1px solid var(--border);
     border-radius: 3px;
     color: var(--text);
@@ -3672,9 +3771,17 @@
   <button class="tab-btn active" data-tab="tab-dashboard" onclick="switchTab('tab-dashboard')">Dashboard</button>
   <button class="tab-btn" data-tab="tab-tc" onclick="switchTab('tab-tc')">TC</button>
   <button class="tab-btn" data-tab="tab-voy" onclick="switchTab('tab-voy')">Spot</button>
-  <button class="tab-btn" data-tab="tab-bunkers" onclick="switchTab('tab-bunkers')">Bunkers</button>
   <button class="tab-btn" data-tab="tab-emissions" onclick="switchTab('tab-emissions')">Emissions</button>
   <button class="tab-btn" data-tab="tab-route" onclick="switchTab('tab-route')">Route</button>
+  <div class="tab-more" id="tabMoreWrap">
+    <button type="button" class="tab-btn tab-more-trigger" data-tab="tab-more" aria-haspopup="true" aria-expanded="false" id="tabMoreTrigger">
+      More
+    </button>
+    <div class="tab-more-menu" role="menu" id="tabMoreMenu">
+      <button type="button" class="tab-more-item" role="menuitem" data-tab="tab-bunkers">Bunkers</button>
+      <button type="button" class="tab-more-item" role="menuitem" data-tab="tab-tank-cleaning">Tank Cleaning</button>
+    </div>
+  </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
@@ -4135,6 +4242,11 @@
     style="width:100%;height:calc(100vh - 200px);border:none;background:var(--bg)"></iframe>
 </div>
 
+<div class="tab-panel" id="tab-tank-cleaning">
+  <iframe id="tankCleaningFrame" src="tank-cleaning.html"
+    style="width:100%;height:calc(100vh - 200px);border:none;background:var(--bg)"></iframe>
+</div>
+
 <div id="livePosDetailOverlay" class="live-pos-overlay" hidden aria-hidden="true">
   <div class="live-pos-detail" role="dialog" aria-modal="true" aria-labelledby="livePosDetailTitle">
     <div class="live-pos-detail__head">
@@ -4398,33 +4510,93 @@ async function saveVoyageChains() {
 // TAB SWITCHING
 // ═════════════════════════════════════════════════════════════════════════════
 const TAB_STORAGE_KEY = 'arctium_active_tab';
-const VALID_TABS = ['tab-dashboard', 'tab-tc', 'tab-voy', 'tab-bunkers', 'tab-emissions', 'tab-route'];
+const MORE_TAB_IDS = ['tab-bunkers', 'tab-tank-cleaning'];
+const VALID_TABS = ['tab-dashboard', 'tab-tc', 'tab-voy', 'tab-emissions', 'tab-route', ...MORE_TAB_IDS];
 
+function setMoreDropdownOpen(open) {
+  const wrap = document.getElementById('tabMoreWrap');
+  const trigger = document.getElementById('tabMoreTrigger');
+  if (!wrap || !trigger) return;
+  wrap.classList.toggle('open', open);
+  trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
 
-function postBunkerUiState() {
+function closeMoreDropdown() {
+  setMoreDropdownOpen(false);
+}
+
+function initMoreTabNav() {
+  const wrap = document.getElementById('tabMoreWrap');
+  const menu = document.getElementById('tabMoreMenu');
+  const trigger = document.getElementById('tabMoreTrigger');
+  if (!wrap || !menu || !trigger) return;
+
+  trigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    setMoreDropdownOpen(!wrap.classList.contains('open'));
+  });
+
+  menu.querySelectorAll('.tab-more-item').forEach((item) => {
+    item.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const tabId = item.dataset.tab;
+      if (tabId) switchTab(tabId);
+      closeMoreDropdown();
+    });
+  });
+
+  document.addEventListener('click', () => closeMoreDropdown());
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeMoreDropdown();
+  });
+}
+
+function postIframeUiState() {
   const payload = {
     type: 'arctium-ui',
     theme: document.documentElement.getAttribute('data-ui-theme') || 'dark',
     isAdmin,
     isOps
   };
-  const frame = document.getElementById('bunkerFrame');
-  if (frame?.contentWindow) {
-    frame.contentWindow.postMessage(payload, '*');
-    return;
-  }
+  ['bunkerFrame', 'tankCleaningFrame', 'routeFrame'].forEach((id) => {
+    const frame = document.getElementById(id);
+    if (frame?.contentWindow) frame.contentWindow.postMessage(payload, '*');
+  });
   if (typeof bunkReceiveUiState === 'function') bunkReceiveUiState(payload);
 }
 
+function postBunkerUiState() {
+  postIframeUiState();
+}
+
 window.addEventListener('message', (e) => {
-  if (e.data?.type === 'arctium-bunker-ready') postBunkerUiState();
+  if (e.data?.type === 'arctium-arc-loading') {
+    if (e.data.phase === 'start') showArcLoading();
+    else if (e.data.phase === 'end') hideArcLoading();
+    return;
+  }
+  if (
+    e.data?.type === 'arctium-bunker-ready' ||
+    e.data?.type === 'arctium-tank-cleaning-ready' ||
+    e.data?.type === 'arctium-route-ready'
+  ) {
+    postIframeUiState();
+  }
 });
 
 function switchTab(id) {
   if (!VALID_TABS.includes(id)) return;
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
+  const isMorePage = MORE_TAB_IDS.includes(id);
+  document.querySelectorAll('.tab-btn').forEach((b) => {
+    const tab = b.dataset.tab;
+    b.classList.toggle('active', tab === id || (tab === 'tab-more' && isMorePage));
+  });
+  document.querySelectorAll('.tab-more-item').forEach((item) => {
+    item.classList.toggle('active', item.dataset.tab === id);
+  });
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === id));
   sessionStorage.setItem(TAB_STORAGE_KEY, id);
+  if (!isMorePage) closeMoreDropdown();
   if (id === 'tab-dashboard') {
     dashListRender();
     if (typeof twelveQuotesUpdateAdminUi === 'function') twelveQuotesUpdateAdminUi();
@@ -4439,11 +4611,14 @@ function switchTab(id) {
     postBunkerUiState();
     if (typeof wireBunkerPorts === 'function') wireBunkerPorts();
   }
+  if (id === 'tab-tank-cleaning' || id === 'tab-route') {
+    postIframeUiState();
+  }
 }
 
 function getActiveTab() {
-  const btn = document.querySelector('.tab-btn.active');
-  return btn?.dataset.tab || 'tab-dashboard';
+  const panel = document.querySelector('.tab-panel.active');
+  return panel?.id || 'tab-dashboard';
 }
 
 function reloadArctiumLabs() {
@@ -4594,6 +4769,7 @@ function bindHeaderChrome() {
 function bootHeaderChrome() {
   bindHeaderChrome();
   authBindUserMenu();
+  initMoreTabNav();
 }
 
 if (document.readyState === 'loading') {
@@ -4671,7 +4847,7 @@ async function authOnLogin(user) {
   dashE2UnresolvedInit();
   const afterDataReady = () => {
     applyRoleUI();
-    if (getActiveTab() === 'tab-bunkers') postBunkerUiState();
+    if (['tab-bunkers', 'tab-tank-cleaning', 'tab-route'].includes(getActiveTab())) postIframeUiState();
     livePosRefreshUI();
     void reloadDashE2UnresolvedComments();
     if (typeof twelveQuotesUpdateAdminUi === 'function') twelveQuotesUpdateAdminUi();
@@ -8436,9 +8612,18 @@ function wirePortAutocompleteForApp() {
   initVesCargoAutocomplete();
 }
 
+function closeAllPortAutocompleteLists(root) {
+  const scope = root && root.querySelectorAll ? root : document;
+  scope.querySelectorAll('.route-port-list.open').forEach((list) => {
+    list.classList.remove('open');
+    list.innerHTML = '';
+  });
+}
+
 function renderChains() {
-  closeAllPortAutocompleteLists();
+  closeAllPortAutocompleteLists(document.getElementById('tab-voy'));
   const container = document.getElementById('chainsContainer');
+  if (!container) return;
   container.innerHTML = '';
   chains.forEach(chain => {
     const block = document.createElement('div');
@@ -8797,7 +8982,12 @@ function minSpecBaseToBeat(specChain, targetProfit, vd) {
 }
 
 const ARC_LOADING_MIN_MS = 1500;
+const ARC_LOADING_PAINT_MS = 15;
 let arcLoadingDepth = 0;
+
+function arcLoadingPaintBuffer() {
+  return new Promise((resolve) => setTimeout(resolve, ARC_LOADING_PAINT_MS));
+}
 
 function showArcLoading() {
   arcLoadingDepth++;
@@ -8823,6 +9013,7 @@ function hideArcLoading() {
 
 async function withArcLoading(task) {
   showArcLoading();
+  await arcLoadingPaintBuffer();
   const started = performance.now();
   try {
     return await task();

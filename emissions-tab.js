@@ -384,49 +384,53 @@ async function emCalcETS() {
     return;
   }
 
-  let routeMeta = null;
-  const pol = typeof getRoutePortFromInput === 'function' ? getRoutePortFromInput('em-pol') : null;
-  const pod = typeof getRoutePortFromInput === 'function' ? getRoutePortFromInput('em-pod') : null;
-  if (pol && pod) {
-    const routeResult = await emApplyRouteFuelFromPorts();
-    if (!routeResult.ok) {
-      emShowWarning(routeResult.error);
+  const run = typeof withArcLoading === 'function' ? withArcLoading : async (task) => task();
+
+  await run(async () => {
+    let routeMeta = null;
+    const pol = typeof getRoutePortFromInput === 'function' ? getRoutePortFromInput('em-pol') : null;
+    const pod = typeof getRoutePortFromInput === 'function' ? getRoutePortFromInput('em-pod') : null;
+    if (pol && pod) {
+      const routeResult = await emApplyRouteFuelFromPorts();
+      if (!routeResult.ok) {
+        emShowWarning(routeResult.error);
+        return;
+      }
+      routeMeta = routeResult;
+    }
+
+    const fuels = emGatherFuelData();
+    const totalMt = fuels.reduce((sum, row) => sum + row.mt, 0);
+    if (totalMt <= 0) {
+      emShowWarning('No fuel consumption entered');
       return;
     }
-    routeMeta = routeResult;
-  }
 
-  const fuels = emGatherFuelData();
-  const totalMt = fuels.reduce((sum, row) => sum + row.mt, 0);
-  if (totalMt <= 0) {
-    emShowWarning('No fuel consumption entered');
-    return;
-  }
+    const voyageType = document.getElementById('em-voyage-type').value;
+    const coverage = emCoverageFromType(voyageType);
+    const coverageLabel = emCoverageLabelFromFactor(coverage);
+    const totalCo2 = fuels.reduce((sum, row) => sum + row.co2, 0);
+    const coveredCo2 = totalCo2 * coverage;
+    const euasRequired = Math.ceil(coveredCo2);
+    const totalCost = euasRequired * euaPrice;
+    const voyageDays = parseNum(document.getElementById('em-voyage-days').value);
+    const costPerDay = voyageDays && voyageDays > 0 ? totalCost / voyageDays : null;
+    const complianceYear = emGetComplianceYear();
 
-  const voyageType = document.getElementById('em-voyage-type').value;
-  const coverage = emCoverageFromType(voyageType);
-  const coverageLabel = emCoverageLabelFromFactor(coverage);
-  const totalCo2 = fuels.reduce((sum, row) => sum + row.co2, 0);
-  const coveredCo2 = totalCo2 * coverage;
-  const euasRequired = Math.ceil(coveredCo2);
-  const totalCost = euasRequired * euaPrice;
-  const voyageDays = parseNum(document.getElementById('em-voyage-days').value);
-  const costPerDay = voyageDays && voyageDays > 0 ? totalCost / voyageDays : null;
-  const complianceYear = emGetComplianceYear();
-
-  emRenderResults({
-    fuels,
-    totalCo2,
-    coverage,
-    coverageLabel,
-    coveredCo2,
-    euasRequired,
-    euaPrice,
-    totalCost,
-    voyageDays,
-    costPerDay,
-    complianceYear,
-    routeMeta,
+    emRenderResults({
+      fuels,
+      totalCo2,
+      coverage,
+      coverageLabel,
+      coveredCo2,
+      euasRequired,
+      euaPrice,
+      totalCost,
+      voyageDays,
+      costPerDay,
+      complianceYear,
+      routeMeta,
+    });
   });
 }
 
