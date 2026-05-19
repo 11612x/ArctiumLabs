@@ -1,4 +1,4 @@
- [
+window.ARCTIUM_PORTS=[
   {
     origin: "DAN",
     value: "CAPE RACE",
@@ -107839,4 +107839,4 @@
     is_inactive: null,
     ismrv: "N"
   }
-]
+];

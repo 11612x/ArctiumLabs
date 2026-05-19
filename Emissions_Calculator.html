@@ -268,12 +268,13 @@ document.addEventListener('blur', e => {
   </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+<script src="route-geo-loader.js"></script>
 <script type="module">
-  import searoute from 'https://esm.sh/searoute-ts@2.0.0';
+  import searoute, { clearFinderCache } from 'https://esm.sh/searoute-ts@2.0.0';
   window.searoute = searoute;
+  window.clearSearouteCache = clearFinderCache;
   window.dispatchEvent(new Event('searoute-ready'));
 </script>
-<script src="eca-zones.js"></script>
 <script src="route-engine.js"></script>
 <script src="arc-loading.js"></script>
 <script src="emissions-tab.js"></script>
