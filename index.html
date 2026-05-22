@@ -3,8 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Arctium Labs</title>
 <link rel="icon" href="Favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
@@ -65,6 +67,8 @@
     align-items: center;
     gap: 9.6px;
     margin-bottom: 14.4px;
+    position: relative;
+    z-index: 1100;
   }
 
   header .header-logo {
@@ -102,6 +106,8 @@
     justify-content: center;
     margin-bottom: 28px;
     border-bottom: 1px solid var(--border);
+    position: relative;
+    z-index: 1000;
   }
 
   .tab-btn {
@@ -186,6 +192,360 @@
 
   .tab-panel:not(.active) iframe {
     display: none !important;
+  }
+
+  #tab-map {
+    position: relative;
+    z-index: 0;
+    isolation: isolate;
+  }
+
+  #tab-map .map-page {
+    position: relative;
+    width: 100%;
+    height: calc(100vh - 200px);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .map-toolbar {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 850;
+    display: flex;
+    gap: 8px;
+  }
+
+  .map-vessels-upload-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid var(--border-light);
+    border-radius: 5px;
+    background: var(--surface);
+    color: var(--accent);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  }
+
+  .map-vessels-upload-btn:hover {
+    background: var(--accent-glow);
+    border-color: var(--accent-dim);
+    color: var(--text);
+  }
+
+  .map-vessels-upload-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: square;
+  }
+
+  .map-vessel-divicon {
+    background: transparent !important;
+    border: none !important;
+  }
+
+  .map-vessel-marker {
+    position: relative;
+    width: 1px;
+    height: 1px;
+    white-space: nowrap;
+  }
+
+  .map-vessel-marker__dot {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 10px;
+    height: 10px;
+    margin-left: -5px;
+    margin-top: -5px;
+    border-radius: 50%;
+    background: #e8a040;
+    border: none;
+    box-shadow: none;
+  }
+
+  .map-vessel-marker__label {
+    position: absolute;
+    left: 0;
+    transform: translateX(-50%);
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    line-height: 1.2;
+    pointer-events: none;
+    color: #0d0f0e;
+    text-shadow: 0 0 3px rgba(232, 237, 232, 0.9), 0 1px 2px rgba(255, 255, 255, 0.6);
+  }
+
+  .map-vessel-marker__label--above {
+    bottom: 9px;
+    margin-bottom: 4px;
+  }
+
+  .map-vessel-marker__label--below {
+    top: 9px;
+    margin-top: 4px;
+  }
+
+  .map-vessel-marker--stale .map-vessel-marker__dot {
+    background: var(--red);
+    border: none;
+    box-shadow: none;
+  }
+
+  .map-vessel-marker__label--dark {
+    color: #e8ede8;
+    text-shadow: 0 0 4px rgba(13, 15, 14, 0.9), 0 1px 3px rgba(0, 0, 0, 0.7);
+  }
+
+  .map-vessel-marker--stale .map-vessel-marker__label,
+  .map-vessel-marker--stale .map-vessel-marker__label--dark {
+    color: var(--red);
+    text-shadow: 0 0 4px rgba(13, 15, 14, 0.85);
+  }
+
+  html[data-ui-theme="dark"] .leaflet-container .leaflet-popup.map-vessel-leaflet-popup .leaflet-popup-content-wrapper {
+    background: rgba(20, 23, 20, 0.7) !important;
+    border: 1px solid rgba(37, 40, 37, 0.7);
+    border-radius: 6px;
+    color: var(--text);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  }
+
+  html[data-ui-theme="light"] .leaflet-container .leaflet-popup.map-vessel-leaflet-popup .leaflet-popup-content-wrapper {
+    background: rgba(221, 227, 221, 0.7) !important;
+    border: 1px solid rgba(184, 190, 184, 0.7);
+    border-radius: 6px;
+    color: var(--text);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+  }
+
+  .leaflet-container .leaflet-popup.map-vessel-leaflet-popup .leaflet-popup-tip-container {
+    opacity: 0.7;
+  }
+
+  .map-vessel-leaflet-popup .leaflet-popup-content {
+    margin: 12px 14px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .map-vessel-popup__title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .map-vessel-popup__type {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  .map-vessel-popup dl {
+    display: grid;
+    grid-template-columns: minmax(0, 42%) 1fr;
+    gap: 6px 12px;
+    margin: 0;
+  }
+
+  .map-vessel-popup dt {
+    margin: 0;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .map-vessel-popup dd {
+    margin: 0;
+    color: var(--text-dim);
+    word-break: break-word;
+  }
+
+  .map-vessel-popup__warn {
+    margin-top: 10px;
+    padding: 8px 10px;
+    border: 1px solid var(--red);
+    border-radius: 4px;
+    color: var(--red);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .map-vessels-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9200;
+    background: rgba(10, 12, 11, 0.72);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .map-vessels-overlay[hidden] {
+    display: none !important;
+  }
+
+  .map-vessels-modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    max-width: 480px;
+    width: 100%;
+    max-height: min(85vh, 560px);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
+  }
+
+  .map-vessels-modal__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .map-vessels-modal__title {
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .map-vessels-modal__close {
+    flex-shrink: 0;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    width: 32px;
+    height: 32px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  .map-vessels-modal__close:hover {
+    color: var(--text);
+    border-color: var(--border-light);
+  }
+
+  .map-vessels-modal__body {
+    padding: 16px 18px 18px;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .map-vessels-modal__hint {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.45;
+  }
+
+  .map-vessels-upload-status {
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: 0.04em;
+  }
+
+  .map-vessels-upload-status--err {
+    color: var(--red);
+  }
+
+  .map-vessels-upload-skips {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 11px;
+    color: var(--amber);
+    letter-spacing: 0.04em;
+  }
+
+  .map-vessels-upload-skips[hidden] {
+    display: none;
+  }
+
+  .map-vessels-modal__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .map-vessels-pick-btn,
+  .map-vessels-submit-btn {
+    background: transparent;
+    border: 1px solid var(--accent-dim);
+    border-radius: 4px;
+    color: var(--accent);
+    cursor: pointer;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    padding: 10px 14px;
+    text-transform: uppercase;
+    transition: background 0.15s;
+  }
+
+  .map-vessels-pick-btn:hover,
+  .map-vessels-submit-btn:hover {
+    background: var(--accent-glow);
+  }
+
+  .map-vessels-submit-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .map-vessels-cancel-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 10px 8px;
+  }
+
+  .map-vessels-file-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+  }
+
+  #tab-map #arctiumMap,
+  #tab-map #arctiumMap .leaflet-container {
+    width: 100%;
+    height: 100%;
+    background: var(--surface);
+    font-family: inherit;
   }
 
   .layout {
@@ -828,6 +1188,7 @@
 
   .auth-user-wrap {
     position: relative;
+    z-index: 2;
     margin-left: auto;
     flex-shrink: 0;
   }
@@ -871,7 +1232,7 @@
     border: 1px solid var(--border);
     border-radius: 6px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-    z-index: 50;
+    z-index: 10;
   }
 
   .auth-user-menu__section-title {
@@ -3793,6 +4154,7 @@
 
 <div class="tab-nav">
   <button class="tab-btn active" data-tab="tab-dashboard" onclick="switchTab('tab-dashboard')">Dashboard</button>
+  <button class="tab-btn" data-tab="tab-map" onclick="switchTab('tab-map')">Map</button>
   <button class="tab-btn" data-tab="tab-tc" onclick="switchTab('tab-tc')">TC</button>
   <button class="tab-btn" data-tab="tab-voy" onclick="switchTab('tab-voy')">Spot</button>
   <button class="tab-btn" data-tab="tab-emissions" onclick="switchTab('tab-emissions')">Emissions</button>
@@ -3893,6 +4255,41 @@
         <div class="db-widget-head">Saved</div>
         <div class="db-widget-body" id="dashboardSavedList"></div>
       </article>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- TAB: MAP (OpenStreetMap)                                                  -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-map">
+  <div class="map-page">
+    <div class="map-toolbar">
+      <button type="button" class="map-vessels-upload-btn" id="mapVesselsUploadBtn" title="Upload vessel PDF reports" aria-label="Upload vessel reports">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 18v2h16v-2"/></svg>
+      </button>
+    </div>
+    <div id="arctiumMap" role="application" aria-label="World map"></div>
+  </div>
+</div>
+
+<div id="mapVesselsUploadOverlay" class="map-vessels-overlay" hidden aria-hidden="true">
+  <div class="map-vessels-modal" role="dialog" aria-modal="true" aria-labelledby="mapVesselsUploadTitle">
+    <div class="map-vessels-modal__head">
+      <div class="map-vessels-modal__title" id="mapVesselsUploadTitle">Upload vessel reports</div>
+      <button type="button" class="map-vessels-modal__close" id="mapVesselsUploadClose" aria-label="Close">×</button>
+    </div>
+    <div class="map-vessels-modal__body">
+      <p class="map-vessels-modal__hint">Upload one or more PDF files (Daily Summary or Providers Report). Newer issue dates replace existing vessel records.</p>
+      <input type="file" id="mapVesselsFileInput" accept="application/pdf,.pdf" multiple hidden>
+      <div class="map-vessels-modal__actions">
+        <button type="button" class="map-vessels-pick-btn" id="mapVesselsUploadPick">Choose PDFs</button>
+        <button type="button" class="map-vessels-submit-btn" id="mapVesselsUploadSubmit">Upload &amp; parse</button>
+        <button type="button" class="map-vessels-cancel-btn" id="mapVesselsUploadCancel">Cancel</button>
+      </div>
+      <span class="map-vessels-file-hint" id="mapVesselsFileHint">No files selected</span>
+      <p class="map-vessels-upload-status" id="mapVesselsUploadStatus" hidden></p>
+      <ul class="map-vessels-upload-skips" id="mapVesselsUploadSkips" hidden></ul>
     </div>
   </div>
 </div>
@@ -4187,6 +4584,9 @@
   </svg>
 </div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="map-vessels.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -4199,9 +4599,11 @@
 //   vessel_positions | tc_options | voyage_chains
 // DB: table `app_settings` (key text PK, value text) — e.g. twelvedata_api_key
 // DB: table `vessel_comments` (threaded: parent_id, thread_root_id — see vessel_comments.sql + Realtime)
+// DB: table `map_vessels` (Map tab PDF vessel tracking — see map_vessels.sql)
 // ═════════════════════════════════════════════════════════════════════════════
 const { createClient } = supabase;
 const sb = createClient('https://hxwahnackweyozhragli.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4d2FobmFja3dleW96aHJhZ2xpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NjA5MTMsImV4cCI6MjA5NDIzNjkxM30.FQEt55o70i1ogRc52rI05rMbfAGzvI_RT_7B0HT-EeA');
+window.sb = sb;
 let currentUser = null;
 let isAdmin = false;
 let isOps = false;
@@ -4378,7 +4780,7 @@ async function saveVoyageChains() {
 // ═════════════════════════════════════════════════════════════════════════════
 const TAB_STORAGE_KEY = 'arctium_active_tab';
 const MORE_TAB_IDS = ['tab-bunkers', 'tab-tank-cleaning'];
-const VALID_TABS = ['tab-dashboard', 'tab-tc', 'tab-voy', 'tab-emissions', 'tab-route', ...MORE_TAB_IDS];
+const VALID_TABS = ['tab-dashboard', 'tab-map', 'tab-tc', 'tab-voy', 'tab-emissions', 'tab-route', ...MORE_TAB_IDS];
 const TAB_IFRAME_IDS = {
   'tab-emissions': 'emissionsFrame',
   'tab-route': 'routeFrame',
@@ -4467,6 +4869,85 @@ window.addEventListener('message', (e) => {
   }
 });
 
+const MAP_TILE_LAYERS = {
+  light: {
+    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    options: {
+      maxZoom: 19,
+      subdomains: 'abcd',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      referrerPolicy: 'strict-origin-when-cross-origin',
+    },
+  },
+  dark: {
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    options: {
+      maxZoom: 19,
+      subdomains: 'abcd',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      referrerPolicy: 'strict-origin-when-cross-origin',
+    },
+  },
+};
+
+let arctiumMap = null;
+let arctiumMapTileLayer = null;
+let arctiumMapThemeObserver = null;
+
+function getMapTheme() {
+  const ui = document.documentElement.getAttribute('data-ui-theme');
+  if (ui === 'light' || ui === 'dark') return ui;
+  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+}
+
+function applyArctiumMapTiles(theme) {
+  if (!arctiumMap || typeof L === 'undefined') return;
+  const t = theme === 'light' ? 'light' : 'dark';
+  if (arctiumMapTileLayer) {
+    arctiumMap.removeLayer(arctiumMapTileLayer);
+    arctiumMapTileLayer = null;
+  }
+  const cfg = MAP_TILE_LAYERS[t];
+  arctiumMapTileLayer = L.tileLayer(cfg.url, cfg.options).addTo(arctiumMap);
+}
+
+function bindArctiumMapThemeSync() {
+  if (arctiumMapThemeObserver) return;
+  arctiumMapThemeObserver = new MutationObserver(() => {
+    applyArctiumMapTiles(getMapTheme());
+    if (typeof mapVesselsOnThemeChange === 'function') mapVesselsOnThemeChange();
+  });
+  arctiumMapThemeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-ui-theme'],
+  });
+  const mq = window.matchMedia('(prefers-color-scheme: light)');
+  const onMq = () => {
+    if (!document.documentElement.getAttribute('data-ui-theme')) {
+      applyArctiumMapTiles(getMapTheme());
+    }
+  };
+  if (typeof mq.addEventListener === 'function') mq.addEventListener('change', onMq);
+  else if (typeof mq.addListener === 'function') mq.addListener(onMq);
+}
+
+function ensureArctiumMap() {
+  if (arctiumMap || typeof L === 'undefined') return;
+  const el = document.getElementById('arctiumMap');
+  if (!el) return;
+  L.TileLayer.prototype.options.referrerPolicy = 'strict-origin-when-cross-origin';
+  arctiumMap = L.map(el, { zoomControl: true }).setView([20, 0], 2);
+  applyArctiumMapTiles(getMapTheme());
+  bindArctiumMapThemeSync();
+}
+
+function resizeArctiumMap() {
+  if (!arctiumMap) return;
+  requestAnimationFrame(() => {
+    arctiumMap.invalidateSize();
+  });
+}
+
 function switchTab(id) {
   if (!VALID_TABS.includes(id)) return;
   const isMorePage = MORE_TAB_IDS.includes(id);
@@ -4481,6 +4962,11 @@ function switchTab(id) {
   mountTabIframe(id);
   sessionStorage.setItem(TAB_STORAGE_KEY, id);
   if (!isMorePage) closeMoreDropdown();
+  if (id === 'tab-map') {
+    ensureArctiumMap();
+    resizeArctiumMap();
+    if (typeof mapVesselsOnMapTabActive === 'function') mapVesselsOnMapTabActive();
+  }
   if (id === 'tab-dashboard') {
     dashListRender();
     if (typeof twelveQuotesUpdateAdminUi === 'function') twelveQuotesUpdateAdminUi();
@@ -4707,6 +5193,7 @@ function applyRoleUI() {
 async function authOnLogin(user) {
   if (!user) return;
   currentUser = user;
+  window.currentUser = user;
   const { data: profile } = await sb
     .from('profiles')
     .select('role')
@@ -4728,6 +5215,8 @@ async function authOnLogin(user) {
     livePosRefreshUI();
     void reloadDashE2UnresolvedComments();
     if (typeof twelveQuotesUpdateAdminUi === 'function') twelveQuotesUpdateAdminUi();
+    if (typeof mapVesselsInit === 'function') mapVesselsInit();
+    if (getActiveTab() === 'tab-map' && typeof mapVesselsOnMapTabActive === 'function') mapVesselsOnMapTabActive();
   };
   if (needFullLoad) {
     livePosRefreshUI();
@@ -4745,9 +5234,11 @@ async function authInit() {
   } else {
     hydratedUserId = null;
     currentUser = null;
+    window.currentUser = null;
     isAdmin = false;
     isOps = false;
     userProfileRole = '';
+    if (typeof mapVesselsTeardown === 'function') mapVesselsTeardown();
     authShowLogin();
     applyRoleUI();
     livePosRefreshUI();
@@ -4759,6 +5250,8 @@ async function authInit() {
     if (event === 'SIGNED_OUT') {
       hydratedUserId = null;
       currentUser = null;
+      window.currentUser = null;
+      if (typeof mapVesselsTeardown === 'function') mapVesselsTeardown();
       isAdmin = false;
       isOps = false;
       userProfileRole = '';
