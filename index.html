@@ -8641,8 +8641,11 @@ function renderResults(results, pairs, meta) {
   const bestBase2 = tcPickBestResult(results, r => r.scenBase)?.id;
   const bestBull = tcPickBestResult(results, r => r.scenBull)?.id;
 
+  const matrixTitle = meta.disc > 0
+    ? `Scenario Matrix — PV over ${meta.horizon.toFixed(2)}Y Horizon (discounted at ${meta.disc}%/yr)`
+    : `Scenario Matrix — Gross Earnings over ${meta.horizon.toFixed(2)}Y Horizon`;
   let matHTML = `
-    <div class="section-title">Scenario Matrix — PV over ${meta.horizon.toFixed(2)}Y Horizon</div>
+    <div class="section-title">${matrixTitle}</div>
     <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px">Scenarios: Bear ${fmtDay(meta.spotBear)} / Base ${fmtDay(meta.spotBase)} / Bull ${fmtDay(meta.spotBull)}</div>
     <table class="matrix-table">
       <thead><tr><th>Option</th><th style="color:var(--red)">Bear</th><th style="color:var(--amber)">Base</th><th style="color:var(--accent)">Bull</th><th>Score</th></tr></thead>
