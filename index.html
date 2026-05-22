@@ -3284,11 +3284,8 @@
     justify-content: flex-start;
   }
 
-  .summary-spot-base-note {
-    color: var(--text-muted);
-    font-size: 12px;
-    line-height: 1.35;
-    margin-top: 4px;
+  .summary-rate-line {
+    line-height: 1.4;
   }
 
   .summary-table tr:last-child td { border-bottom: none; }
@@ -7454,12 +7451,29 @@ function tcFmtDurationTcPlusSpot(opt, horizonYears) {
   return `${tcPart} + ${spotPart}`;
 }
 
+function tcFmtRate(n) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  return '$' + Number(n).toLocaleString('en-US', { maximumFractionDigits: 0 });
+}
+
+function tcFmtSummaryRateLine(label, n) {
+  return `<div class="summary-rate-line">${label}: ${tcFmtRate(n)}</div>`;
+}
+
 function tcFmtSummaryRateCell(r, meta) {
-  if (tcIsSpotArc(r)) return fmtDay(r.rate);
+  if (tcIsSpotArc(r)) return tcFmtRate(r.rate);
   if (tcArcHasBaseSpotTail(r, meta.horizon)) {
-    return `${fmtDay(r.rate)}<div class="summary-spot-base-note">Base spot: ${fmtDay(meta.spotBase)}</div>`;
+    const tcDurationYears = tcDurationYearsTotal(r);
+    const horizonYears = meta.horizon;
+    const spotTailYears = horizonYears - tcDurationYears;
+    const blended = (r.rate * tcDurationYears + meta.spotBase * spotTailYears) / horizonYears;
+    return [
+      tcFmtSummaryRateLine('TC Rate', r.rate),
+      tcFmtSummaryRateLine('Base Spot', meta.spotBase),
+      tcFmtSummaryRateLine('AVG.', Math.round(blended)),
+    ].join('');
   }
-  return fmtDay(r.rate);
+  return tcFmtRate(r.rate);
 }
 
 function getTcSpotScenarioRates() {
@@ -7472,15 +7486,15 @@ function getTcSpotScenarioRates() {
 
 function tcFmtSpotRatesPlain(meta) {
   const m = meta || getTcSpotScenarioRates();
-  return `Bear: ${fmtDay(m.spotBear)} · Base: ${fmtDay(m.spotBase)} · Bull: ${fmtDay(m.spotBull)}`;
+  return `Bear: ${tcFmtRate(m.spotBear)} · Base: ${tcFmtRate(m.spotBase)} · Bull: ${tcFmtRate(m.spotBull)}`;
 }
 
 function tcFmtSpotRatesStackHtml(meta) {
   const m = meta || getTcSpotScenarioRates();
   return `<div class="tc-spot-rates-stack">
-    <span class="bear">Bear: ${fmtDay(m.spotBear)}</span>
-    <span class="base">Base: ${fmtDay(m.spotBase)}</span>
-    <span class="bull">Bull: ${fmtDay(m.spotBull)}</span>
+    <span class="bear">Bear: ${tcFmtRate(m.spotBear)}</span>
+    <span class="base">Base: ${tcFmtRate(m.spotBase)}</span>
+    <span class="bull">Bull: ${tcFmtRate(m.spotBull)}</span>
   </div>`;
 }
 
@@ -7489,7 +7503,7 @@ function tcIsSpotArc(opt) {
 }
 
 function tcFmtRateDisplay(r) {
-  return fmtDay(r.rate);
+  return tcFmtRate(r.rate);
 }
 
 function tcSpotSummaryRowsHtml(r, meta) {
@@ -7503,17 +7517,12 @@ function tcSpotSummaryRowsHtml(r, meta) {
   return scenarios.map(s => `
     <tr>
       <td><div class="tc-name-cell"><div class="tc-dot" style="background:${r.color}"></div>SPOT (${s.label})</div></td>
-      <td>${fmtDay(s.rate)}</td>
+      <td>${tcFmtRate(s.rate)}</td>
       <td>${dur}</td>
       <td class="${s.label === 'Base' && r.id === meta.bestTotal ? 'val-pos' : 'val-neu'}">${fmt(s.total)}</td>
       <td>${fmtYear(s.aer)}</td>
     </tr>
   `).join('');
-}
-
-function tcBreakevenDailyRate(opt, spotBase) {
-  if (tcIsSpotArc(opt)) return spotBase;
-  return opt.rate;
 }
 
 /** TC charter length for ranking; spot arcs = 0 (shorter fixed cover). */
@@ -7641,7 +7650,7 @@ function renderTCList() {
           ${tcFmtSpotRatesStackHtml()}
         </div>`
       : `<div class="field">
-          <label>Rate $/day</label>
+          <label>Rate</label>
           <input ${numInputHtml(opt.rate, 0, `updateTC(${opt.id},'rate',parseNum(this.value))`)}>
         </div>`;
     const refTc = tcLongestTcArcOption();
@@ -7724,27 +7733,6 @@ function scenarioValue(tcRate, tcDuration, spotRate, horizon, discount_rate) {
     pv += r / Math.pow(1 + daily_discount, d);
   }
   return pv;
-}
-
-function breakeven(a, b, horizon, discount_rate, spotBase) {
-  const rateA = tcBreakevenDailyRate(a, spotBase);
-  const rateB = tcBreakevenDailyRate(b, spotBase);
-  const dr = Math.pow(1 + discount_rate / 100, 1 / 365) - 1;
-  const hDays = Math.round(horizon * 365);
-  const aDays = Math.min(Math.round(tcEffectiveDurationYears(a) * 365), hDays);
-  const bDays = Math.min(Math.round(tcEffectiveDurationYears(b) * 365), hDays);
-
-  let fixedA = 0, fixedB = 0;
-  for (let d = 0; d < aDays; d++) fixedA += rateA / Math.pow(1 + dr, d);
-  for (let d = 0; d < bDays; d++) fixedB += rateB / Math.pow(1 + dr, d);
-
-  let multA = 0, multB = 0;
-  for (let d = aDays; d < hDays; d++) multA += 1 / Math.pow(1 + dr, d);
-  for (let d = bDays; d < hDays; d++) multB += 1 / Math.pow(1 + dr, d);
-
-  const denom = multA - multB;
-  if (Math.abs(denom) < 0.01) return null;
-  return (fixedB - fixedA) / denom;
 }
 
 function clearTcVesselNameError() {
@@ -7841,15 +7829,7 @@ async function runAnalysis() {
     const bestTotal = tcPickBestResult(results, r => r.total)?.id;
     const bestBase = tcPickBestResult(results, r => r.scenBase)?.id;
 
-    const pairs = [];
-    for (let i = 0; i < results.length; i++) {
-      for (let j = i + 1; j < results.length; j++) {
-        const bep = breakeven(results[i], results[j], horizon, disc, spotBase);
-        pairs.push({ a: results[i], b: results[j], bep });
-      }
-    }
-
-    renderResults(results, pairs, { bestTotal, bestBase, horizon, disc, spotBear, spotBase, spotBull });
+    renderResults(results, { bestTotal, bestBase, horizon, disc, spotBear, spotBase, spotBull });
   });
 }
 
@@ -8554,17 +8534,17 @@ function buildTcSnapshotForDashboard() {
   const lines = [
     {
       label: 'Base case winner',
-      value: `${best.label} (${tcFmtDuration(best)} @ ${tcIsSpotArc(best) ? 'spot base' : fmtDay(best.rate)})`,
+      value: `${best.label} (${tcFmtDuration(best)} @ ${tcIsSpotArc(best) ? 'spot base' : tcFmtRate(best.rate)})`,
     },
     { label: 'Winner base PV', value: fmt(best.scenBase) },
     { label: 'Horizon', value: `${meta.horizon.toFixed(2)}Y` },
     { label: 'Discount', value: `${meta.disc}%/yr` },
     {
       label: 'Spot scenarios',
-      value: `Bear ${fmtDay(meta.spotBear)} · Base ${fmtDay(meta.spotBase)} · Bull ${fmtDay(meta.spotBull)}`,
+      value: `Bear ${tcFmtRate(meta.spotBear)} · Base ${tcFmtRate(meta.spotBase)} · Bull ${tcFmtRate(meta.spotBull)}`,
     },
   ];
-  const bestTce = tcIsSpotArc(best) ? fmtDay(best.spotBase) : fmtDay(best.rate);
+  const bestTce = tcIsSpotArc(best) ? tcFmtRate(best.spotBase) : tcFmtRate(best.rate);
   return {
     source: 'tc',
     vesselName,
@@ -8597,7 +8577,7 @@ function buildSpotSnapshotForDashboard() {
   };
 }
 
-function renderResults(results, pairs, meta) {
+function renderResults(results, meta) {
   const container = document.getElementById('results');
   container.innerHTML = '';
   dashAppendResultsSaveBar(container, buildTcSnapshotForDashboard);
@@ -8646,7 +8626,7 @@ function renderResults(results, pairs, meta) {
     : `Scenario Matrix — Gross Earnings over ${meta.horizon.toFixed(2)}Y Horizon`;
   let matHTML = `
     <div class="section-title">${matrixTitle}</div>
-    <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px">Scenarios: Bear ${fmtDay(meta.spotBear)} / Base ${fmtDay(meta.spotBase)} / Bull ${fmtDay(meta.spotBull)}</div>
+    <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px">Scenarios: Bear ${tcFmtRate(meta.spotBear)} / Base ${tcFmtRate(meta.spotBase)} / Bull ${tcFmtRate(meta.spotBull)}</div>
     <table class="matrix-table">
       <thead><tr><th>Option</th><th style="color:var(--red)">Bear</th><th style="color:var(--amber)">Base</th><th style="color:var(--accent)">Bull</th><th>Score</th></tr></thead>
       <tbody>
@@ -8668,35 +8648,6 @@ function renderResults(results, pairs, meta) {
   matHTML += `</tbody></table>`;
   matWrap.innerHTML = matHTML;
   container.appendChild(matWrap);
-
-  if (pairs.length > 0) {
-    const bepWrap = document.createElement('div');
-    bepWrap.className = 'card';
-    let bepHTML = `
-      <div class="section-title">Break-Even Spot Rates</div>
-      <div style="font-size:13px;color:var(--text-muted);margin-bottom:14px">Average spot rate at which each pair becomes equivalent in NPV. Below break-even → longer/lower TC wins. Above → shorter/higher TC wins.</div>
-      <div class="breakeven-grid">
-    `;
-
-    pairs.forEach(p => {
-      if (p.bep === null) {
-        bepHTML += `<div class="breakeven-card"><div class="pair">${p.a.label} vs ${p.b.label}</div><div class="rate" style="font-size:14px;color:var(--text-muted)">Same duration</div><div class="context">Compare by rate directly</div></div>`;
-        return;
-      }
-      const spotBase = parseNum(document.getElementById('spotBase').value);
-      let verdict = '';
-      if (p.bep < 0) verdict = `Higher-rate option dominates`;
-      else if (spotBase > p.bep) verdict = `Base spot above BE → <span style="color:${p.a.color}">${p.a.label}</span> preferred`;
-      else verdict = `Base spot below BE → <span style="color:${p.b.color}">${p.b.label}</span> preferred`;
-
-      bepHTML += `<div class="breakeven-card"><div class="pair">${p.a.label} vs ${p.b.label}</div><div class="rate">${p.bep < 0 ? '—' : fmtDay(p.bep)}</div><div class="context">${verdict}</div></div>`;
-    });
-    bepHTML += `</div>`;
-    bepWrap.innerHTML = bepHTML;
-    container.appendChild(bepWrap);
-  }
-
-
 
   const exportWrap = document.createElement('div');
   exportWrap.className = 'chain-export-wrap';
@@ -9746,9 +9697,9 @@ function tcAnalysisExportHtml(options = {}) {
     ['Vessel', showText(vessel)],
     ['Discount rate %/yr', showText(discEl?.value)],
     ['Vessel type', showText(vesselType)],
-    ['Spot Bear $/day', showText(document.getElementById('spotBear')?.value)],
-    ['Spot Base $/day', showText(document.getElementById('spotBase')?.value)],
-    ['Spot Bull $/day', showText(document.getElementById('spotBull')?.value)],
+    ['Spot Bear', showText(document.getElementById('spotBear')?.value)],
+    ['Spot Base', showText(document.getElementById('spotBase')?.value)],
+    ['Spot Bull', showText(document.getElementById('spotBull')?.value)],
   ];
   const cells = rows.map(([label, value]) => `
     <div class="field">
@@ -9764,14 +9715,14 @@ function tcAnalysisExportHtml(options = {}) {
         const ref = tcLongestTcArcOption();
         const dur = ref ? tcFmtDurationYearsAs(ref, horizon) : '—';
         return [
-          `SPOT (Bear): ${fmtDay(spotRates.spotBear)} · ${dur}`,
-          `SPOT (Base): ${fmtDay(spotRates.spotBase)} · ${dur}`,
-          `SPOT (Bull): ${fmtDay(spotRates.spotBull)} · ${dur}`,
+          `SPOT (Bear): ${tcFmtRate(spotRates.spotBear)} · ${dur}`,
+          `SPOT (Base): ${tcFmtRate(spotRates.spotBase)} · ${dur}`,
+          `SPOT (Bull): ${tcFmtRate(spotRates.spotBull)} · ${dur}`,
         ];
       }
       const dur = tcFmtDurationTcPlusSpot(o, horizon);
-      let line = `${o.label}: ${fmtDay(o.rate)} · ${dur}`;
-      if (tcArcHasBaseSpotTail(o, horizon)) line += ` · base spot ${fmtDay(spotRates.spotBase)}`;
+      let line = `${o.label}: ${tcFmtRate(o.rate)} · ${dur}`;
+      if (tcArcHasBaseSpotTail(o, horizon)) line += ` · base spot ${tcFmtRate(spotRates.spotBase)}`;
       return [line];
     }).join('<br>') || '—';
     arcsCell = `
