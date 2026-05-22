@@ -4089,6 +4089,211 @@
 
   @media (max-width: 900px) {
     .layout, .layout-wide { grid-template-columns: 1fr; }
+
+    :root {
+      --app-chrome: 168px;
+    }
+
+    body {
+      padding: 12px 10px;
+      padding-left: max(10px, env(safe-area-inset-left));
+      padding-right: max(10px, env(safe-area-inset-right));
+      padding-bottom: max(12px, env(safe-area-inset-bottom));
+      font-size: 14px;
+    }
+
+    header {
+      margin-bottom: 10px;
+      gap: 8px;
+    }
+
+    header .header-logo {
+      width: 40px;
+      height: 40px;
+    }
+
+    header h1 {
+      font-size: 18px;
+    }
+
+    header span {
+      display: none;
+    }
+
+    .tab-nav {
+      justify-content: flex-start;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      gap: 2px;
+      margin-bottom: 14px;
+      padding-bottom: 2px;
+    }
+
+    .tab-nav::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab-btn {
+      flex-shrink: 0;
+      padding: 10px 14px;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+    }
+
+    .tab-more-menu {
+      left: auto;
+      right: 0;
+      transform: none;
+    }
+
+    .tab-panel iframe {
+      height: calc(100dvh - var(--app-chrome));
+      min-height: 280px;
+    }
+
+    #tab-map .map-page {
+      height: calc(100dvh - var(--app-chrome));
+      min-height: 280px;
+      border-radius: 4px;
+    }
+
+    .map-toolbar {
+      top: 8px;
+      right: 8px;
+    }
+
+    .map-vessels-upload-btn {
+      width: 44px;
+      height: 44px;
+    }
+
+    .map-vessels-overlay {
+      padding: 12px;
+      align-items: flex-end;
+    }
+
+    .map-vessels-modal {
+      max-width: none;
+      border-radius: 8px 8px 0 0;
+      max-height: min(88dvh, 640px);
+    }
+
+    .map-vessel-leaflet-popup .leaflet-popup-content {
+      margin: 10px 12px;
+      font-size: 11px;
+    }
+
+    .map-vessel-popup dl {
+      grid-template-columns: 1fr;
+      gap: 2px 0;
+    }
+
+    .map-vessel-popup dt {
+      margin-top: 6px;
+    }
+
+    #tab-dashboard .db-page {
+      max-width: none;
+    }
+
+    .db-toolbar {
+      margin-bottom: 12px;
+    }
+
+    .db-layout-btn {
+      padding: 10px 18px;
+      min-height: 44px;
+    }
+
+    .dashboard-widgets[data-layout="bento"] {
+      grid-template-columns: 1fr;
+      grid-template-rows: none;
+      gap: 12px;
+    }
+
+    .dashboard-widgets[data-layout="bento"] .db-widget--live,
+    .dashboard-widgets[data-layout="bento"] .db-widget:nth-child(2),
+    .dashboard-widgets[data-layout="bento"] .db-widget:nth-child(3),
+    .dashboard-widgets[data-layout="bento"] .db-widget:nth-child(4),
+    .dashboard-widgets[data-layout="bento"] .db-widget:nth-child(5) {
+      grid-column: 1;
+      grid-row: auto;
+    }
+
+    .db-widget {
+      padding: 12px 14px;
+      min-height: 0;
+    }
+
+    .dashboard-widgets[data-layout="list"] .db-widget--saved-list {
+      min-height: 0;
+      flex: 1;
+    }
+
+    .dashboard-widgets[data-layout="list"] .db-widget--saved-list .db-widget-body {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .dash-snap-table-wrap,
+    .live-pos-table-wrap {
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+      max-height: calc(100dvh - var(--app-chrome) - 88px);
+    }
+
+    .dash-snap-table-wrap {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+    }
+
+    .dash-snap-table {
+      width: max-content;
+      min-width: 100%;
+    }
+
+    .dash-snap-table th,
+    .dash-snap-table td {
+      white-space: nowrap;
+    }
+
+    .dash-snap-vessel-cell {
+      max-width: none;
+    }
+
+    .live-pos-table-wrap {
+      overflow: auto;
+      max-height: calc(100dvh - var(--app-chrome) - 200px);
+      margin-top: 2px;
+    }
+
+    .live-pos-table--kpler {
+      width: max-content;
+      min-width: 100%;
+      table-layout: auto;
+    }
+
+    .live-pos-table--kpler th,
+    .live-pos-table--kpler td {
+      width: auto;
+      min-width: max-content;
+    }
+
+    .dash-snap-overlay {
+      padding: 10px;
+      align-items: flex-end;
+    }
+
+    .dash-snap-detail {
+      max-height: min(92dvh, 900px);
+      border-radius: 8px 8px 0 0;
+    }
   }
 </style>
 </head>
@@ -4944,6 +5149,17 @@ function resizeArctiumMap() {
     arctiumMap.invalidateSize();
   });
 }
+
+let arctiumMapResizeTimer = null;
+window.addEventListener('resize', () => {
+  if (!arctiumMap || !document.getElementById('tab-map')?.classList.contains('active')) return;
+  clearTimeout(arctiumMapResizeTimer);
+  arctiumMapResizeTimer = setTimeout(resizeArctiumMap, 120);
+});
+window.addEventListener('orientationchange', () => {
+  if (!document.getElementById('tab-map')?.classList.contains('active')) return;
+  setTimeout(resizeArctiumMap, 280);
+});
 
 function switchTab(id) {
   if (!VALID_TABS.includes(id)) return;
