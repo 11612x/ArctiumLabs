@@ -471,7 +471,7 @@ body {
       <div class="field"><label for="lsmgo-rate">LSMGO mt/day (sea, ECA)</label><input type="number" id="lsmgo-rate" value="25" step="0.5"></div>
       <div class="field"><label for="vlsfo-price">VLSFO $/mt</label><input type="number" id="vlsfo-price" value="500" step="10"></div>
       <div class="field"><label for="lsmgo-price">LSMGO $/mt</label><input type="number" id="lsmgo-price" value="650" step="10"></div>
-      <div class="field"><label for="port-days">Port days</label><input type="number" id="port-days" value="1.5" step="0.5"></div>
+      <div class="field"><label for="port-days">Port days</label><input type="number" id="port-days" value="0" step="0.5" min="0"></div>
     </div>
     <div class="spot-actions-wrap">
       <div class="spot-actions">
@@ -792,7 +792,7 @@ function resetRouteCalculator() {
   document.getElementById('lsmgo-rate').value = '25';
   document.getElementById('vlsfo-price').value = '500';
   document.getElementById('lsmgo-price').value = '650';
-  document.getElementById('port-days').value = '1.5';
+  document.getElementById('port-days').value = '0';
 
   clearError();
   document.getElementById('empty-state').style.display = '';
@@ -1044,7 +1044,8 @@ async function calculateRoute() {
     const lsmgoRate = parseFloat(document.getElementById('lsmgo-rate').value) || 25;
     const vlsfoPrice = parseFloat(document.getElementById('vlsfo-price').value) || 500;
     const lsmgoPrice = parseFloat(document.getElementById('lsmgo-price').value) || 650;
-    const portDaysTotal = parseFloat(document.getElementById('port-days').value) || 1.5;
+    const portDaysRaw = parseFloat(document.getElementById('port-days').value);
+    const portDaysTotal = Number.isFinite(portDaysRaw) ? portDaysRaw : 0;
 
     const suez = suezToggle === 'use';
     const panama = panamaToggle === 'use';

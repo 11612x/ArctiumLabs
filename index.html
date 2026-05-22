@@ -6129,6 +6129,11 @@ function livePosVcUpdateReplyChrome() {
     if (txt) txt.textContent = snip ? `Replying to ${who}: ${snip}` : `Replying to ${who}`;
     lbl.textContent = 'Reply in thread';
     if (cap) cap.textContent = 'Your send follows the selected message in this thread. Cancel to start a new thread instead.';
+  } else if (livePosVcViewThreadRootId) {
+    if (ctx) ctx.hidden = true;
+    if (txt) txt.textContent = '';
+    lbl.textContent = 'Reply in thread';
+    if (cap) cap.textContent = 'Your message will be added to this thread.';
   } else {
     if (ctx) ctx.hidden = true;
     if (txt) txt.textContent = '';
@@ -6141,7 +6146,23 @@ function livePosVcUpdateReplyChrome() {
 function livePosVcSyncRootComposeVisibility() {
   const blk = document.getElementById('livePosVcRootComposeFields');
   if (!blk) return;
-  blk.hidden = !!livePosVcReplyParentId;
+  blk.hidden = !!livePosVcReplyParentId || !!livePosVcViewThreadRootId;
+}
+
+/** Where the next send goes: explicit reply, focused thread (Overview), or new thread. */
+function livePosVcResolvedSendTarget() {
+  if (livePosVcReplyParentId) {
+    return {
+      isNewThread: false,
+      parentId: livePosVcReplyParentId,
+      threadRootId: livePosVcReplyThreadRootId || livePosVcReplyParentId,
+    };
+  }
+  if (livePosVcViewThreadRootId) {
+    const tr = String(livePosVcViewThreadRootId);
+    return { isNewThread: false, parentId: tr, threadRootId: tr };
+  }
+  return { isNewThread: true, parentId: null, threadRootId: null };
 }
 
 function livePosVcCloseAllDeleteConfirms() {
@@ -6669,24 +6690,20 @@ async function livePosVesselCommentsSend() {
   const msg = ta.value;
   if (!String(msg).trim()) return;
   const vn = vesselCommentNormalizeName(livePosVesselCommentsOpenName);
-  const isReply = !!livePosVcReplyParentId;
+  const target = livePosVcResolvedSendTarget();
   let titleForPost = null;
   let issueForPost = null;
-  if (!isReply) {
+  if (target.isNewThread) {
     const ti = (document.getElementById('livePosVcThreadTitle')?.value || '').trim();
-    if (!ti) {
-      livePosVcShowTitleErr();
-      document.getElementById('livePosVcThreadTitle')?.focus();
-      return;
-    }
+    const msgSnip = String(msg).trim().replace(/\s+/g, ' ');
+    titleForPost = ti || msgSnip.slice(0, 80) || 'Thread';
     livePosVcHideTitleErr();
-    titleForPost = ti;
     const ilRaw = String(document.getElementById('livePosVcIssueLevel')?.value || '').trim();
     issueForPost = vesselCommentIssueLevelNorm(ilRaw) || null;
   }
   const res = await postVesselComment(vn, msg, {
-    parentId: livePosVcReplyParentId,
-    threadRootId: livePosVcReplyThreadRootId,
+    parentId: target.parentId,
+    threadRootId: target.threadRootId,
     title: titleForPost,
     issueLevel: issueForPost,
   });
@@ -7100,6 +7117,15 @@ function updateTcAddSpotButton() {
   btn.style.cursor = disabled ? 'not-allowed' : '';
 }
 
+function updateTcSpotDurationLabels() {
+  const refTc = tcLongestTcArcOption();
+  const horizonY = tcMaxTcArcDurationYears();
+  const spotDurLabel = refTc && horizonY > 0 ? tcFmtDurationYearsAs(refTc, horizonY) : '—';
+  document.querySelectorAll('.tc-spot-value--duration').forEach(el => {
+    el.textContent = spotDurLabel;
+  });
+}
+
 function removeTC(id) {
   tcOptions = tcOptions.filter(t => t.id !== id);
   tcOptions.forEach((t, i) => t.color = COLORS[i % COLORS.length]);
@@ -7169,7 +7195,7 @@ function updateTC(id, field, val) {
     if (val === '' || val == null) opt[field] = null;
     opt.duration = tcDurationYearsTotal(opt);
     opt.startDelay = 0;
-    renderTCList();
+    updateTcSpotDurationLabels();
   }
   debouncePersist('tc', () => { void saveTCOptions(); });
 }
