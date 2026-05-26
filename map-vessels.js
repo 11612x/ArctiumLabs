@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  const MAP_VESSELS_STALE_MS = 48 * 60 * 60 * 1000;
+  const MAP_VESSELS_STALE_MS = 96 * 60 * 60 * 1000;
   const MAP_VESSELS_STALE_TICK_MS = 5 * 60 * 1000;
   const MAP_VESSEL_DOT_COLOR = '#e8a040';
   const MAP_VESSEL_DOT_STALE = '#b87878';
