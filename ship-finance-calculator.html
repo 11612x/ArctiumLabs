@@ -1001,8 +1001,10 @@
     <div class="section-title">Deal Summary <span id="dealSummaryLifeTerm" class="deal-summary-span"></span></div>
     <div class="kpi-row deal-summary-row" id="dealSummaryLifeRow"></div>
 
-    <div class="section-title">Deal Summary <span id="dealSummaryCumulativeTerm" class="deal-summary-span"></span></div>
-    <div class="kpi-row deal-summary-row" id="dealSummaryCumulativeRow"></div>
+    <div id="dealSummaryCumulativeSection" class="deal-summary-cumulative-section" hidden>
+      <div class="section-title">Deal Summary <span id="dealSummaryCumulativeTerm" class="deal-summary-span"></span></div>
+      <div class="kpi-row deal-summary-row" id="dealSummaryCumulativeRow"></div>
+    </div>
   </main>
 </div>
 
@@ -2100,6 +2102,7 @@
       dealSummary,
       dealSummaryLife,
       dealSummaryCumulative,
+      termCount: termBlocks.length,
     };
   }
 
@@ -2214,7 +2217,12 @@
   function renderDealSummary(d) {
     renderDealSummaryGrid(d.dealSummary, 'dealSummaryRow', 'dealSummaryTerm');
     renderDealSummaryGrid(d.dealSummaryLife, 'dealSummaryLifeRow', 'dealSummaryLifeTerm');
-    renderDealSummaryGrid(d.dealSummaryCumulative, 'dealSummaryCumulativeRow', 'dealSummaryCumulativeTerm');
+    const showCumulative = (d.termCount ?? 0) >= 2;
+    const cumSection = byId('dealSummaryCumulativeSection');
+    if (cumSection) cumSection.hidden = !showCumulative;
+    if (showCumulative) {
+      renderDealSummaryGrid(d.dealSummaryCumulative, 'dealSummaryCumulativeRow', 'dealSummaryCumulativeTerm');
+    }
   }
 
   function renderKpis(r) {
@@ -2489,8 +2497,9 @@
       blocks.push(b);
     }
 
+    const dealCumSection = src.querySelector('#dealSummaryCumulativeSection');
     const dealCumRow = src.querySelector('#dealSummaryCumulativeRow');
-    if (dealCumRow && sectionTitles[4]) {
+    if (dealCumSection && !dealCumSection.hidden && dealCumRow && sectionTitles[4]) {
       const b = createExportBlock();
       b.appendChild(sectionTitles[4].cloneNode(true));
       b.appendChild(dealCumRow.cloneNode(true));
