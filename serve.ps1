@@ -20,4 +20,4 @@ Write-Host "Open: $url" -ForegroundColor Green
 Write-Host "Press Ctrl+C to stop." -ForegroundColor DarkGray
 
 Start-Process $url
-& $python.Source -m http.server $Port
+& $python.Source "$Root\serve.py"

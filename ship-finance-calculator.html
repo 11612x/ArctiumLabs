@@ -1,0 +1,3032 @@
+<!DOCTYPE html>
+<html lang="en" data-ui-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<title>Ship Finance Calculator — Arctium Labs</title>
+<link rel="icon" href="Favicon.svg" type="image/svg+xml">
+<script>
+(function () {
+  var guestKey = 'arctium_ui_theme_v1_guest';
+  var theme = localStorage.getItem(guestKey);
+  if (theme !== 'light' && theme !== 'dark') {
+    for (var i = 0; i < localStorage.length; i++) {
+      var key = localStorage.key(i);
+      if (key && key.indexOf('arctium_ui_theme_v1_') === 0) {
+        var v = localStorage.getItem(key);
+        if (v === 'light' || v === 'dark') { theme = v; break; }
+      }
+    }
+  }
+  document.documentElement.setAttribute('data-ui-theme', theme === 'light' ? 'light' : 'dark');
+})();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0d0f0e;
+    --surface: #141714;
+    --surface2: #1a1d1a;
+    --border: #252825;
+    --border-light: #2e322e;
+    --text: #e8ede8;
+    --text-dim: #b8beb8;
+    --text-muted: #949a94;
+    --accent: #a8b8a8;
+    --accent-dim: #5a6a5a;
+    --accent-glow: rgba(168,184,168,0.07);
+    --red: #b87878;
+    --amber: #b89858;
+    --blue: #7898b8;
+    --teal: #78b8a8;
+    --input-bg: #000000;
+    --shadow: rgba(0, 0, 0, 0.35);
+    --run-btn-text: #0d0f0e;
+  }
+
+  html[data-ui-theme="light"] {
+    --bg: #e8ede8;
+    --surface: #dde3dd;
+    --surface2: #d3d9d3;
+    --border: #b8beb8;
+    --border-light: #a8aea8;
+    --text: #0d0f0e;
+    --text-dim: #2a2e2a;
+    --text-muted: #4a504a;
+    --accent: #6a8a6a;
+    --accent-dim: #4a6a4a;
+    --accent-glow: rgba(80,100,80,0.10);
+    --input-bg: #ffffff;
+    --shadow: rgba(0, 0, 0, 0.12);
+    --run-btn-text: #0d0f0e;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="hidden"]):not([type="color"]),
+  select,
+  textarea {
+    background-color: var(--input-bg);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 15px;
+    height: 100%;
+    min-height: 100vh;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: 1fr;
+  }
+
+  .vessel-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+
+  .vessel-actions .run-btn {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  .kpi__sub--live { color: var(--teal); }
+  .kpi__sub--manual { color: var(--amber); }
+
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(380px, 440px) 1fr;
+    align-items: stretch;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  @media (max-width: 960px) {
+    .layout {
+      grid-template-columns: 1fr;
+      overflow: visible;
+    }
+  }
+
+  .panel-left {
+    border-right: 1px solid var(--border);
+    padding: 16px;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .financing-section {
+    margin-bottom: 14px;
+  }
+
+  .financing-section__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+
+  .financing-section__title {
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  #termsContainer {
+    display: block;
+    min-height: 100px;
+  }
+
+  #termsContainer .term-block {
+    display: block;
+    background: var(--bg);
+    border: none;
+    box-shadow: none;
+  }
+
+  #termsContainer:empty::after {
+    content: 'No terms loaded — refresh the page (Cmd+Shift+R).';
+    display: block;
+    padding: 20px 16px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 12px;
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    background: var(--surface2);
+  }
+
+  .panel-right {
+    padding: 16px 20px 24px;
+    min-width: 0;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  @media (max-width: 960px) {
+    .panel-left,
+    .panel-right {
+      overflow-y: visible;
+      min-height: auto;
+    }
+    body {
+      height: auto;
+      overflow: visible;
+    }
+    html {
+      height: auto;
+      overflow: visible;
+    }
+  }
+
+  .table-scroll-wrap {
+    overflow-x: auto;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 18px;
+    margin-bottom: 12px;
+  }
+
+  .card-title {
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+
+  .field:last-child { margin-bottom: 0; }
+
+  .field label {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .field input, .field select {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    padding: 6px 8px;
+    outline: none;
+    width: 100%;
+    transition: border-color 0.15s;
+  }
+
+  .field input:focus, .field select:focus { border-color: var(--accent-dim); }
+  .field select option { background: var(--surface); }
+
+  .field input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
+  .field input[type="number"]::-webkit-outer-spin-button,
+  .field input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .params-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 14px;
+  }
+
+  .params-grid .field { margin-bottom: 0; }
+
+  .run-btn {
+    background: var(--accent);
+    border: none;
+    border-radius: 4px;
+    color: var(--run-btn-text);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    padding: 10px 16px;
+    text-transform: uppercase;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+  }
+
+  .run-btn:hover { opacity: 0.88; }
+  .run-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .run-btn--ghost {
+    background: transparent;
+    border: 1px solid var(--border-light);
+    color: var(--text-dim);
+  }
+
+  .run-btn--ghost:hover {
+    opacity: 1;
+    border-color: var(--accent-dim);
+    color: var(--text);
+  }
+
+  .run-btn--danger {
+    background: transparent;
+    border: 1px solid var(--red);
+    color: var(--red);
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  .tranche-remove {
+    border: none;
+    color: var(--text-muted);
+    padding: 4px 8px;
+    font-size: 16px;
+    line-height: 1;
+  }
+
+  .tranche-remove:hover {
+    color: var(--red);
+    opacity: 1;
+  }
+
+  .run-btn--sm {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .term-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .term-actions .run-btn--sm {
+    width: auto;
+    min-width: 7.5rem;
+  }
+
+  .term-add-wrap { position: relative; }
+
+  .term-add-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    min-width: 200px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 0;
+    z-index: 200;
+    box-shadow: 0 8px 24px var(--shadow);
+  }
+
+  .term-add-wrap.open .term-add-menu { display: block; }
+
+  .term-add-item {
+    display: block;
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    padding: 10px 16px;
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  .term-add-item:hover {
+    color: var(--accent);
+    background: var(--accent-glow);
+  }
+
+  .term-block {
+    border: none;
+    margin-bottom: 14px;
+    background: var(--surface);
+    overflow: visible;
+  }
+
+  .term-block:last-child { margin-bottom: 0; }
+
+  .term-block__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 18px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .term-block.collapsed .term-block__head {
+    border-bottom: none;
+  }
+
+  .term-block__head-main {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .term-block__chevron {
+    flex-shrink: 0;
+    width: 1em;
+    font-size: 12px;
+    line-height: 1;
+    color: var(--accent);
+    text-align: center;
+    transition: transform 0.15s ease;
+  }
+
+  .term-block.collapsed .term-block__chevron {
+    transform: rotate(-90deg);
+  }
+
+  .term-block__title {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .term-block__body {
+    display: block;
+    visibility: visible;
+    padding: 16px 18px 18px;
+  }
+
+  .term-block.collapsed .term-block__body {
+    display: none;
+  }
+
+  .term-block__body > .field {
+    margin-bottom: 14px;
+  }
+
+  .term-block__body > .params-grid {
+    margin-bottom: 16px;
+  }
+
+  .term-block .tranches-root {
+    display: block;
+    margin-top: 4px;
+  }
+
+  .term-block .tranches-root .tranche-card:last-child {
+    margin-bottom: 0;
+  }
+
+  .term-block .stack-hint {
+    margin-top: 14px;
+  }
+
+  .term-block__remove {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    padding: 2px 6px;
+    margin: -2px -6px -2px 0;
+  }
+
+  .term-block__remove:hover { color: var(--red); }
+
+  .term-block .params-grid,
+  .term-block .term-slb-out {
+    visibility: visible;
+  }
+
+  .term-block .params-grid {
+    display: grid;
+  }
+
+  .term-slb-out {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .term-slb-out .kpi {
+    padding: 10px 12px;
+    margin: 0;
+  }
+
+  .term-slb-out .kpi__value { font-size: 14px; }
+
+  .summary-table tr.pnl-term-header td {
+    background: var(--surface2);
+    color: var(--accent);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .summary-table tr.pnl-term-header:hover td { background: var(--surface2); }
+
+  .tranche-card {
+    display: block;
+    visibility: visible;
+    background: transparent;
+    border: none;
+    padding: 14px 0;
+    margin-bottom: 12px;
+  }
+
+  .tranche-card .params-grid {
+    gap: 10px 12px;
+    margin-top: 4px;
+  }
+
+  .tranche-card .field {
+    margin-bottom: 0;
+  }
+
+  .tranche-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .tranche-head input {
+    flex: 1;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    padding: 6px 8px;
+  }
+
+  .type-toggle {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .type-toggle button {
+    background: var(--surface);
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    padding: 6px 10px;
+    text-transform: uppercase;
+  }
+
+  .type-toggle button.active {
+    background: var(--accent);
+    color: var(--run-btn-text);
+    font-weight: 600;
+  }
+
+  .type-toggle button + button { border-left: 1px solid var(--border); }
+
+  .debt-fields { display: none; }
+  .tranche-card[data-type="debt"] .debt-fields { display: block; }
+  .tranche-card[data-type="equity"] .equity-fields { display: block; }
+  .tranche-card[data-type="debt"] .equity-only { display: none; }
+
+  .tranche-amount-display {
+    color: var(--accent);
+    font-size: 14px;
+    letter-spacing: 0.02em;
+    margin-top: 4px;
+  }
+
+  .stack-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 0;
+    letter-spacing: 0.04em;
+  }
+
+  .stack-hint.warn { color: var(--amber); }
+
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .deal-summary-row {
+    grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+  }
+
+  .kpi--highlight {
+    border-color: var(--accent-dim);
+    background: var(--accent-glow);
+  }
+
+  .deal-summary-span {
+    font-weight: 400;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+  }
+
+  .kpi {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 12px 14px;
+  }
+
+  .kpi__label {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+
+  .kpi__value {
+    font-size: 18px;
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .kpi__value--warn { color: var(--red); }
+  .kpi__value--ok { color: var(--accent); }
+  .kpi__sub { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+  .kpi__sub--covers { color: var(--accent); }
+  .kpi__sub--below { color: var(--red); }
+
+  .summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+
+  .summary-table th {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-align: right;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 400;
+  }
+
+  .summary-table th:first-child { text-align: left; }
+
+  .summary-table td {
+    padding: 9px 10px;
+    text-align: right;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-dim);
+    vertical-align: middle;
+  }
+
+  .summary-table td:first-child { text-align: left; color: var(--text); }
+
+  .summary-table tr:last-child td { border-bottom: none; }
+  .summary-table tr:hover td { background: var(--surface2); }
+
+  .summary-table td.col-dscr.dscr-bad { color: var(--red); font-weight: 600; }
+
+  #pnlTable.summary-table {
+    font-size: 13px;
+    min-width: 100%;
+  }
+
+  #pnlTable.summary-table th,
+  #pnlTable.summary-table td {
+    white-space: nowrap;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  #pnlTable.summary-table th:first-child,
+  #pnlTable.summary-table td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--surface);
+    box-shadow: 1px 0 0 var(--border);
+  }
+
+  #pnlTable.summary-table thead th:first-child {
+    background: var(--surface);
+  }
+
+  #pnlTable.summary-table tr:hover td:first-child {
+    background: var(--surface2);
+  }
+
+  #pnlTable.summary-table .col-dscr {
+    text-align: right;
+    min-width: 3.5rem;
+  }
+
+  .val-pos { color: var(--accent); }
+  .val-neg { color: var(--red); }
+
+  .section-title {
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin: 16px 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-title:first-child { margin-top: 0; }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .residual-mode-field { margin-top: 4px; }
+
+  .residual-mode-toggle {
+    display: flex;
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    background: var(--surface2);
+  }
+
+  .residual-mode-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    padding: 8px 10px;
+    text-transform: uppercase;
+    transition: color 0.15s, background 0.15s;
+  }
+
+  .residual-mode-btn:hover {
+    color: var(--text-dim);
+    background: var(--surface);
+  }
+
+  .residual-mode-btn.active {
+    background: var(--accent);
+    color: var(--run-btn-text);
+    font-weight: 600;
+  }
+
+  .residual-mode-btn + .residual-mode-btn {
+    border-left: 1px solid var(--border);
+  }
+
+  .residual-mode-hint {
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    margin-top: 6px;
+    line-height: 1.4;
+  }
+
+  #exportRoot { min-width: 0; }
+
+  .sf-export-surface {
+    position: fixed;
+    left: -9999px;
+    top: 0;
+    width: 800px;
+    background: #ffffff !important;
+    color: #0d0f0e !important;
+    padding: 0;
+    font-family: 'Consolas', 'Courier New', monospace;
+  }
+
+  .sf-export-block {
+    width: 800px;
+    box-sizing: border-box;
+    background: #ffffff;
+    padding: 0 24px 16px;
+  }
+
+  .sf-export-block.sf-export-title-block {
+    padding-top: 24px;
+    padding-bottom: 8px;
+  }
+
+  .sf-export-surface .sf-export-title {
+    color: #0d0f0e;
+  }
+
+  .sf-export-surface .kpi {
+    background: #eef2ee !important;
+    border-color: #c8cec8 !important;
+  }
+
+  .sf-export-surface .kpi__label { color: #4a504a !important; }
+  .sf-export-surface .kpi__value { color: #3d5c3d !important; }
+  .sf-export-surface .kpi__value--warn { color: #8b4040 !important; }
+  .sf-export-surface .kpi__value--ok { color: #3d5c3d !important; }
+  .sf-export-surface .kpi__sub { color: #4a504a !important; }
+  .sf-export-surface .kpi__sub--covers { color: #3d5c3d !important; }
+  .sf-export-surface .kpi__sub--below { color: #8b4040 !important; }
+  .sf-export-surface .kpi__sub--live { color: #2a6a5a !important; }
+  .sf-export-surface .kpi__sub--manual { color: #7a6030 !important; }
+
+  .sf-export-surface .card {
+    background: #f6f8f6 !important;
+    border-color: #c8cec8 !important;
+  }
+
+  .sf-export-surface .section-title {
+    color: #4a504a !important;
+  }
+
+  .sf-export-surface .section-title::after {
+    background: #c8cec8 !important;
+  }
+
+  .sf-export-surface .summary-table th {
+    color: #4a504a !important;
+    border-color: #c8cec8 !important;
+  }
+
+  .sf-export-surface .summary-table td {
+    color: #2a2e2a !important;
+    border-color: #d8ded8 !important;
+  }
+
+  .sf-export-surface .summary-table td:first-child { color: #0d0f0e !important; }
+  .sf-export-surface .summary-table tr:hover td { background: transparent !important; }
+  .sf-export-surface .summary-table td.col-dscr.dscr-bad { color: #8b4040 !important; }
+  .sf-export-surface .val-pos { color: #3d5c3d !important; }
+  .sf-export-surface .val-neg { color: #8b4040 !important; }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <aside class="panel-left">
+    <section class="financing-section" aria-label="Financing terms">
+      <div class="financing-section__header">
+        <div class="financing-section__title">Financing terms</div>
+        <div class="term-actions">
+          <button type="button" class="run-btn run-btn--ghost run-btn--sm" id="addTrancheBtn">+ Tranche</button>
+          <div class="term-add-wrap" id="termAddWrap">
+            <button type="button" class="run-btn run-btn--ghost run-btn--sm" id="addTermBtn">+ Term</button>
+            <div class="term-add-menu" role="menu" id="termAddMenu">
+              <button type="button" class="term-add-item" data-term-kind="refinancing">Refinancing</button>
+              <button type="button" class="term-add-item" data-term-kind="slb">Sale &amp; Leaseback</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="termsContainer">
+        <div class="term-block active" data-term-id="term-1" data-kind="loan" data-term-number="1">
+          <div class="term-block__head">
+            <div class="term-block__head-main">
+              <span class="term-block__chevron" aria-hidden="true">▾</span>
+              <span class="term-block__title">TERM 1 · LOAN</span>
+            </div>
+          </div>
+          <div class="term-block__body term-body--loan">
+            <div class="field">
+              <label>Total capital needed ($)</label>
+              <input type="text" inputmode="decimal" class="num-fmt term-total-capital" data-decimals="0" value="50,000,000">
+            </div>
+            <div class="tranches-root"></div>
+            <div class="stack-hint"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="card">
+      <div class="card-title">Vessel Economics</div>
+      <div class="params-grid">
+        <div class="field">
+          <label>Vessel purchase ($)</label>
+          <input type="text" inputmode="decimal" class="num-fmt" id="vesselPrice" data-decimals="0" value="50,000,000">
+        </div>
+        <div class="field">
+          <label>Daily TCE ($/day)</label>
+          <input type="text" inputmode="decimal" class="num-fmt" id="dailyTce" data-decimals="0" value="18,500">
+        </div>
+        <div class="field">
+          <label>Daily OPEX ($/day)</label>
+          <input type="text" inputmode="decimal" class="num-fmt" id="dailyOpex" data-decimals="0" value="6,200">
+        </div>
+        <div class="field">
+          <label>Vessel age (years)</label>
+          <input type="text" inputmode="decimal" class="num-fmt" id="vesselAge" data-decimals="0" value="0">
+        </div>
+        <div class="field">
+          <label>Useful life (years)</label>
+          <input type="text" inputmode="decimal" class="num-fmt" id="usefulLife" data-decimals="0" value="20">
+        </div>
+        <div class="field">
+          <label>Depreciation (% p.a.)</label>
+          <input type="text" inputmode="decimal" class="num-fmt" id="depreciationPct" data-decimals="2" value="0">
+        </div>
+        <div class="field">
+          <label>SOFR (%)</label>
+          <input type="text" inputmode="decimal" class="num-fmt" id="sofrInput" data-decimals="2" value="5.32">
+        </div>
+      </div>
+      <div class="field residual-mode-field">
+        <label>Residual at maturity</label>
+        <div class="residual-mode-toggle" role="group" aria-label="Residual at maturity">
+          <button type="button" class="residual-mode-btn active" data-mode="auto">Auto-depreciate</button>
+          <button type="button" class="residual-mode-btn" data-mode="manual">Manual</button>
+        </div>
+        <p class="residual-mode-hint" id="residualModeHint">From depreciation % and loan term</p>
+      </div>
+      <div class="field" id="residualField" hidden>
+        <label>Residual value at maturity ($)</label>
+        <input type="text" inputmode="decimal" class="num-fmt" id="residualValue" data-decimals="0" value="0">
+      </div>
+      <div class="vessel-actions">
+        <button type="button" class="run-btn run-btn--danger" id="clearAllBtn" title="Reset calculator and clear saved data">Clear</button>
+        <button type="button" class="run-btn run-btn--ghost" id="exportPdfBtn">Export</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="panel-right" id="exportRoot">
+    <div class="kpi-row" id="kpiRow"></div>
+
+    <div class="section-title">Capital Stack</div>
+    <div class="card" style="padding:12px 14px;margin-bottom:12px;">
+      <table class="summary-table" id="stackTable">
+        <thead>
+          <tr>
+            <th>Tranche</th>
+            <th>Amount</th>
+            <th>Rate</th>
+            <th>Periodic Pmt</th>
+            <th>Total Interest</th>
+            <th>Total Cost</th>
+          </tr>
+        </thead>
+        <tbody id="stackBody"></tbody>
+      </table>
+    </div>
+
+    <div class="section-title">Annual P&amp;L &amp; DSCR</div>
+    <div class="card" style="padding:12px 14px;margin-bottom:12px;">
+      <div class="table-scroll-wrap">
+        <table class="summary-table" id="pnlTable">
+          <thead>
+            <tr>
+              <th>Year</th>
+              <th>Revenue</th>
+              <th>OPEX</th>
+              <th>Deprec.</th>
+              <th>Debt svc.</th>
+              <th>NOI</th>
+              <th>Net profit</th>
+              <th class="col-dscr">DSCR</th>
+            </tr>
+          </thead>
+          <tbody id="pnlBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section-title">Deal Summary <span id="dealSummaryTerm" class="deal-summary-span"></span></div>
+    <div class="kpi-row deal-summary-row" id="dealSummaryRow"></div>
+
+    <div class="section-title">Deal Summary <span id="dealSummaryLifeTerm" class="deal-summary-span"></span></div>
+    <div class="kpi-row deal-summary-row" id="dealSummaryLifeRow"></div>
+
+    <div class="section-title">Deal Summary <span id="dealSummaryCumulativeTerm" class="deal-summary-span"></span></div>
+    <div class="kpi-row deal-summary-row" id="dealSummaryCumulativeRow"></div>
+  </main>
+</div>
+
+<script>
+(function () {
+  const FREQ_MAP = { monthly: 12, quarterly: 4, semiannual: 2, annual: 1 };
+  const DAYS_YEAR = 365;
+  let trancheId = 0;
+  let termSeq = 1;
+  let activeTermId = null;
+  let sofrSource = 'manual';
+  let refiAutogenLock = false;
+  let programmaticSofrUpdate = false;
+  let sofrFetchInProgress = false;
+
+  const TERM_KIND_LABEL = { loan: 'LOAN', refinancing: 'REFINANCING', slb: 'SALE & LEASEBACK' };
+
+  const SLB_DEFAULTS = {
+    salePrice: 27000000,
+    dailyLease: 6500,
+    leaseYears: 9,
+    buybackPrice: 21000000,
+  };
+
+  const VESSEL_DEFAULTS = {
+    vesselPrice: '50,000,000',
+    dailyTce: '18,500',
+    dailyOpex: '6,200',
+    vesselAge: '0',
+    usefulLife: '20',
+    depreciationPct: '0',
+    sofrInput: '5.32',
+    residualValue: '0',
+  };
+
+  const LOAN_TRANCHE_DEFAULTS = [
+    { name: 'Bank Loan', type: 'debt', pct: 60, spread: 1.5, freq: 'quarterly', amortYears: 20, termYears: 7 },
+    { name: 'Equity', type: 'equity', pct: 40, equityReturn: 6 },
+  ];
+
+  const SHIP_FINANCE_STORAGE_KEY = 'arctium-ship-finance-v1';
+  let stateRestoreActive = false;
+  let saveStateTimer = null;
+
+  const byId = (id) => document.getElementById(id);
+
+  function receiveUiState(data) {
+    if (!data || data.type !== 'arctium-ui') return;
+    document.documentElement.setAttribute('data-ui-theme', data.theme === 'light' ? 'light' : 'dark');
+  }
+  window.addEventListener('message', (e) => receiveUiState(e.data));
+
+  function parseNum(v) {
+    const s = String(v ?? '').replace(/,/g, '').trim();
+    if (!s) return null;
+    const n = parseFloat(s);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function num(v, fallback = 0) {
+    const n = parseNum(v);
+    return n === null ? fallback : n;
+  }
+
+  function fmtNumInput(value, decimals = 0) {
+    const n = typeof value === 'number' ? value : parseNum(value);
+    if (n === null) return '';
+    return n.toLocaleString('en-US', {
+      minimumFractionDigits: decimals > 0 ? 0 : 0,
+      maximumFractionDigits: decimals,
+    });
+  }
+
+  function sanitizeNumInputEl(el) {
+    if (!el) return;
+    const sanitized = String(el.value).replace(/[^\d.,]/g, '');
+    if (el.value === sanitized) return;
+    const pos = el.selectionStart;
+    el.value = sanitized;
+    if (typeof pos === 'number') {
+      const next = Math.min(pos, sanitized.length);
+      el.setSelectionRange(next, next);
+    }
+  }
+
+  function formatNumInputEl(el) {
+    if (!el) return;
+    const decimals = Number(el.dataset.decimals || 0);
+    const n = parseNum(el.value);
+    if (n === null) return;
+    el.value = fmtNumInput(n, decimals);
+  }
+
+  function formatAllNumInputs(root = document) {
+    root.querySelectorAll('input.num-fmt').forEach(formatNumInputEl);
+  }
+
+  function escapeAttr(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  }
+
+  function numInputValue(value, decimals, extraClass = '') {
+    const display = value == null || value === '' ? '' : fmtNumInput(value, decimals);
+    const cls = extraClass ? `num-fmt ${extraClass}` : 'num-fmt';
+    return `type="text" inputmode="decimal" class="${cls}" data-decimals="${decimals}" value="${escapeAttr(display)}"`;
+  }
+
+  function fmtMoney(v, decimals = 0) {
+    if (!Number.isFinite(v)) return '—';
+    const sign = v < 0 ? '-' : '';
+    return sign + '$' + Math.abs(v).toLocaleString('en-US', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    });
+  }
+
+  /** Expense / cash-out columns: show positive model values as negative dollars. */
+  function fmtMoneyOutflow(v, decimals = 0) {
+    if (!Number.isFinite(v)) return '—';
+    if (v === 0) return fmtMoney(0, decimals);
+    return fmtMoney(v > 0 ? -v : v, decimals);
+  }
+
+  function fmtPct(v, dec = 2) {
+    if (!Number.isFinite(v)) return '—';
+    return v.toFixed(dec) + '%';
+  }
+
+  function fmtNum(v, dec = 2) {
+    if (!Number.isFinite(v)) return '—';
+    return v.toFixed(dec) + 'x';
+  }
+
+  function pmt(principal, ratePerPeriod, nPeriods) {
+    if (nPeriods <= 0) return 0;
+    if (principal <= 0) return 0;
+    if (Math.abs(ratePerPeriod) < 1e-12) return principal / nPeriods;
+    const f = Math.pow(1 + ratePerPeriod, nPeriods);
+    return principal * (ratePerPeriod * f) / (f - 1);
+  }
+
+  function buildDebtSchedule(amount, annualPct, ppy, amortYears, termYears) {
+    const nAmort = Math.max(1, Math.round(amortYears * ppy));
+    const nTerm = Math.max(1, Math.round(termYears * ppy));
+    const r = annualPct / 100 / ppy;
+    const payment = pmt(amount, r, nAmort);
+    let balance = amount;
+    const periods = [];
+    let totalInterest = 0;
+
+    for (let i = 0; i < nTerm; i++) {
+      const interest = balance * r;
+      let principal = payment - interest;
+      if (i === nTerm - 1) principal = balance;
+      const ds = interest + principal;
+      totalInterest += interest;
+      balance = Math.max(0, balance - principal);
+      periods.push({ interest, principal, debtService: ds, balance });
+    }
+
+    return { payment, periods, totalInterest, balloon: balance };
+  }
+
+  function getTotalCapitalForTerm(termEl) {
+    if (!termEl) return 0;
+    const kind = termEl.dataset.kind;
+    if (kind === 'loan') return num(termEl.querySelector('.term-total-capital')?.value);
+    if (kind === 'refinancing') return num(termEl.querySelector('.term-market-value')?.value);
+    return 0;
+  }
+
+  function tranchePctFromPreset(t, totalCapital) {
+    if (t.pct != null && Number.isFinite(t.pct)) return t.pct;
+    if (t.amount != null && totalCapital > 0) return (t.amount / totalCapital) * 100;
+    return 0;
+  }
+
+  function trancheDollarsFromPct(pct, totalCapital) {
+    return totalCapital * (pct / 100);
+  }
+
+  function updateTrancheAmountDisplay(card) {
+    const termEl = card?.closest('.term-block');
+    const total = getTotalCapitalForTerm(termEl);
+    const pct = num(card.querySelector('.tranche-pct')?.value);
+    const display = card.querySelector('.tranche-amount-display');
+    if (display) display.textContent = fmtMoney(trancheDollarsFromPct(pct, total));
+  }
+
+  function updateAllTrancheAmountDisplays(termEl) {
+    const root = termEl || document;
+    root.querySelectorAll('.tranche-card').forEach(updateTrancheAmountDisplay);
+  }
+
+  function readTranchesFromTerm(termEl) {
+    const totalCapital = getTotalCapitalForTerm(termEl);
+    return [...termEl.querySelectorAll('.tranche-card')].map((el) => {
+      const pct = num(el.querySelector('.tranche-pct')?.value);
+      return {
+        id: el.dataset.id,
+        name: el.querySelector('.tranche-name')?.value?.trim() || 'Tranche',
+        type: el.dataset.type || 'debt',
+        pct,
+        amount: trancheDollarsFromPct(pct, totalCapital),
+        spread: num(el.querySelector('.tranche-spread')?.value),
+        freq: el.querySelector('.tranche-freq')?.value || 'quarterly',
+        amortYears: num(el.querySelector('.tranche-amort')?.value, 20),
+        termYears: num(el.querySelector('.tranche-term')?.value, 7),
+        equityReturn: num(el.querySelector('.tranche-equity-rate')?.value, 6),
+      };
+    });
+  }
+
+  function termTitle(termEl) {
+    const n = termEl.dataset.termNumber;
+    const kind = termEl.dataset.kind;
+    return `TERM ${n} · ${TERM_KIND_LABEL[kind] || String(kind).toUpperCase()}`;
+  }
+
+  function setActiveTerm(termEl, options) {
+    const { scroll = true } = options || {};
+    document.querySelectorAll('.term-block').forEach((b) => {
+      b.classList.toggle('active', b === termEl);
+    });
+    activeTermId = termEl?.dataset.termId || null;
+    if (termEl && scroll && typeof termEl.scrollIntoView === 'function') {
+      try {
+        termEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      } catch (_) { /* iframe / legacy */ }
+    }
+  }
+
+  function getActiveTermEl() {
+    if (activeTermId) {
+      const el = document.querySelector(`.term-block[data-term-id="${activeTermId}"]`);
+      if (el) return el;
+    }
+    return document.querySelector('.term-block');
+  }
+
+  function renumberTerms() {
+    document.querySelectorAll('#termsContainer .term-block').forEach((el, i) => {
+      el.dataset.termNumber = String(i + 1);
+      const title = el.querySelector('.term-block__title');
+      if (title) title.textContent = termTitle(el);
+    });
+  }
+
+  function termBlockHeadHtml(titleText, withRemove) {
+    const removeBtn = withRemove
+      ? '<button type="button" class="term-block__remove" title="Remove term">×</button>'
+      : '';
+    return `
+      <div class="term-block__head">
+        <div class="term-block__head-main">
+          <span class="term-block__chevron" aria-hidden="true">▾</span>
+          <span class="term-block__title">${escapeHtml(titleText)}</span>
+        </div>
+        ${removeBtn}
+      </div>`;
+  }
+
+  function toggleTermCollapsed(termEl) {
+    if (!termEl) return;
+    termEl.classList.toggle('collapsed');
+  }
+
+  function trancheHtml(t, totalCapital) {
+    const id = t.id || ('t' + (++trancheId));
+    const type = t.type || 'debt';
+    const pct = tranchePctFromPreset(t, totalCapital);
+    const dollars = trancheDollarsFromPct(pct, totalCapital);
+    return `
+      <div class="tranche-card" data-id="${id}" data-type="${type}">
+        <div class="tranche-head">
+          <input type="text" class="tranche-name" value="${escapeAttr(t.name || 'Tranche')}" placeholder="Tranche name">
+          <div class="type-toggle">
+            <button type="button" class="type-btn ${type === 'debt' ? 'active' : ''}" data-type="debt">Debt</button>
+            <button type="button" class="type-btn ${type === 'equity' ? 'active' : ''}" data-type="equity">Equity</button>
+          </div>
+          <button type="button" class="run-btn run-btn--danger tranche-remove" title="Remove">×</button>
+        </div>
+        <div class="field">
+          <label>Share of capital (%)</label>
+          <input ${numInputValue(pct, 2, 'tranche-pct')}>
+          <div class="tranche-amount-display">${fmtMoney(dollars)}</div>
+        </div>
+        <div class="debt-fields">
+          <div class="params-grid">
+            <div class="field">
+              <label>Spread (%)</label>
+              <input ${numInputValue(t.spread ?? 1.5, 2, 'tranche-spread')}>
+            </div>
+            <div class="field">
+              <label>Payment frequency</label>
+              <select class="tranche-freq">
+                <option value="monthly" ${t.freq === 'monthly' ? 'selected' : ''}>Monthly</option>
+                <option value="quarterly" ${(!t.freq || t.freq === 'quarterly') ? 'selected' : ''}>Quarterly</option>
+                <option value="semiannual" ${t.freq === 'semiannual' ? 'selected' : ''}>Semi-annual</option>
+                <option value="annual" ${t.freq === 'annual' ? 'selected' : ''}>Annual</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Amortization (years)</label>
+              <input ${numInputValue(t.amortYears ?? 20, 0, 'tranche-amort')}>
+            </div>
+            <div class="field">
+              <label>Loan term (years)</label>
+              <input ${numInputValue(t.termYears ?? 7, 0, 'tranche-term')}>
+            </div>
+          </div>
+        </div>
+        <div class="equity-fields equity-only">
+          <div class="field">
+            <label>Flat return (% p.a.)</label>
+            <input ${numInputValue(t.equityReturn ?? 6, 1, 'tranche-equity-rate')}>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function escapeHtml(s) {
+    return escapeAttr(s).replace(/>/g, '&gt;');
+  }
+
+  function addTrancheToTerm(termEl, preset, options) {
+    const { skipRecalc = false } = options || {};
+    const root = termEl.querySelector('.tranches-root');
+    if (!root) return;
+    const total = getTotalCapitalForTerm(termEl);
+    const wrap = document.createElement('div');
+    wrap.innerHTML = trancheHtml(preset || { name: 'Tranche', type: 'debt', pct: 0 }, total);
+    const card = wrap.firstElementChild;
+    root.appendChild(card);
+    bindTranche(card);
+    updateTrancheAmountDisplay(card);
+    if (!skipRecalc && !stateRestoreActive) recalc();
+    if (!stateRestoreActive) scheduleSaveShipFinanceState();
+  }
+
+  function regenerateRefiTranches(termEl, options) {
+    const { force = false } = options || {};
+    if (refiAutogenLock) return;
+    if (sofrFetchInProgress) return;
+    if (!termEl || termEl.dataset.kind !== 'refinancing') return;
+    const root = termEl.querySelector('.term-block__body .tranches-root');
+    if (!root) return;
+    if (!force && root.querySelector('.tranche-card')) return;
+
+    const mv = num(termEl.querySelector('.term-market-value')?.value);
+    if (mv <= 0) {
+      const hint = termEl.querySelector('.stack-hint');
+      if (hint) {
+        hint.textContent = 'Enter vessel market value to generate tranches';
+        hint.className = 'stack-hint warn';
+      }
+      return;
+    }
+    const eqPct = num(termEl.querySelector('.term-equity-pct')?.value, 40);
+    const spread = num(termEl.querySelector('.term-refi-spread')?.value, 1.5);
+    const eqReturn = num(termEl.querySelector('.term-equity-return')?.value, 6);
+    const freq = termEl.querySelector('.term-refi-freq')?.value || 'quarterly';
+    const amort = num(termEl.querySelector('.term-refi-amort')?.value, 20);
+    const termY = num(termEl.querySelector('.term-refi-term-years')?.value, 7);
+    const debtPct = Math.max(0, 100 - eqPct);
+    refiAutogenLock = true;
+    try {
+      root.innerHTML = '';
+      [
+        { name: 'Refi Bank', type: 'debt', pct: debtPct, spread, freq, amortYears: amort, termYears: termY },
+        { name: 'Refi Equity', type: 'equity', pct: eqPct, equityReturn: eqReturn },
+      ].forEach((preset) => {
+        const wrap = document.createElement('div');
+        wrap.innerHTML = trancheHtml(preset, mv);
+        const card = wrap.firstElementChild;
+        root.appendChild(card);
+        bindTranche(card);
+      });
+    } finally {
+      refiAutogenLock = false;
+    }
+    recalc();
+  }
+
+  function equityCostForTranches(tranches, years) {
+    const y = Math.max(1, years);
+    let cost = 0;
+    tranches.forEach((t) => {
+      if (t.type === 'equity') cost += t.amount * (t.equityReturn / 100) * y;
+    });
+    return cost;
+  }
+
+  function getEndOfPriorTermMetrics() {
+    const vesselPrice = num(byId('vesselPrice').value);
+    const vesselAge = num(byId('vesselAge').value);
+    const depPct = num(byId('depreciationPct').value, 0);
+    const autoResidual = isAutoResidual();
+    const manualResidual = num(byId('residualValue').value);
+    const globalSofr = num(byId('sofrInput').value);
+    let yearsElapsed = 0;
+    let lastAnnualDebtSvc = 0;
+    let vesselValue = vesselPrice;
+
+    document.querySelectorAll('#termsContainer .term-block').forEach((termEl) => {
+      const kind = termEl.dataset.kind;
+      if (kind === 'slb') {
+        const leaseYears = Math.max(1, num(termEl.querySelector('.term-lease-years')?.value, 5));
+        yearsElapsed += leaseYears;
+        lastAnnualDebtSvc = num(termEl.querySelector('.term-daily-lease')?.value) * DAYS_YEAR;
+        const buyback = num(termEl.querySelector('.term-buyback-price')?.value);
+        const sale = num(termEl.querySelector('.term-sale-price')?.value);
+        vesselValue = buyback > 0 ? buyback : (sale > 0 ? sale : vesselValue);
+        return;
+      }
+      const tranches = readTranchesFromTerm(termEl);
+      const termSofr = kind === 'refinancing'
+        ? num(termEl.querySelector('.term-refi-sofr')?.value, globalSofr)
+        : globalSofr;
+      const termYears = Math.max(1, ...tranches.map((t) => t.termYears || 7), 1);
+      const debtByYear = {};
+      tranches.forEach((t) => {
+        if (t.type !== 'debt') return;
+        const ppy = FREQ_MAP[t.freq] || 4;
+        const sched = buildDebtSchedule(t.amount, termSofr + t.spread, ppy, t.amortYears, t.termYears);
+        sched.periods.forEach((p, idx) => {
+          const y = yearsElapsed + Math.floor(idx / ppy);
+          debtByYear[y] = (debtByYear[y] || 0) + p.debtService;
+        });
+      });
+      const lastY = yearsElapsed + termYears - 1;
+      lastAnnualDebtSvc = debtByYear[lastY] || lastAnnualDebtSvc;
+      yearsElapsed += termYears;
+      vesselValue = vesselValueAtYear(
+        vesselPrice, vesselAge, depPct, yearsElapsed, manualResidual, autoResidual
+      );
+    });
+
+    return {
+      vesselValue,
+      yearsElapsed,
+      lastAnnualDebtSvc,
+    };
+  }
+
+  function createLoanTermBlock(number) {
+    const id = `term-${++termSeq}`;
+    const el = document.createElement('div');
+    el.className = 'term-block';
+    el.dataset.termId = id;
+    el.dataset.kind = 'loan';
+    el.dataset.termNumber = String(number);
+    el.innerHTML = `
+      ${termBlockHeadHtml(`TERM ${number} · LOAN`, false)}
+      <div class="term-block__body term-body--loan">
+        <div class="field">
+          <label>Total capital needed ($)</label>
+          <input type="text" inputmode="decimal" class="num-fmt term-total-capital" data-decimals="0" value="50,000,000">
+        </div>
+        <div class="tranches-root"></div>
+        <div class="stack-hint"></div>
+      </div>`;
+    return el;
+  }
+
+  function createRefiTermBlock(number, defaults) {
+    const d = defaults || {};
+    const id = `term-${++termSeq}`;
+    const el = document.createElement('div');
+    el.className = 'term-block';
+    el.dataset.termId = id;
+    el.dataset.kind = 'refinancing';
+    el.dataset.termNumber = String(number);
+    el.innerHTML = `
+      ${termBlockHeadHtml(`TERM ${number} · REFINANCING`, true)}
+      <div class="term-block__body term-body--refi">
+        <div class="params-grid">
+          <div class="field">
+            <label>Vessel market value ($)</label>
+            <input type="text" inputmode="decimal" class="num-fmt term-market-value refi-autogen" data-decimals="0" value="${escapeAttr(fmtNumInput(d.marketValue || 0, 0))}">
+          </div>
+          <div class="field">
+            <label>New equity injection (%)</label>
+            <input type="text" inputmode="decimal" class="num-fmt term-equity-pct refi-autogen" data-decimals="2" value="${d.equityPct ?? 40}">
+          </div>
+          <div class="field">
+            <label>SOFR (%)</label>
+            <input type="text" inputmode="decimal" class="num-fmt term-refi-sofr refi-autogen" data-decimals="2" value="${escapeAttr(fmtNumInput(d.sofr ?? 0, 2))}">
+          </div>
+          <div class="field">
+            <label>Spread (%)</label>
+            <input type="text" inputmode="decimal" class="num-fmt term-refi-spread refi-autogen" data-decimals="2" value="${d.spread ?? 1.5}">
+          </div>
+          <div class="field">
+            <label>Flat return % p.a. (equity)</label>
+            <input type="text" inputmode="decimal" class="num-fmt term-equity-return refi-autogen" data-decimals="1" value="${d.equityReturn ?? 6}">
+          </div>
+          <div class="field">
+            <label>Payment frequency</label>
+            <select class="term-refi-freq refi-autogen">
+              <option value="monthly" ${d.freq === 'monthly' ? 'selected' : ''}>Monthly</option>
+              <option value="quarterly" ${(!d.freq || d.freq === 'quarterly') ? 'selected' : ''}>Quarterly</option>
+              <option value="semiannual" ${d.freq === 'semiannual' ? 'selected' : ''}>Semi-annual</option>
+              <option value="annual" ${d.freq === 'annual' ? 'selected' : ''}>Annual</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Amortization (years)</label>
+            <input type="text" inputmode="decimal" class="num-fmt term-refi-amort refi-autogen" data-decimals="0" value="${d.amortYears ?? 20}">
+          </div>
+          <div class="field">
+            <label>Term (years)</label>
+            <input type="text" inputmode="decimal" class="num-fmt term-refi-term-years refi-autogen" data-decimals="0" value="${d.termYears ?? 7}">
+          </div>
+        </div>
+        <div class="tranches-root"></div>
+        <div class="stack-hint"></div>
+      </div>`;
+    return el;
+  }
+
+  function createSlbTermBlock(number, defaults) {
+    const d = defaults || {};
+    const id = `term-${++termSeq}`;
+    const el = document.createElement('div');
+    el.className = 'term-block';
+    el.dataset.termId = id;
+    el.dataset.kind = 'slb';
+    el.dataset.termNumber = String(number);
+    el.innerHTML = `
+      ${termBlockHeadHtml(`TERM ${number} · SALE & LEASEBACK`, true)}
+      <div class="term-block__body term-body--slb">
+        <div class="params-grid">
+          <div class="field">
+            <label>Sale price end prior term ($)</label>
+            <input type="text" inputmode="decimal" class="num-fmt term-sale-price" data-decimals="0" value="${escapeAttr(fmtNumInput(d.salePrice ?? SLB_DEFAULTS.salePrice, 0))}">
+          </div>
+          <div class="field">
+            <label>Daily lease rate ($/day)</label>
+            <input type="text" inputmode="decimal" class="num-fmt term-daily-lease" data-decimals="0" value="${escapeAttr(fmtNumInput(d.dailyLease ?? SLB_DEFAULTS.dailyLease, 0))}">
+          </div>
+          <div class="field">
+            <label>Lease duration (years)</label>
+            <input type="text" inputmode="decimal" class="num-fmt term-lease-years" data-decimals="0" value="${d.leaseYears ?? SLB_DEFAULTS.leaseYears}">
+          </div>
+          <div class="field">
+            <label>Buyback price ($)</label>
+            <input type="text" inputmode="decimal" class="num-fmt term-buyback-price" data-decimals="0" value="${escapeAttr(fmtNumInput(d.buybackPrice ?? SLB_DEFAULTS.buybackPrice, 0))}">
+          </div>
+        </div>
+        <div class="term-slb-out"></div>
+      </div>`;
+    return el;
+  }
+
+  function appendTermBlock(el, options) {
+    const { autogenRefi = false } = options || {};
+    const container = byId('termsContainer');
+    if (!container) return;
+    container.appendChild(el);
+    bindTermBlock(el);
+    if (autogenRefi) regenerateRefiTranches(el, { force: true });
+    formatAllNumInputs(el);
+    renumberTerms();
+    setActiveTerm(el);
+    recalc();
+    scheduleSaveShipFinanceState();
+  }
+
+  function bindTermBlock(termEl) {
+    if (termEl.dataset.bound === '1') return;
+    termEl.dataset.bound = '1';
+    termEl.querySelector('.term-block__head')?.addEventListener('click', (e) => {
+      if (e.target.closest('.term-block__remove')) return;
+      toggleTermCollapsed(termEl);
+      setActiveTerm(termEl, { scroll: false });
+      scheduleSaveShipFinanceState();
+    });
+    termEl.querySelector('.term-block__remove')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (termEl.dataset.kind === 'loan') return;
+      termEl.remove();
+      setActiveTerm(getActiveTermEl());
+      renumberTerms();
+      recalc();
+      scheduleSaveShipFinanceState();
+    });
+    termEl.addEventListener('input', (e) => {
+      if (programmaticSofrUpdate) return;
+      const el = e.target;
+      if (!el || typeof el.matches !== 'function') return;
+      if (!el.matches('input, select')) return;
+      if (el.closest('.tranche-card')) return;
+      if (el.classList.contains('num-fmt')) sanitizeNumInputEl(el);
+      if (el.id === 'sofrInput') sofrSource = 'manual';
+      if (el.classList.contains('refi-autogen') && termEl.dataset.kind === 'refinancing') {
+        regenerateRefiTranches(termEl);
+      }
+      recalc();
+      scheduleSaveShipFinanceState();
+    });
+    termEl.addEventListener('change', (e) => {
+      const t = e.target;
+      if (!t || typeof t.matches !== 'function') return;
+      if (t.matches('input, select') && !t.closest('.tranche-card')) {
+        recalc();
+        scheduleSaveShipFinanceState();
+      }
+    });
+    termEl.addEventListener('blur', (e) => {
+      const el = e.target;
+      if (!el || typeof el.matches !== 'function') return;
+      if (!el.matches('input.num-fmt, input.tranche-pct')) return;
+      if (el.closest('.tranche-card')) return;
+      if (el.classList.contains('num-fmt')) formatNumInputEl(el);
+    }, true);
+  }
+
+  function bindTranche(card) {
+    if (card.dataset.bound === '1') return;
+    card.dataset.bound = '1';
+    card.querySelectorAll('.type-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        card.dataset.type = btn.dataset.type;
+        card.querySelectorAll('.type-btn').forEach((b) => b.classList.toggle('active', b === btn));
+        recalc();
+        scheduleSaveShipFinanceState();
+      });
+    });
+    card.querySelector('.tranche-remove')?.addEventListener('click', () => {
+      const termEl = card.closest('.term-block');
+      if (!termEl || termEl.querySelectorAll('.tranche-card').length <= 1) return;
+      card.remove();
+      recalc();
+      scheduleSaveShipFinanceState();
+    });
+    card.querySelectorAll('input, select').forEach((el) => {
+      el.addEventListener('input', () => {
+        if (el.classList.contains('num-fmt')) sanitizeNumInputEl(el);
+        if (el.classList.contains('tranche-pct')) updateTrancheAmountDisplay(card);
+        recalc();
+        scheduleSaveShipFinanceState();
+      });
+      el.addEventListener('change', () => {
+        recalc();
+        scheduleSaveShipFinanceState();
+      });
+      el.addEventListener('blur', () => {
+        if (el.classList.contains('num-fmt')) formatNumInputEl(el);
+        if (el.classList.contains('tranche-pct')) updateTrancheAmountDisplay(card);
+      });
+    });
+    card.querySelectorAll('input.num-fmt').forEach(formatNumInputEl);
+    updateTrancheAmountDisplay(card);
+  }
+
+  /** Assign SOFR fields without firing input listeners (fetch / programmatic sync). */
+  function setSofrFields(displayValue) {
+    programmaticSofrUpdate = true;
+    try {
+      const sofrEl = byId('sofrInput');
+      if (sofrEl) sofrEl.value = displayValue;
+      document.querySelectorAll('.term-refi-sofr').forEach((el) => {
+        el.value = displayValue;
+      });
+    } finally {
+      programmaticSofrUpdate = false;
+    }
+  }
+
+  function syncRefiSofrFromGlobal(displayValue) {
+    programmaticSofrUpdate = true;
+    try {
+      document.querySelectorAll('.term-refi-sofr').forEach((el) => {
+        el.value = displayValue;
+      });
+    } finally {
+      programmaticSofrUpdate = false;
+    }
+  }
+
+  async function fetchSofr() {
+    try {
+      const res = await fetch('/api/sofr', { cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      const lastVal = num(data?.rate);
+      if (!Number.isFinite(lastVal)) throw new Error('Invalid SOFR response');
+      sofrSource = 'live';
+      sofrFetchInProgress = true;
+      try {
+        setSofrFields(fmtNumInput(lastVal, 2));
+      } finally {
+        sofrFetchInProgress = false;
+      }
+      recalc();
+      scheduleSaveShipFinanceState();
+    } catch (err) {
+      console.warn('SOFR fetch failed', err);
+      sofrSource = 'manual';
+      recalc();
+      scheduleSaveShipFinanceState();
+    }
+  }
+
+  function vesselValueAtYear(purchase, age, depPct, yearOffset, manualResidual, autoDep) {
+    if (!autoDep && manualResidual > 0) return manualResidual;
+    const annualDep = purchase * (depPct / 100);
+    return Math.max(0, purchase - annualDep * (age + yearOffset));
+  }
+
+  function processFinancingTerm(termEl, ctx) {
+    const { sofr, annualRevenue, annualOpex, annualDepreciation, startYear } = ctx;
+    const kind = termEl.dataset.kind;
+    const tranches = readTranchesFromTerm(termEl);
+    const totalCapital = getTotalCapitalForTerm(termEl);
+    const termSofr = kind === 'refinancing'
+      ? num(termEl.querySelector('.term-refi-sofr')?.value, sofr)
+      : sofr;
+    const stackRows = [];
+    let termDebt = 0;
+    let termEquity = 0;
+    let termInterest = 0;
+    let maxTermYears = 1;
+    let debtAtMaturity = 0;
+    const debtByYear = {};
+
+    tranches.forEach((t) => {
+      if (t.type === 'debt') {
+        termDebt += t.amount;
+        const ppy = FREQ_MAP[t.freq] || 4;
+        const allIn = termSofr + t.spread;
+        const sched = buildDebtSchedule(t.amount, allIn, ppy, t.amortYears, t.termYears);
+        maxTermYears = Math.max(maxTermYears, t.termYears);
+        termInterest += sched.totalInterest;
+        debtAtMaturity += sched.periods.length
+          ? sched.periods[sched.periods.length - 1].balance
+          : 0;
+        sched.periods.forEach((p, idx) => {
+          const y = startYear + Math.floor(idx / ppy);
+          debtByYear[y] = (debtByYear[y] || 0) + p.debtService;
+        });
+        stackRows.push({
+          name: t.name,
+          amount: t.amount,
+          rate: allIn,
+          periodic: sched.payment,
+          totalInterest: sched.totalInterest,
+          totalCost: t.amount + sched.totalInterest + sched.balloon,
+          type: 'debt',
+          termLabel: termTitle(termEl),
+        });
+      } else {
+        termEquity += t.amount;
+        const annualReturn = t.amount * (t.equityReturn / 100);
+        stackRows.push({
+          name: t.name,
+          amount: t.amount,
+          rate: t.equityReturn,
+          periodic: annualReturn / (FREQ_MAP.quarterly),
+          totalInterest: null,
+          totalCost: t.amount + annualReturn * maxTermYears,
+          type: 'equity',
+          termLabel: termTitle(termEl),
+        });
+      }
+    });
+
+    const pnlRows = [];
+    for (let i = 0; i < maxTermYears; i++) {
+      const y = startYear + i;
+      const ds = debtByYear[y] || 0;
+      const noi = annualRevenue - annualOpex;
+      const netProfit = noi - annualDepreciation - ds;
+      pnlRows.push({
+        year: y + 1,
+        revenue: annualRevenue,
+        opex: annualOpex,
+        depreciation: annualDepreciation,
+        debtService: ds,
+        noi,
+        netProfit,
+        dscr: ds > 0 ? noi / ds : null,
+      });
+    }
+
+    const hint = termEl.querySelector('.stack-hint');
+    const pctSum = tranches.reduce((s, t) => s + t.pct, 0);
+    if (hint) {
+      if (Math.abs(pctSum - 100) > 0.05 && tranches.length > 0) {
+        hint.textContent = 'Tranches total ' + pctSum.toFixed(2) + '% (' + fmtMoney(tranches.reduce((s, t) => s + t.amount, 0)) + ')';
+        hint.className = 'stack-hint warn';
+      } else {
+        hint.textContent = tranches.reduce((s, t) => s + t.amount, 0) > 0
+          ? 'Stack funded: ' + fmtMoney(tranches.reduce((s, t) => s + t.amount, 0))
+          : '';
+        hint.className = 'stack-hint';
+      }
+    }
+
+    return {
+      header: termTitle(termEl),
+      stackRows,
+      pnlRows,
+      tranches,
+      termYears: maxTermYears,
+      termDebt,
+      termEquity,
+      termInterest,
+      totalCapital,
+      debtAtMaturity,
+    };
+  }
+
+  function buildOperatingPnlRow(year, annualRevenue, annualOpex, annualDepreciation) {
+    const noi = annualRevenue - annualOpex;
+    return {
+      year,
+      revenue: annualRevenue,
+      opex: annualOpex,
+      depreciation: annualDepreciation,
+      debtService: 0,
+      noi,
+      netProfit: noi - annualDepreciation,
+      dscr: null,
+    };
+  }
+
+  function extendPnlPartsToUsefulLife(parts, targetYears, ctx) {
+    const filled = new Set();
+    (parts || []).forEach((p) => (p.rows || []).forEach((r) => filled.add(r.year)));
+    const lastTermYear = filled.size ? Math.max(...filled) : 0;
+    if (targetYears <= lastTermYear) return parts;
+
+    const extensionRows = [];
+    for (let y = lastTermYear + 1; y <= targetYears; y++) {
+      extensionRows.push(buildOperatingPnlRow(
+        y, ctx.annualRevenue, ctx.annualOpex, ctx.annualDepreciation
+      ));
+    }
+    const header = lastTermYear > 0
+      ? `YEARS ${lastTermYear + 1}–${targetYears} · REMAINING USEFUL LIFE`
+      : `YEARS 1–${targetYears}`;
+    return [...parts, { header, rows: extensionRows }];
+  }
+
+  /** Annual debt service for YoY comparisons — excludes final P&L year (balloon / buyback). */
+  function steadyAnnualDebtService(pnlRows) {
+    if (!pnlRows?.length) return 0;
+    if (pnlRows.length < 2) return pnlRows[pnlRows.length - 1].debtService || 0;
+    return pnlRows[pnlRows.length - 2].debtService || 0;
+  }
+
+  function renderSlbOutputs(termEl, data) {
+    const out = termEl.querySelector('.term-slb-out');
+    if (!out) return;
+    out.innerHTML = `
+      <div class="kpi">
+        <div class="kpi__label">Annual lease cost</div>
+        <div class="kpi__value">${fmtMoney(data.annualLease)}</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi__label">Net operating income</div>
+        <div class="kpi__value ${data.noi >= 0 ? 'kpi__value--ok' : 'kpi__value--warn'}">${fmtMoney(data.noi)}</div>
+        <div class="kpi__sub">Revenue − OPEX − lease</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi__label">Lease vs own delta</div>
+        <div class="kpi__value">${fmtMoney(data.leaseVsOwnDelta)}</div>
+        <div class="kpi__sub">Annual lease − prior debt svc</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi__label">DSCR equivalent</div>
+        <div class="kpi__value ${data.dscr != null && data.dscr < 1.2 ? 'kpi__value--warn' : ''}">${data.dscr != null ? fmtNum(data.dscr) : '—'}</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi__label">Buyback (end of lease)</div>
+        <div class="kpi__value">${fmtMoney(data.buybackPrice || 0)}</div>
+        <div class="kpi__sub">Charged in final P&amp;L year</div>
+      </div>`;
+  }
+
+  function compute() {
+    const sofr = num(byId('sofrInput').value);
+    const vesselPrice = num(byId('vesselPrice').value);
+    const dailyTce = num(byId('dailyTce').value);
+    const dailyOpex = num(byId('dailyOpex').value);
+    const vesselAge = num(byId('vesselAge').value);
+    const usefulLife = Math.max(1, num(byId('usefulLife').value, 20));
+    const depreciationPct = num(byId('depreciationPct').value, 0);
+    const autoResidual = isAutoResidual();
+    const manualResidual = num(byId('residualValue').value);
+    const annualRevenue = dailyTce * DAYS_YEAR;
+    const annualOpex = dailyOpex * DAYS_YEAR;
+    const annualDepreciation = vesselPrice * (depreciationPct / 100);
+
+    const termBlocks = [...document.querySelectorAll('#termsContainer .term-block')];
+    const stackParts = [];
+    const pnlParts = [];
+    let globalYear = 0;
+    let priorVesselValue = vesselPrice;
+    let priorAnnualDebtSvc = 0;
+
+    let firstLoanTranches = [];
+    let firstLoanTermYears = 1;
+    let firstLoanDebt = 0;
+    let firstLoanDebtAtMaturity = 0;
+    let firstLoanFunded = 0;
+    let firstLoanEquity = 0;
+    let firstLoanInterest = 0;
+    let cumulativeInterest = 0;
+    let cumulativeEquity = 0;
+    let cumulativeFunded = 0;
+    let cumulativeEquityCost = 0;
+    let allFinancingTranches = [];
+
+    termBlocks.forEach((termEl) => {
+      const kind = termEl.dataset.kind;
+
+      if (kind === 'slb') {
+        const leaseYears = Math.max(1, num(termEl.querySelector('.term-lease-years')?.value, 5));
+        const dailyLease = num(termEl.querySelector('.term-daily-lease')?.value);
+        const buybackPrice = num(termEl.querySelector('.term-buyback-price')?.value);
+        const annualLease = dailyLease * DAYS_YEAR;
+        const rows = [];
+        for (let i = 0; i < leaseYears; i++) {
+          const buybackOutflow = i === leaseYears - 1 ? buybackPrice : 0;
+          const cashOut = annualLease + buybackOutflow;
+          const noi = annualRevenue - annualOpex - cashOut;
+          rows.push({
+            year: globalYear + i + 1,
+            revenue: annualRevenue,
+            opex: annualOpex,
+            depreciation: 0,
+            debtService: cashOut,
+            noi,
+            netProfit: noi,
+            dscr: cashOut > 0 ? noi / cashOut : null,
+          });
+        }
+        const steadyNoi = annualRevenue - annualOpex - annualLease;
+        renderSlbOutputs(termEl, {
+          annualLease,
+          buybackPrice,
+          noi: steadyNoi,
+          leaseVsOwnDelta: annualLease - priorAnnualDebtSvc,
+          dscr: annualLease > 0 ? steadyNoi / annualLease : null,
+        });
+        pnlParts.push({ header: termTitle(termEl), rows });
+        globalYear += leaseYears;
+        priorAnnualDebtSvc = annualLease;
+        if (buybackPrice > 0) priorVesselValue = buybackPrice;
+        return;
+      }
+
+      const result = processFinancingTerm(termEl, {
+        sofr,
+        annualRevenue,
+        annualOpex,
+        annualDepreciation,
+        startYear: globalYear,
+      });
+      stackParts.push(result);
+      pnlParts.push({ header: result.header, rows: result.pnlRows });
+      allFinancingTranches = allFinancingTranches.concat(result.tranches);
+      cumulativeInterest += result.termInterest;
+      cumulativeEquity += result.termEquity;
+      cumulativeFunded += result.totalCapital;
+      cumulativeEquityCost += equityCostForTranches(result.tranches, result.termYears);
+      priorVesselValue = result.totalCapital;
+      priorAnnualDebtSvc = steadyAnnualDebtService(result.pnlRows);
+
+      if (kind === 'loan') {
+        firstLoanTranches = result.tranches;
+        firstLoanTermYears = result.termYears;
+        firstLoanDebt = result.termDebt;
+        firstLoanDebtAtMaturity = result.debtAtMaturity;
+        firstLoanFunded = result.totalCapital;
+        firstLoanEquity = result.termEquity;
+        firstLoanInterest = result.termInterest;
+      }
+
+      globalYear += result.termYears;
+    });
+
+    const stackRows = stackParts.flatMap((p) => p.stackRows);
+    const displayYears = Math.max(usefulLife, globalYear);
+    const pnlRows = extendPnlPartsToUsefulLife(pnlParts, displayYears, {
+      annualRevenue,
+      annualOpex,
+      annualDepreciation,
+    });
+    const holdingYears = Math.max(globalYear, 1);
+
+    const noi = annualRevenue - annualOpex;
+    const year1Ds = pnlParts[0]?.rows[0]?.debtService || 0;
+    const breakEvenDaily = year1Ds > 0 ? (year1Ds + annualOpex) / DAYS_YEAR : dailyOpex;
+
+    const ltvInception = vesselPrice > 0 && firstLoanDebt > 0
+      ? (firstLoanDebt / vesselPrice) * 100
+      : null;
+    const valMaturity = vesselValueAtYear(
+      vesselPrice, vesselAge, depreciationPct, firstLoanTermYears, manualResidual, autoResidual
+    );
+    const debtAtMaturity = firstLoanDebtAtMaturity;
+    const ltvMaturity = valMaturity > 0 ? (debtAtMaturity / valMaturity) * 100 : null;
+
+    const funded = firstLoanFunded || 1;
+    let blendedNum = 0;
+    firstLoanTranches.forEach((t) => {
+      const w = t.amount / funded;
+      if (t.type === 'debt') blendedNum += w * (sofr + t.spread);
+      else blendedNum += w * t.equityReturn;
+    });
+
+    const assetYield = funded > 0 ? (annualRevenue / funded) * 100 : null;
+    const assetYieldCovers = assetYield != null && assetYield > blendedNum;
+
+    const cumResidual = vesselValueAtYear(
+      vesselPrice, vesselAge, depreciationPct, holdingYears, manualResidual, autoResidual
+    );
+
+    const dealSummary = buildDealSummary({
+      termYears: firstLoanTermYears,
+      termLabel: 'loan term',
+      tranches: firstLoanTranches,
+      annualRevenue,
+      annualOpex,
+      totalInterestPaid: firstLoanInterest,
+      vesselPrice,
+      vesselAge,
+      depreciationPct,
+      manualResidual,
+      autoResidual,
+      totalEquityAmount: firstLoanEquity,
+      funded,
+      estResidualOverride: valMaturity,
+      totalEquityCostOverride: equityCostForTranches(firstLoanTranches, firstLoanTermYears),
+    });
+
+    const dealSummaryLife = buildDealSummary({
+      termYears: usefulLife,
+      termLabel: 'useful life',
+      tranches: firstLoanTranches,
+      annualRevenue,
+      annualOpex,
+      totalInterestPaid: firstLoanInterest,
+      vesselPrice,
+      vesselAge,
+      depreciationPct,
+      manualResidual,
+      autoResidual,
+      totalEquityAmount: firstLoanEquity,
+      funded,
+      estResidualOverride: vesselValueAtYear(
+        vesselPrice, vesselAge, depreciationPct, usefulLife, manualResidual, autoResidual
+      ),
+      totalEquityCostOverride: equityCostForTranches(firstLoanTranches, usefulLife),
+    });
+
+    const dealSummaryCumulative = buildDealSummary({
+      termYears: holdingYears,
+      termLabel: 'cumulative holding',
+      tranches: allFinancingTranches,
+      annualRevenue,
+      annualOpex,
+      totalInterestPaid: cumulativeInterest,
+      vesselPrice,
+      vesselAge,
+      depreciationPct,
+      manualResidual,
+      autoResidual,
+      totalEquityAmount: cumulativeEquity,
+      funded: cumulativeFunded || funded,
+      estResidualOverride: cumResidual,
+      totalEquityCostOverride: cumulativeEquityCost,
+    });
+
+    return {
+      stackRows,
+      stackParts,
+      pnlRows,
+      breakEvenDaily,
+      ltvInception,
+      ltvMaturity,
+      valMaturity,
+      debtAtMaturity,
+      blended: blendedNum,
+      assetYield,
+      assetYieldCovers,
+      noi,
+      year1Dscr: year1Ds > 0 ? noi / year1Ds : null,
+      sofr,
+      sofrSource,
+      dealSummary,
+      dealSummaryLife,
+      dealSummaryCumulative,
+    };
+  }
+
+  function buildDealSummary(ctx) {
+    const {
+      termYears,
+      tranches,
+      annualRevenue,
+      annualOpex,
+      totalInterestPaid,
+      vesselPrice,
+      vesselAge,
+      depreciationPct,
+      manualResidual,
+      autoResidual,
+      totalEquityAmount,
+      funded,
+    } = ctx;
+    const years = Math.max(1, termYears);
+    let totalEquityCost = ctx.totalEquityCostOverride;
+    if (totalEquityCost == null) {
+      const equityYears = ctx.equityCostYears ?? years;
+      totalEquityCost = equityCostForTranches(tranches, equityYears);
+    }
+    const totalRevenue = annualRevenue * years;
+    const totalOpex = annualOpex * years;
+    const estResidual = ctx.estResidualOverride != null
+      ? ctx.estResidualOverride
+      : vesselValueAtYear(
+        vesselPrice, vesselAge, depreciationPct, years, manualResidual, autoResidual
+      );
+    const residualAssumption = autoResidual
+      ? 'Straight-line depreciation assumption'
+      : 'User-defined assumption';
+    const totalNetProfit = totalRevenue - totalOpex - totalInterestPaid - totalEquityCost + estResidual;
+    const annualAvgNetProfit = totalNetProfit / years;
+    const roe = totalEquityAmount > 0 ? (totalNetProfit / totalEquityAmount) * 100 : null;
+    const roi = funded > 0 ? (totalNetProfit / funded) * 100 : null;
+    const annualizedRoi = roi != null ? roi / years : null;
+    const annualizedRoe = roe != null ? roe / years : null;
+
+    return {
+      termYears: years,
+      termLabel: ctx.termLabel || 'term',
+      totalRevenue,
+      totalOpex,
+      totalInterestPaid,
+      totalEquityCost,
+      estResidual,
+      residualAssumption,
+      totalNetProfit,
+      annualAvgNetProfit,
+      roe,
+      annualizedRoe,
+      roi,
+      annualizedRoi,
+    };
+  }
+
+  function signedMetricClass(v) {
+    if (!Number.isFinite(v)) return '';
+    return v >= 0 ? 'kpi__value--ok' : 'kpi__value--warn';
+  }
+
+  function dealSummaryCard(label, value, sub, options = {}) {
+    const { valueClass = '', cardClass = '' } = options;
+    return `
+      <div class="kpi ${cardClass}">
+        <div class="kpi__label">${label}</div>
+        <div class="kpi__value ${valueClass}">${value}</div>
+        ${sub ? `<div class="kpi__sub">${sub}</div>` : ''}
+      </div>`;
+  }
+
+  function renderDealSummaryGrid(s, rowId, termSpanId) {
+    if (!s) return;
+    const termEl = byId(termSpanId);
+    if (termEl) {
+      termEl.textContent = `· ${s.termYears}-year ${s.termLabel}`;
+    }
+    const interestNote = s.termLabel === 'useful life'
+      ? 'Interest through loan term only'
+      : s.termLabel === 'cumulative holding'
+        ? 'All financing terms'
+        : 'Principal excluded';
+    const row = byId(rowId);
+    if (!row) return;
+    row.innerHTML = [
+      dealSummaryCard('Total revenue', fmtMoney(s.totalRevenue), `Annual × ${s.termYears} yrs`),
+      dealSummaryCard('Total OPEX', fmtMoney(s.totalOpex), `Annual × ${s.termYears} yrs`),
+      dealSummaryCard('Total interest paid', fmtMoney(s.totalInterestPaid), interestNote),
+      dealSummaryCard('Equity cost', fmtMoney(s.totalEquityCost), `Flat returns × ${s.termYears} yrs`),
+      dealSummaryCard('Est. residual value', fmtMoney(s.estResidual), s.residualAssumption),
+      dealSummaryCard('Total net profit', fmtMoney(s.totalNetProfit), 'Revenue − OPEX − interest − equity + residual', {
+        cardClass: 'kpi--highlight',
+        valueClass: signedMetricClass(s.totalNetProfit),
+      }),
+      dealSummaryCard('Annual avg net profit', fmtMoney(s.annualAvgNetProfit), `Total ÷ ${s.termYears} yrs`),
+      dealSummaryCard('ROE', s.roe != null ? fmtPct(s.roe, 1) : '—', 'Net profit ÷ equity', {
+        valueClass: signedMetricClass(s.roe),
+      }),
+      dealSummaryCard('Annualized ROE', s.annualizedRoe != null ? fmtPct(s.annualizedRoe, 1) : '—', 'ROE ÷ term years', {
+        valueClass: signedMetricClass(s.annualizedRoe),
+      }),
+      dealSummaryCard('ROI', s.roi != null ? fmtPct(s.roi, 1) : '—', 'Net profit ÷ total capital', {
+        valueClass: signedMetricClass(s.roi),
+      }),
+      dealSummaryCard('Annualized ROI', s.annualizedRoi != null ? fmtPct(s.annualizedRoi, 1) : '—', 'ROI ÷ term years'),
+    ].join('');
+  }
+
+  function renderDealSummary(d) {
+    renderDealSummaryGrid(d.dealSummary, 'dealSummaryRow', 'dealSummaryTerm');
+    renderDealSummaryGrid(d.dealSummaryLife, 'dealSummaryLifeRow', 'dealSummaryLifeTerm');
+    renderDealSummaryGrid(d.dealSummaryCumulative, 'dealSummaryCumulativeRow', 'dealSummaryCumulativeTerm');
+  }
+
+  function renderKpis(r) {
+    const sofrSubClass = r.sofrSource === 'live' ? 'kpi__sub--live' : 'kpi__sub--manual';
+    const sofrSubText = r.sofrSource === 'live' ? '(live)' : '(manual)';
+    byId('kpiRow').innerHTML = `
+      <div class="kpi">
+        <div class="kpi__label">SOFR</div>
+        <div class="kpi__value">${Number.isFinite(r.sofr) ? r.sofr.toFixed(3) + '%' : '—'}</div>
+        <div class="kpi__sub ${sofrSubClass}">${sofrSubText}</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi__label">Break-even TCE</div>
+        <div class="kpi__value">${fmtMoney(r.breakEvenDaily)}</div>
+        <div class="kpi__sub">Covers OPEX + debt service (Y1)</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi__label">Blended cost of capital</div>
+        <div class="kpi__value">${fmtPct(r.blended)}</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi__label">Asset yield</div>
+        <div class="kpi__value ${r.assetYieldCovers ? 'kpi__value--ok' : 'kpi__value--warn'}">${r.assetYield != null ? fmtPct(r.assetYield) : '—'}</div>
+        <div class="kpi__sub ${r.assetYieldCovers ? 'kpi__sub--covers' : 'kpi__sub--below'}">${r.assetYield != null ? (r.assetYieldCovers ? 'Covers cost of capital' : 'Below cost of capital') : 'Revenue ÷ capital raised'}</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi__label">LTV at inception</div>
+        <div class="kpi__value">${r.ltvInception != null ? fmtPct(r.ltvInception, 1) : '—'}</div>
+        <div class="kpi__sub">Debt / vessel price</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi__label">LTV at maturity</div>
+        <div class="kpi__value ${r.ltvMaturity > 80 ? 'kpi__value--warn' : ''}">${r.ltvMaturity != null ? fmtPct(r.ltvMaturity, 1) : '—'}</div>
+        <div class="kpi__sub">Debt ${fmtMoney(r.debtAtMaturity)} · value ${fmtMoney(r.valMaturity)}</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi__label">Year 1 DSCR</div>
+        <div class="kpi__value ${r.year1Dscr != null && r.year1Dscr < 1.2 ? 'kpi__value--warn' : ''}">${r.year1Dscr != null ? fmtNum(r.year1Dscr) : '—'}</div>
+        <div class="kpi__sub">Threshold 1.20×</div>
+      </div>
+    `;
+  }
+
+  function renderStack(rows) {
+    let html = '';
+    let lastTerm = null;
+    (rows || []).forEach((row) => {
+      if (row.termLabel && row.termLabel !== lastTerm) {
+        html += `<tr class="pnl-term-header"><td colspan="6">${escapeHtml(row.termLabel)}</td></tr>`;
+        lastTerm = row.termLabel;
+      }
+      html += `
+      <tr>
+        <td>${escapeHtml(row.name)}</td>
+        <td>${fmtMoney(row.amount)}</td>
+        <td>${fmtPct(row.rate)}</td>
+        <td>${fmtMoney(row.periodic)}</td>
+        <td>${row.totalInterest != null ? fmtMoney(row.totalInterest) : '—'}</td>
+        <td>${fmtMoney(row.totalCost)}</td>
+      </tr>`;
+    });
+    byId('stackBody').innerHTML = html
+      || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">Add tranches to model the stack</td></tr>';
+  }
+
+  function renderPnlRow(row) {
+    const bad = row.dscr != null && row.dscr < 1.2;
+    return `
+      <tr>
+        <td>${row.year}</td>
+        <td>${fmtMoney(row.revenue)}</td>
+        <td>${fmtMoneyOutflow(row.opex)}</td>
+        <td>${fmtMoneyOutflow(row.depreciation)}</td>
+        <td>${fmtMoneyOutflow(row.debtService)}</td>
+        <td class="${row.noi >= 0 ? 'val-pos' : 'val-neg'}">${fmtMoney(row.noi)}</td>
+        <td class="${row.netProfit >= 0 ? 'val-pos' : 'val-neg'}">${fmtMoney(row.netProfit)}</td>
+        <td class="col-dscr${bad ? ' dscr-bad' : ''}">${row.dscr != null ? fmtNum(row.dscr) : '—'}</td>
+      </tr>`;
+  }
+
+  function renderPnl(parts) {
+    const html = [];
+    (parts || []).forEach((part) => {
+      html.push(`<tr class="pnl-term-header"><td colspan="8">${escapeHtml(part.header)}</td></tr>`);
+      (part.rows || []).forEach((row) => html.push(renderPnlRow(row)));
+    });
+    byId('pnlBody').innerHTML = html.join('')
+      || '<tr><td colspan="8" style="text-align:center;color:var(--text-muted)">Add terms to model P&amp;L</td></tr>';
+  }
+
+  function recalc() {
+    updateAllTrancheAmountDisplays();
+    const r = compute();
+    renderKpis(r);
+    renderStack(r.stackRows);
+    renderPnl(r.pnlRows);
+    renderDealSummary(r);
+  }
+
+  const EXPORT_PAGE_BADGE_LOGO_SCALE = 1.35;
+  const EXPORT_PAGE_BADGE_GAP_PT = 8;
+
+  function exportPageBadgeLogoSvg() {
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="#000000" stroke-width="2" stroke-linecap="square">
+      <rect x="29" y="29" width="6" height="6"></rect>
+      <line x1="32" y1="29" x2="32" y2="10"></line>
+      <line x1="32" y1="10" x2="38" y2="10"></line>
+      <line x1="32" y1="35" x2="32" y2="54"></line>
+      <line x1="32" y1="54" x2="26" y2="54"></line>
+      <line x1="35" y1="32" x2="54" y2="32"></line>
+      <line x1="54" y1="32" x2="54" y2="26"></line>
+      <line x1="29" y1="32" x2="10" y2="32"></line>
+      <line x1="10" y1="32" x2="10" y2="38"></line>
+      <line x1="35" y1="29" x2="46" y2="18"></line>
+      <line x1="46" y1="18" x2="46" y2="14"></line>
+      <line x1="29" y1="35" x2="18" y2="46"></line>
+      <line x1="18" y1="46" x2="18" y2="50"></line>
+      <line x1="35" y1="35" x2="46" y2="46"></line>
+      <line x1="46" y1="46" x2="50" y2="46"></line>
+      <line x1="29" y1="29" x2="18" y2="18"></line>
+      <line x1="18" y1="18" x2="14" y2="18"></line>
+    </svg>`;
+  }
+
+  function getBadgeLogo() {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(new Blob([exportPageBadgeLogoSvg()], { type: 'image/svg+xml' }));
+      img.onload = () => {
+        const logoSize = Math.round(96 * EXPORT_PAGE_BADGE_LOGO_SCALE);
+        const badge = document.createElement('canvas');
+        badge.width = logoSize;
+        badge.height = logoSize;
+        const ctx = badge.getContext('2d');
+        const pad = Math.round(logoSize * 0.08);
+        ctx.drawImage(img, pad, pad, logoSize - pad * 2, logoSize - pad * 2);
+        URL.revokeObjectURL(url);
+        resolve(badge.toDataURL('image/png'));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('logo')); };
+      img.src = url;
+    });
+  }
+
+  function sanitizeExportClone(root) {
+    if (!root) return;
+    root.style.background = '#ffffff';
+    root.style.color = '#0d0f0e';
+    root.querySelectorAll('*').forEach((el) => {
+      el.style.backgroundImage = 'none';
+      el.style.boxShadow = 'none';
+    });
+    root.querySelectorAll('.kpi, .card').forEach((el) => {
+      el.style.backgroundColor = '#eef2ee';
+      el.style.borderColor = '#c8cec8';
+    });
+    root.querySelectorAll('.kpi__label').forEach((el) => { el.style.color = '#4a504a'; });
+    root.querySelectorAll('.kpi__value:not(.kpi__value--warn):not(.kpi__value--ok)').forEach((el) => { el.style.color = '#3d5c3d'; });
+    root.querySelectorAll('.kpi__value--ok').forEach((el) => { el.style.color = '#3d5c3d'; });
+    root.querySelectorAll('.kpi__value--warn, .val-neg, .summary-table td.col-dscr.dscr-bad').forEach((el) => {
+      el.style.color = '#8b4040';
+    });
+    root.querySelectorAll('.kpi__sub:not(.kpi__sub--covers):not(.kpi__sub--below)').forEach((el) => { el.style.color = '#4a504a'; });
+    root.querySelectorAll('.kpi__sub--covers').forEach((el) => { el.style.color = '#3d5c3d'; });
+    root.querySelectorAll('.kpi__sub--below').forEach((el) => { el.style.color = '#8b4040'; });
+    root.querySelectorAll('.section-title').forEach((el) => { el.style.color = '#4a504a'; });
+    root.querySelectorAll('.summary-table th').forEach((el) => {
+      el.style.color = '#4a504a';
+      el.style.borderColor = '#c8cec8';
+    });
+    root.querySelectorAll('.summary-table td').forEach((el) => {
+      el.style.color = '#2a2e2a';
+      el.style.borderColor = '#d8ded8';
+      el.style.backgroundColor = 'transparent';
+    });
+    root.querySelectorAll('.val-pos').forEach((el) => { el.style.color = '#3d5c3d'; });
+  }
+
+  function createExportBlock() {
+    const el = document.createElement('div');
+    el.className = 'sf-export-block';
+    return el;
+  }
+
+  function buildExportBlocks() {
+    const src = byId('exportRoot');
+    if (!src) return [];
+    const blocks = [];
+    const sectionTitles = src.querySelectorAll('.section-title');
+    const exportDate = new Date().toISOString().slice(0, 10);
+
+    const titleBlock = createExportBlock();
+    titleBlock.classList.add('sf-export-title-block');
+    const title = document.createElement('div');
+    title.className = 'sf-export-title';
+    title.style.cssText = 'font-size:14px;letter-spacing:0.12em;text-transform:uppercase;font-weight:600;color:#0d0f0e;';
+    title.textContent = 'Ship Finance Calculator — ' + exportDate;
+    titleBlock.appendChild(title);
+    blocks.push(titleBlock);
+
+    const kpiRow = src.querySelector('#kpiRow');
+    if (kpiRow) {
+      const b = createExportBlock();
+      b.appendChild(kpiRow.cloneNode(true));
+      blocks.push(b);
+    }
+
+    const stackCard = src.querySelector('#stackTable')?.closest('.card');
+    if (stackCard && sectionTitles[0]) {
+      const b = createExportBlock();
+      b.appendChild(sectionTitles[0].cloneNode(true));
+      b.appendChild(stackCard.cloneNode(true));
+      blocks.push(b);
+    }
+
+    const pnlCard = src.querySelector('#pnlTable')?.closest('.card');
+    const pnlTitle = sectionTitles[1];
+    if (pnlCard && pnlTitle) {
+      const rows = [...pnlCard.querySelectorAll('tbody tr')];
+      const thead = pnlCard.querySelector('thead');
+      const ROWS_PER_BLOCK = 14;
+
+      if (!rows.length) {
+        const b = createExportBlock();
+        b.appendChild(pnlTitle.cloneNode(true));
+        b.appendChild(pnlCard.cloneNode(true));
+        blocks.push(b);
+      } else {
+        for (let i = 0; i < rows.length; i += ROWS_PER_BLOCK) {
+          const b = createExportBlock();
+          if (i === 0) {
+            b.appendChild(pnlTitle.cloneNode(true));
+          } else {
+            const cont = document.createElement('div');
+            cont.className = 'section-title';
+            cont.style.cssText = 'font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#4a504a;margin:0 0 10px;display:flex;align-items:center;gap:8px;';
+            cont.textContent = 'Annual P&L & DSCR (continued)';
+            b.appendChild(cont);
+          }
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.style.cssText = 'padding:12px 14px;margin-bottom:0;background:#f6f8f6;border:1px solid #c8cec8;border-radius:6px;';
+          const table = pnlCard.querySelector('table').cloneNode(false);
+          table.className = 'summary-table';
+          table.style.fontSize = '11px';
+          table.style.width = '100%';
+          table.style.tableLayout = 'fixed';
+          if (thead) table.appendChild(thead.cloneNode(true));
+          const tbody = document.createElement('tbody');
+          rows.slice(i, i + ROWS_PER_BLOCK).forEach((row) => tbody.appendChild(row.cloneNode(true)));
+          table.appendChild(tbody);
+          card.appendChild(table);
+          b.appendChild(card);
+          blocks.push(b);
+        }
+      }
+    }
+
+    const dealRow = src.querySelector('#dealSummaryRow');
+    if (dealRow && sectionTitles[2]) {
+      const b = createExportBlock();
+      b.appendChild(sectionTitles[2].cloneNode(true));
+      b.appendChild(dealRow.cloneNode(true));
+      blocks.push(b);
+    }
+
+    const dealLifeRow = src.querySelector('#dealSummaryLifeRow');
+    if (dealLifeRow && sectionTitles[3]) {
+      const b = createExportBlock();
+      b.appendChild(sectionTitles[3].cloneNode(true));
+      b.appendChild(dealLifeRow.cloneNode(true));
+      blocks.push(b);
+    }
+
+    const dealCumRow = src.querySelector('#dealSummaryCumulativeRow');
+    if (dealCumRow && sectionTitles[4]) {
+      const b = createExportBlock();
+      b.appendChild(sectionTitles[4].cloneNode(true));
+      b.appendChild(dealCumRow.cloneNode(true));
+      blocks.push(b);
+    }
+
+    return blocks;
+  }
+
+  async function captureExportBlock(block, scale) {
+    return html2canvas(block, {
+      backgroundColor: '#ffffff',
+      scale,
+      logging: false,
+      onclone: (_doc, cloned) => sanitizeExportClone(cloned),
+    });
+  }
+
+  async function appendCanvasToPdf(doc, canvas, layout) {
+    const { margin, contentTop, contentW, contentMaxH, pageW } = layout;
+    let yCursor = layout.yCursor;
+    let srcY = 0;
+    const pxPerPt = canvas.width / contentW;
+
+    while (srcY < canvas.height) {
+      const remainingPt = contentMaxH - (yCursor - contentTop);
+      if (yCursor > contentTop && remainingPt < 48) {
+        layout.addPage();
+        yCursor = layout.yCursor;
+      }
+      const availPt = contentMaxH - (yCursor - contentTop);
+      const slicePx = Math.min(canvas.height - srcY, Math.floor(availPt * pxPerPt));
+      if (slicePx <= 0) {
+        layout.addPage();
+        yCursor = layout.yCursor;
+        continue;
+      }
+      const slicePt = slicePx / pxPerPt;
+      const slice = document.createElement('canvas');
+      slice.width = canvas.width;
+      slice.height = slicePx;
+      slice.getContext('2d').drawImage(canvas, 0, srcY, canvas.width, slicePx, 0, 0, canvas.width, slicePx);
+      doc.addImage(slice.toDataURL('image/png'), 'PNG', margin, yCursor, contentW, slicePt);
+      srcY += slicePx;
+      yCursor += slicePt + 10;
+    }
+    layout.yCursor = yCursor;
+  }
+
+  async function appendExportBlocksToPdf(doc, blocks, badgeLogo) {
+    const margin = 36;
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const badgeW = 28 * EXPORT_PAGE_BADGE_LOGO_SCALE;
+    const badgeH = 28 * EXPORT_PAGE_BADGE_LOGO_SCALE;
+    const badgeY = 14;
+    const contentTop = badgeY + badgeH + EXPORT_PAGE_BADGE_GAP_PT;
+    const contentW = pageW - margin * 2;
+    const contentMaxH = pageH - contentTop - margin;
+    const blockGap = 12;
+    let pageStarted = false;
+
+    const layout = {
+      margin,
+      contentTop,
+      contentW,
+      contentMaxH,
+      pageW,
+      yCursor: contentTop,
+      addPage() {
+        if (pageStarted) doc.addPage();
+        doc.addImage(badgeLogo, 'PNG', (pageW - badgeW) / 2, badgeY, badgeW, badgeH);
+        this.yCursor = contentTop;
+        pageStarted = true;
+      },
+    };
+
+    layout.addPage();
+
+    for (const block of blocks) {
+      const canvas = await captureExportBlock(block, 2);
+      if (!canvas.width || !canvas.height) continue;
+
+      const blockH = canvas.height * (contentW / canvas.width);
+      if (layout.yCursor > contentTop && layout.yCursor + blockH > contentTop + contentMaxH) {
+        layout.addPage();
+      }
+      await appendCanvasToPdf(doc, canvas, layout);
+      layout.yCursor += blockGap;
+    }
+  }
+
+  async function exportPdf() {
+    const btn = byId('exportPdfBtn');
+    if (btn.disabled) return;
+    if (typeof html2canvas !== 'function' || !window.jspdf?.jsPDF) {
+      alert('Export libraries failed to load.');
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Exporting…';
+    const htmlEl = document.documentElement;
+    const prevTheme = htmlEl.getAttribute('data-ui-theme');
+    const staging = document.createElement('div');
+    staging.className = 'sf-export-surface';
+    staging.setAttribute('aria-hidden', 'true');
+    const blocks = buildExportBlocks();
+    blocks.forEach((b) => staging.appendChild(b));
+    document.body.appendChild(staging);
+    sanitizeExportClone(staging);
+
+    try {
+      htmlEl.setAttribute('data-ui-theme', 'light');
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+      const badge = await getBadgeLogo();
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: 'pt', format: 'a4', compress: true });
+      await appendExportBlocksToPdf(doc, blocks, badge);
+      doc.save('ship-finance-' + new Date().toISOString().slice(0, 10) + '.pdf');
+    } catch (err) {
+      console.error(err);
+      alert('Could not export PDF.');
+    } finally {
+      htmlEl.setAttribute('data-ui-theme', prevTheme || 'dark');
+      staging.remove();
+      btn.disabled = false;
+      btn.textContent = 'Export';
+    }
+  }
+
+  function isAutoResidual() {
+    const active = document.querySelector('.residual-mode-btn.active');
+    return !active || active.dataset.mode === 'auto';
+  }
+
+  function setResidualMode(mode, skipRecalc) {
+    document.querySelectorAll('.residual-mode-btn').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.mode === mode);
+    });
+    const residualField = byId('residualField');
+    if (residualField) residualField.hidden = mode === 'auto';
+    const hint = byId('residualModeHint');
+    if (hint) {
+      hint.textContent = mode === 'auto'
+        ? 'From depreciation % and loan term'
+        : 'Enter residual value below';
+    }
+    if (!skipRecalc) recalc();
+  }
+
+  function inputValue(el) {
+    return el?.value ?? '';
+  }
+
+  function setInputValue(el, value) {
+    if (!el || value == null) return;
+    el.value = String(value);
+  }
+
+  function serializeTranchePreset(t) {
+    return {
+      id: t.id,
+      name: t.name,
+      type: t.type,
+      pct: t.pct,
+      spread: t.spread,
+      freq: t.freq,
+      amortYears: t.amortYears,
+      termYears: t.termYears,
+      equityReturn: t.equityReturn,
+    };
+  }
+
+  function serializeTermBlock(termEl) {
+    const kind = termEl.dataset.kind;
+    const base = {
+      kind,
+      termId: termEl.dataset.termId,
+      collapsed: termEl.classList.contains('collapsed'),
+    };
+    if (kind === 'loan') {
+      base.totalCapital = inputValue(termEl.querySelector('.term-total-capital'));
+      base.tranches = readTranchesFromTerm(termEl).map(serializeTranchePreset);
+    } else if (kind === 'refinancing') {
+      base.marketValue = inputValue(termEl.querySelector('.term-market-value'));
+      base.equityPct = inputValue(termEl.querySelector('.term-equity-pct'));
+      base.sofr = inputValue(termEl.querySelector('.term-refi-sofr'));
+      base.spread = inputValue(termEl.querySelector('.term-refi-spread'));
+      base.equityReturn = inputValue(termEl.querySelector('.term-equity-return'));
+      base.freq = termEl.querySelector('.term-refi-freq')?.value || 'quarterly';
+      base.amortYears = inputValue(termEl.querySelector('.term-refi-amort'));
+      base.termYears = inputValue(termEl.querySelector('.term-refi-term-years'));
+      base.tranches = readTranchesFromTerm(termEl).map(serializeTranchePreset);
+    } else if (kind === 'slb') {
+      base.salePrice = inputValue(termEl.querySelector('.term-sale-price'));
+      base.dailyLease = inputValue(termEl.querySelector('.term-daily-lease'));
+      base.leaseYears = inputValue(termEl.querySelector('.term-lease-years'));
+      base.buybackPrice = inputValue(termEl.querySelector('.term-buyback-price'));
+    }
+    return base;
+  }
+
+  function serializeShipFinanceState() {
+    const vesselIds = [
+      'vesselPrice', 'dailyTce', 'dailyOpex', 'vesselAge', 'usefulLife',
+      'depreciationPct', 'sofrInput', 'residualValue',
+    ];
+    const vessel = {};
+    vesselIds.forEach((id) => {
+      const el = byId(id);
+      if (el) vessel[id] = el.value;
+    });
+    vessel.residualMode = isAutoResidual() ? 'auto' : 'manual';
+    return {
+      version: 1,
+      savedAt: Date.now(),
+      sofrSource,
+      activeTermId,
+      vessel,
+      terms: [...document.querySelectorAll('#termsContainer .term-block')].map(serializeTermBlock),
+    };
+  }
+
+  function saveShipFinanceState() {
+    if (stateRestoreActive) return;
+    try {
+      const state = serializeShipFinanceState();
+      if (!state.terms.some((t) => t.kind === 'loan')) return;
+      localStorage.setItem(SHIP_FINANCE_STORAGE_KEY, JSON.stringify(state));
+    } catch (err) {
+      console.warn('Could not save ship finance state', err);
+    }
+  }
+
+  function scheduleSaveShipFinanceState() {
+    if (stateRestoreActive) return;
+    clearTimeout(saveStateTimer);
+    saveStateTimer = setTimeout(saveShipFinanceState, 400);
+  }
+
+  function adoptTermId(el, termId) {
+    if (!termId) return;
+    el.dataset.termId = termId;
+    const m = String(termId).match(/term-(\d+)/);
+    if (m) termSeq = Math.max(termSeq, Number(m[1]));
+  }
+
+  function restoreTermBlock(term, index) {
+    const n = index + 1;
+    let el;
+    if (term.kind === 'loan') {
+      el = createLoanTermBlock(n);
+      setInputValue(el.querySelector('.term-total-capital'), term.totalCapital);
+    } else if (term.kind === 'refinancing') {
+      el = createRefiTermBlock(n, {
+        marketValue: num(term.marketValue),
+        equityPct: num(term.equityPct, 40),
+        sofr: num(term.sofr),
+        spread: num(term.spread, 1.5),
+        equityReturn: num(term.equityReturn, 6),
+        freq: term.freq,
+        amortYears: num(term.amortYears, 20),
+        termYears: num(term.termYears, 7),
+      });
+      setInputValue(el.querySelector('.term-market-value'), term.marketValue);
+      setInputValue(el.querySelector('.term-equity-pct'), term.equityPct);
+      setInputValue(el.querySelector('.term-refi-sofr'), term.sofr);
+      setInputValue(el.querySelector('.term-refi-spread'), term.spread);
+      setInputValue(el.querySelector('.term-equity-return'), term.equityReturn);
+      if (term.freq) {
+        const freqEl = el.querySelector('.term-refi-freq');
+        if (freqEl) freqEl.value = term.freq;
+      }
+      setInputValue(el.querySelector('.term-refi-amort'), term.amortYears);
+      setInputValue(el.querySelector('.term-refi-term-years'), term.termYears);
+    } else if (term.kind === 'slb') {
+      el = createSlbTermBlock(n, {
+        salePrice: num(term.salePrice),
+        dailyLease: num(term.dailyLease),
+        leaseYears: num(term.leaseYears, SLB_DEFAULTS.leaseYears),
+        buybackPrice: num(term.buybackPrice),
+      });
+      setInputValue(el.querySelector('.term-sale-price'), term.salePrice);
+      setInputValue(el.querySelector('.term-daily-lease'), term.dailyLease);
+      setInputValue(el.querySelector('.term-lease-years'), term.leaseYears);
+      setInputValue(el.querySelector('.term-buyback-price'), term.buybackPrice);
+    } else {
+      return null;
+    }
+    adoptTermId(el, term.termId);
+    if (term.collapsed) el.classList.add('collapsed');
+    (term.tranches || []).forEach((t) => addTrancheToTerm(el, t, { skipRecalc: true }));
+    return el;
+  }
+
+  function loadShipFinanceState() {
+    let raw;
+    try {
+      raw = localStorage.getItem(SHIP_FINANCE_STORAGE_KEY);
+    } catch (_) {
+      return false;
+    }
+    if (!raw) return false;
+    let state;
+    try {
+      state = JSON.parse(raw);
+    } catch (_) {
+      return false;
+    }
+    if (!state?.terms?.length || !state.terms.some((t) => t.kind === 'loan')) return false;
+
+    stateRestoreActive = true;
+    try {
+      const vessel = state.vessel || {};
+      Object.keys(vessel).forEach((key) => {
+        if (key === 'residualMode') return;
+        setInputValue(byId(key), vessel[key]);
+      });
+      if (vessel.residualMode) setResidualMode(vessel.residualMode, true);
+      if (state.sofrSource === 'live' || state.sofrSource === 'manual') sofrSource = state.sofrSource;
+
+      const container = byId('termsContainer');
+      if (!container) return false;
+      container.innerHTML = '';
+      state.terms.forEach((term, i) => {
+        const el = restoreTermBlock(term, i);
+        if (el) container.appendChild(el);
+      });
+      if (!container.querySelector('.term-block[data-kind="loan"]')) return false;
+
+      activeTermId = state.activeTermId || null;
+      document.querySelectorAll('#termsContainer .term-block').forEach((el) => {
+        bindTermBlock(el);
+        if (el.dataset.kind === 'loan' || el.dataset.kind === 'refinancing') {
+          el.querySelectorAll('.tranche-card').forEach(bindTranche);
+          installTrancheWatchdog(el);
+          updateAllTrancheAmountDisplays(el);
+        }
+      });
+      formatAllNumInputs(container);
+      formatAllNumInputs(document);
+      const active = activeTermId
+        ? document.querySelector(`.term-block[data-term-id="${activeTermId}"]`)
+        : null;
+      setActiveTerm(active || container.querySelector('.term-block[data-kind="loan"]'), { scroll: false });
+      return true;
+    } catch (err) {
+      console.warn('Could not restore ship finance state', err);
+      return false;
+    } finally {
+      stateRestoreActive = false;
+    }
+  }
+
+  function clearShipFinanceCalculator() {
+    if (!window.confirm('Clear all terms, tranches, vessel inputs, and saved data? This cannot be undone.')) return;
+
+    stateRestoreActive = true;
+    clearTimeout(saveStateTimer);
+    try {
+      try {
+        localStorage.removeItem(SHIP_FINANCE_STORAGE_KEY);
+      } catch (_) { /* ignore */ }
+
+      Object.entries(VESSEL_DEFAULTS).forEach(([id, value]) => setInputValue(byId(id), value));
+      setResidualMode('auto', true);
+      sofrSource = 'manual';
+      termSeq = 0;
+      trancheId = 0;
+      activeTermId = null;
+
+      const container = byId('termsContainer');
+      if (container) container.innerHTML = '';
+
+      bootstrapFinancingTerms();
+      renumberTerms();
+    } finally {
+      stateRestoreActive = false;
+    }
+
+    fetchSofr();
+    recalc();
+    scheduleSaveShipFinanceState();
+  }
+
+  function bootstrapFinancingTerms() {
+    const container = byId('termsContainer');
+    if (!container) return null;
+
+    let loanTerm = container.querySelector('.term-block[data-kind="loan"]');
+    if (!loanTerm) {
+      loanTerm = createLoanTermBlock(1);
+      container.appendChild(loanTerm);
+    }
+
+    const capInput = loanTerm.querySelector('.term-total-capital');
+    if (capInput) capInput.value = VESSEL_DEFAULTS.vesselPrice;
+
+    if (!loanTerm.querySelector('.tranche-card')) {
+      LOAN_TRANCHE_DEFAULTS.forEach((preset) => addTrancheToTerm(loanTerm, preset, { skipRecalc: stateRestoreActive }));
+    } else {
+      loanTerm.querySelectorAll('.tranche-card').forEach(bindTranche);
+      updateAllTrancheAmountDisplays(loanTerm);
+    }
+
+    bindTermBlock(loanTerm);
+
+    formatAllNumInputs(loanTerm);
+    setActiveTerm(loanTerm, { scroll: false });
+    installTrancheWatchdog(loanTerm);
+    return loanTerm;
+  }
+
+  /**
+   * Defensive watchdog: if anything ever wipes the loan term's tranches
+   * (which is never a valid operation — only the user clicking the × on a
+   * card can remove a single tranche), log a stack trace and restore the
+   * cards from the cached snapshot.
+   */
+  function installTrancheWatchdog(termEl) {
+    if (!termEl || termEl.dataset.watchdog === '1') return;
+    const root = termEl.querySelector('.tranches-root');
+    if (!root) return;
+    termEl.dataset.watchdog = '1';
+    const snapshot = () => Array.from(root.children).map((c) => c.cloneNode(true));
+    let cached = snapshot();
+    const refresh = () => { cached = snapshot(); };
+    root.addEventListener('tranche-changed', refresh);
+    const obs = new MutationObserver((muts) => {
+      const removals = muts.flatMap((m) => Array.from(m.removedNodes))
+        .filter((n) => n.nodeType === 1 && n.classList?.contains('tranche-card'));
+      if (!removals.length) return;
+      const remaining = root.querySelector('.tranche-card');
+      if (!remaining && cached.length) {
+        console.warn('[ship-finance] tranche wipe detected; restoring', new Error().stack);
+        cached.forEach((c) => {
+          const restored = c.cloneNode(true);
+          root.appendChild(restored);
+          bindTranche(restored);
+        });
+        recalc();
+      } else {
+        refresh();
+      }
+    });
+    obs.observe(root, { childList: true });
+  }
+
+  function init() {
+    document.querySelectorAll('.residual-mode-btn').forEach((btn) => {
+      btn.addEventListener('click', () => setResidualMode(btn.dataset.mode));
+    });
+    setResidualMode('auto', true);
+
+    ['vesselPrice', 'dailyTce', 'dailyOpex', 'vesselAge', 'usefulLife', 'depreciationPct', 'sofrInput', 'residualValue'].forEach((id) => {
+      const el = byId(id);
+      if (!el) return;
+      el.addEventListener('input', () => {
+        if (programmaticSofrUpdate) return;
+        if (el.classList.contains('num-fmt')) sanitizeNumInputEl(el);
+        if (id === 'sofrInput') {
+          sofrSource = 'manual';
+          syncRefiSofrFromGlobal(el.value);
+        }
+        recalc();
+        scheduleSaveShipFinanceState();
+      });
+      el.addEventListener('change', () => {
+        recalc();
+        scheduleSaveShipFinanceState();
+      });
+      el.addEventListener('blur', () => formatNumInputEl(el));
+    });
+
+    byId('addTrancheBtn')?.addEventListener('click', () => {
+      const term = getActiveTermEl();
+      if (!term || term.dataset.kind === 'slb') return;
+      addTrancheToTerm(term, { name: 'Tranche', type: 'equity', pct: 0, equityReturn: 6 });
+    });
+
+    byId('addTermBtn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      byId('termAddWrap').classList.toggle('open');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#termAddWrap')) byId('termAddWrap').classList.remove('open');
+    });
+
+    document.querySelectorAll('.term-add-item').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const kind = btn.dataset.termKind;
+        byId('termAddWrap').classList.remove('open');
+        const prior = getEndOfPriorTermMetrics();
+        const n = document.querySelectorAll('#termsContainer .term-block').length + 1;
+        if (kind === 'refinancing') {
+          const el = createRefiTermBlock(n, {
+            marketValue: prior.vesselValue,
+            sofr: num(byId('sofrInput').value),
+          });
+          appendTermBlock(el, { autogenRefi: true });
+        } else if (kind === 'slb') {
+          const el = createSlbTermBlock(n, { ...SLB_DEFAULTS });
+          appendTermBlock(el);
+        }
+      });
+    });
+
+    byId('clearAllBtn')?.addEventListener('click', clearShipFinanceCalculator);
+    byId('exportPdfBtn')?.addEventListener('click', exportPdf);
+
+    termSeq = Math.max(termSeq, document.querySelectorAll('#termsContainer .term-block').length);
+    const restored = loadShipFinanceState();
+    if (!restored) bootstrapFinancingTerms();
+    renumberTerms();
+
+    if (!restored || sofrSource !== 'manual') fetchSofr();
+    recalc();
+    scheduleSaveShipFinanceState();
+
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: 'arctium-ship-finance-ready' }, '*');
+    }
+  }
+
+  try {
+    init();
+  } catch (err) {
+    console.error('Ship finance init failed', err);
+    const container = byId('termsContainer');
+    if (container && !container.querySelector('.term-block')) {
+      container.innerHTML = '<p style="padding:16px;color:var(--red);font-size:12px;">Calculator failed to load. Hard refresh (Cmd+Shift+R).</p>';
+    }
+  }
+})();
+</script>
+</body>
+</html>

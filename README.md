@@ -54,10 +54,10 @@ From the repository root:
 
 ```bash
 # macOS / Linux
-python3 -m http.server 8080
+python3 serve.py
 ```
 
-Then open **http://127.0.0.1:8080/** (or the port you chose). Any static file server at the repo root works the same way.
+Then open **http://127.0.0.1:8080/**. Use `serve.py` (or **serve.bat** on Windows) so server-side routes work — e.g. **`GET /api/sofr`** for live SOFR in the Ship Finance calculator. Plain `python -m http.server` serves static files only and will not populate SOFR.
 
 ---
 
