@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-ui-theme="dark">
+<html lang="en" data-ui-theme="dark" data-calc-mode="irr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +7,9 @@
 <meta http-equiv="Pragma" content="no-cache">
 <title>Ship Finance Calculator — Arctium Labs</title>
 <link rel="icon" href="Favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script>
 (function () {
   var guestKey = 'arctium_ui_theme_v1_guest';
@@ -80,7 +83,7 @@
   body {
     background: var(--bg);
     color: var(--text);
-    font-family: 'Consolas', 'Courier New', monospace;
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
     font-size: 15px;
     height: 100%;
     min-height: 100vh;
@@ -518,6 +521,10 @@
 
   .summary-table tr.pnl-term-header:hover td { background: var(--surface2); }
 
+  .summary-table tr.row-covenant-breach td {
+    background: rgba(184, 120, 120, 0.12);
+  }
+
   .tranche-card {
     display: block;
     visibility: visible;
@@ -747,6 +754,7 @@
 
   .residual-mode-toggle {
     display: flex;
+    flex-wrap: wrap;
     width: 100%;
     border: 1px solid var(--border);
     border-radius: 3px;
@@ -755,15 +763,16 @@
   }
 
   .residual-mode-btn {
-    flex: 1;
+    flex: 1 1 45%;
+    min-width: 0;
     background: transparent;
     border: none;
     color: var(--text-muted);
     cursor: pointer;
-    font-family: inherit;
-    font-size: 11px;
-    letter-spacing: 0.06em;
-    padding: 8px 10px;
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    padding: 8px 8px;
     text-transform: uppercase;
     transition: color 0.15s, background 0.15s;
   }
@@ -863,12 +872,295 @@
   .sf-export-surface .summary-table td.col-dscr.dscr-bad { color: #8b4040 !important; }
   .sf-export-surface .val-pos { color: #3d5c3d !important; }
   .sf-export-surface .val-neg { color: #8b4040 !important; }
+
+  .section-label {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .toggle-group {
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .toggle-btn {
+    flex: 1;
+    padding: 6px 8px;
+    background: var(--surface2);
+    border: none;
+    color: var(--text-muted);
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .toggle-btn.active {
+    background: var(--accent);
+    color: var(--run-btn-text);
+    font-weight: 600;
+  }
+
+  .toggle-btn + .toggle-btn { border-left: 1px solid var(--border); }
+
+  .mode-field { margin-bottom: 14px; }
+
+  .solve-tce-only { display: none; }
+  html[data-calc-mode="tce"] .solve-irr-only { display: none !important; }
+  html[data-calc-mode="tce"] .solve-tce-only { display: block; }
+  html[data-calc-mode="tce"] .params-grid .field.solve-tce-only,
+  html[data-calc-mode="tce"] .params-grid .field.solve-irr-only {
+    display: none;
+  }
+  html[data-calc-mode="tce"] .params-grid .field.solve-tce-only {
+    display: flex;
+  }
+
+  .tce-dist {
+    margin-top: 14px;
+    padding: 14px 14px 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+  }
+
+  .tce-dist > .section-label {
+    display: block;
+    margin-bottom: 14px;
+  }
+
+  .tce-dist__scale {
+    position: relative;
+    height: 18px;
+    margin-bottom: 6px;
+  }
+
+  .tce-dist__scale-label {
+    position: absolute;
+    transform: translateX(-50%);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  .tce-dist__scale-label:first-child { transform: none; }
+  .tce-dist__scale-label:last-child { transform: translateX(-100%); }
+
+  .tce-dist__track-wrap {
+    position: relative;
+    padding: 6px 0 8px;
+  }
+
+  .tce-dist__track {
+    position: relative;
+    height: 8px;
+    background: var(--border);
+    border-radius: 4px;
+  }
+
+  .tce-dist__fill {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+    border-radius: 4px;
+    opacity: 0.35;
+  }
+
+  .tce-dist__p-tick {
+    position: absolute;
+    top: -6px;
+    width: 1px;
+    height: 20px;
+    background: var(--border-light);
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+
+  .tce-dist__marker {
+    position: absolute;
+    top: 50%;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    border: 2px solid var(--surface2);
+    box-shadow: 0 0 0 1px var(--border);
+    z-index: 1;
+  }
+
+  .tce-dist__marker--solved { background: var(--accent); }
+  .tce-dist__marker--cash { background: var(--red); }
+
+  .tce-dist__legend {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  .tce-dist__legend-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    line-height: 1.45;
+    color: var(--text-dim);
+  }
+
+  .tce-dist__legend-dot {
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    margin-top: 3px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+  }
+
+  .tce-dist__legend-item--solved .tce-dist__legend-dot { background: var(--accent); }
+  .tce-dist__legend-item--cash .tce-dist__legend-dot { background: var(--red); }
+
+  .tce-dist__legend-item--solved .tce-dist__legend-band { color: var(--accent); }
+  .tce-dist__legend-item--cash .tce-dist__legend-band { color: var(--red); }
+
+  .tce-dist__verdict {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  .table.data,
+  table.data {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+  }
+
+  table.data th,
+  table.data td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    text-align: right;
+  }
+
+  table.data th:first-child,
+  table.data td:first-child { text-align: left; }
+
+  table.data th {
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  table.data tr.row-base td { background: var(--accent-glow); }
+  table.data tr.row-covenant-breach td { background: rgba(184, 120, 120, 0.12); }
+
+  .covenant-tag {
+    display: inline-block;
+    margin-left: 6px;
+    font-size: 10px;
+    color: var(--red);
+    letter-spacing: 0.04em;
+  }
+
+  .exit-sell-fields { margin-top: 10px; }
+
+  .analytics-note {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+
+  .analytics-note--warn { border-color: var(--amber); color: var(--amber); }
+  .analytics-note--bad { border-color: var(--red); color: var(--red); }
+  .analytics-note--ok { border-color: var(--accent-dim); color: var(--accent); }
+
+  .cushion-metric {
+    margin-top: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  .cushion-metric strong { color: var(--accent); }
+
+  .stack-balloon-note {
+    display: block;
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    letter-spacing: 0.02em;
+  }
+
+  .balloon-treatment-field {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  .balloon-treatment-field select {
+    width: 100%;
+  }
+
+  .balloon-verdict {
+    margin-top: 8px;
+  }
+
+  .pnl-buyout-line {
+    display: block;
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .input-invalid {
+    border-color: var(--danger, #e55353) !important;
+    box-shadow: 0 0 0 1px var(--danger, #e55353);
+  }
+
+  .kpi__value,
+  .tranche-amount-display,
+  .summary-table td,
+  .summary-table th {
+    font-family: 'IBM Plex Mono', monospace;
+  }
 </style>
 </head>
 <body>
 
 <div class="layout">
   <aside class="panel-left">
+    <div class="card mode-field">
+      <div class="field">
+        <label class="section-label">Calculation mode</label>
+        <div class="toggle-group" id="calcModeToggle" role="group" aria-label="Calculation mode">
+          <button type="button" class="toggle-btn active" data-mode="irr">Solve IRR</button>
+          <button type="button" class="toggle-btn" data-mode="tce">Solve TCE</button>
+        </div>
+      </div>
+    </div>
+
     <section class="financing-section" aria-label="Financing terms">
       <div class="financing-section__header">
         <div class="financing-section__title">Financing terms</div>
@@ -910,13 +1202,41 @@
           <label>Vessel purchase ($)</label>
           <input type="text" inputmode="decimal" class="num-fmt" id="vesselPrice" data-decimals="0" value="50,000,000">
         </div>
-        <div class="field">
+        <div class="field solve-irr-only">
           <label>Daily TCE ($/day)</label>
           <input type="text" inputmode="decimal" class="num-fmt" id="dailyTce" data-decimals="0" value="18,500">
+        </div>
+        <div class="field solve-irr-only">
+          <label>Post-TC rate ($/day)</label>
+          <input type="text" inputmode="decimal" class="num-fmt" id="postTcRate" data-decimals="0" value="18,500">
+        </div>
+        <div class="field solve-tce-only">
+          <label>Target IRR (%)</label>
+          <input type="text" inputmode="decimal" class="num-fmt" id="targetIrr" data-decimals="1" value="6.0">
         </div>
         <div class="field">
           <label>Daily OPEX ($/day)</label>
           <input type="text" inputmode="decimal" class="num-fmt" id="dailyOpex" data-decimals="0" value="6,200">
+        </div>
+        <div class="field">
+          <label>Operating days / yr</label>
+          <input type="text" inputmode="decimal" class="num-fmt" id="operatingDays" data-decimals="0" value="357">
+        </div>
+        <div class="field">
+          <label>OPEX escalation (% p.a.)</label>
+          <input type="text" inputmode="decimal" class="num-fmt" id="opexEscalationPct" data-decimals="2" value="0">
+        </div>
+        <div class="field">
+          <label>Transaction costs ($)</label>
+          <input type="text" inputmode="decimal" class="num-fmt" id="transactionCosts" data-decimals="0" value="0">
+        </div>
+        <div class="field">
+          <label>Drydock cost ($)</label>
+          <input type="text" inputmode="decimal" class="num-fmt" id="drydockCost" data-decimals="0" value="0">
+        </div>
+        <div class="field">
+          <label>Drydock interval (years)</label>
+          <input type="text" inputmode="decimal" class="num-fmt" id="drydockInterval" data-decimals="0" value="5">
         </div>
         <div class="field">
           <label>Vessel age (years)</label>
@@ -935,17 +1255,67 @@
           <input type="text" inputmode="decimal" class="num-fmt" id="sofrInput" data-decimals="2" value="5.32">
         </div>
       </div>
+      <div class="solve-tce-only">
+        <div class="section-label" style="margin-bottom:10px;">Historical TCE Distribution ($/day)</div>
+        <div class="params-grid">
+          <div class="field">
+            <label>P25</label>
+            <input type="text" inputmode="decimal" class="num-fmt" id="histP25" data-decimals="0" value="24,000">
+          </div>
+          <div class="field">
+            <label>P50</label>
+            <input type="text" inputmode="decimal" class="num-fmt" id="histP50" data-decimals="0" value="31,500">
+          </div>
+          <div class="field">
+            <label>P75</label>
+            <input type="text" inputmode="decimal" class="num-fmt" id="histP75" data-decimals="0" value="34,800">
+          </div>
+          <div class="field">
+            <label>P90</label>
+            <input type="text" inputmode="decimal" class="num-fmt" id="histP90" data-decimals="0" value="38,000">
+          </div>
+        </div>
+      </div>
       <div class="field residual-mode-field">
-        <label>Residual at maturity</label>
-        <div class="residual-mode-toggle" role="group" aria-label="Residual at maturity">
+        <label>Exit mode</label>
+        <div class="residual-mode-toggle" role="group" aria-label="Exit mode">
           <button type="button" class="residual-mode-btn active" data-mode="auto">Auto-depreciate</button>
           <button type="button" class="residual-mode-btn" data-mode="manual">Manual</button>
+          <button type="button" class="residual-mode-btn" data-mode="scrap">Scrap</button>
+          <button type="button" class="residual-mode-btn" data-mode="sell">Sell at year N</button>
         </div>
         <p class="residual-mode-hint" id="residualModeHint">From depreciation % and loan term</p>
       </div>
       <div class="field" id="residualField" hidden>
-        <label>Residual value at maturity ($)</label>
+        <label id="residualFieldLabel">Residual / scrap value ($)</label>
         <input type="text" inputmode="decimal" class="num-fmt" id="residualValue" data-decimals="0" value="0">
+      </div>
+      <div class="exit-sell-fields" id="exitSellFields" hidden>
+        <div class="params-grid">
+          <div class="field">
+            <label>Exit year</label>
+            <input type="text" inputmode="decimal" class="num-fmt" id="exitYear" data-decimals="0" value="5">
+          </div>
+          <div class="field">
+            <label>Resale value at exit ($)</label>
+            <input type="text" inputmode="decimal" class="num-fmt" id="resaleValue" data-decimals="0" value="50,000,000">
+          </div>
+        </div>
+      </div>
+      <div class="section-label" style="margin:14px 0 10px;">Loan Covenants</div>
+      <div class="params-grid">
+        <div class="field">
+          <label>Minimum DSCR</label>
+          <input type="text" inputmode="decimal" class="num-fmt" id="covMinDscr" data-decimals="2" value="1.30">
+        </div>
+        <div class="field">
+          <label>Maximum LTV (%)</label>
+          <input type="text" inputmode="decimal" class="num-fmt" id="covMaxLtv" data-decimals="0" value="80">
+        </div>
+        <div class="field">
+          <label title="Loan must stay at or below this % of current vessel value each year. Set 0 to disable.">Min-value clause (%)</label>
+          <input type="text" inputmode="decimal" class="num-fmt" id="covMvcPct" data-decimals="0" value="100">
+        </div>
       </div>
       <div class="vessel-actions">
         <button type="button" class="run-btn run-btn--danger" id="clearAllBtn" title="Reset calculator and clear saved data">Clear</button>
@@ -956,6 +1326,39 @@
 
   <main class="panel-right" id="exportRoot">
     <div class="kpi-row" id="kpiRow"></div>
+
+    <div id="tceSolveSection" hidden>
+      <div class="section-title">Breakeven TCE Analysis</div>
+      <div class="kpi-row" id="tceSolveKpiRow"></div>
+      <div class="tce-dist" id="tceDistPanel"></div>
+    </div>
+
+    <div id="scenarioSection">
+      <div class="section-title solve-irr-only">Equity Returns</div>
+      <div class="kpi-row solve-irr-only" id="equityKpiRow"></div>
+      <div class="analytics-note solve-irr-only" id="troughStressNote"></div>
+      <div class="analytics-note solve-irr-only balloon-verdict" id="balloonCompareNote" hidden></div>
+
+      <div class="section-title solve-irr-only">Entry Price Sensitivity</div>
+      <div class="card solve-irr-only" style="padding:12px 14px;margin-bottom:12px;">
+        <div class="table-scroll-wrap">
+          <table class="data" id="priceSensitivityTable">
+            <thead>
+              <tr>
+                <th>Δ Price</th>
+                <th>Purchase price</th>
+                <th>Equity required</th>
+                <th>Breakeven TCE</th>
+                <th>Equity IRR @ base TCE</th>
+                <th>Min DSCR</th>
+              </tr>
+            </thead>
+            <tbody id="priceSensitivityBody"></tbody>
+          </table>
+        </div>
+        <div class="cushion-metric" id="tceCushionMetric"></div>
+      </div>
+    </div>
 
     <div class="section-title">Capital Stack</div>
     <div class="card" style="padding:12px 14px;margin-bottom:12px;">
@@ -1017,6 +1420,7 @@
   let activeTermId = null;
   let sofrSource = 'manual';
   let refiAutogenLock = false;
+  let balloonRefiAutogenLock = false;
   let programmaticSofrUpdate = false;
   let sofrFetchInProgress = false;
 
@@ -1032,13 +1436,40 @@
   const VESSEL_DEFAULTS = {
     vesselPrice: '50,000,000',
     dailyTce: '18,500',
+    postTcRate: '18,500',
     dailyOpex: '6,200',
+    operatingDays: '357',
+    opexEscalationPct: '0',
+    transactionCosts: '0',
+    drydockCost: '0',
+    drydockInterval: '5',
+    targetIrr: '6.0',
+    histP25: '24,000',
+    histP50: '31,500',
+    histP75: '34,800',
+    histP90: '38,000',
     vesselAge: '0',
     usefulLife: '20',
     depreciationPct: '0',
     sofrInput: '5.32',
     residualValue: '0',
+    exitYear: '5',
+    resaleValue: '50,000,000',
+    covMinDscr: '1.30',
+    covMaxLtv: '80',
+    covMvcPct: '100',
   };
+
+  let calcMode = 'irr';
+  let activeTceCache = null;
+
+  function resetActiveTceCache() {
+    activeTceCache = null;
+  }
+
+  function getCalcMode() {
+    return calcMode;
+  }
 
   const LOAN_TRANCHE_DEFAULTS = [
     { name: 'Bank Loan', type: 'debt', pct: 60, spread: 1.5, freq: 'quarterly', amortYears: 20, termYears: 7 },
@@ -1138,6 +1569,1411 @@
     return v.toFixed(dec) + 'x';
   }
 
+  function fmtDay(v) {
+    if (!Number.isFinite(v)) return '—';
+    return '$' + Math.round(v).toLocaleString('en-US') + '/day';
+  }
+
+  function irr(cashFlows) {
+    if (!cashFlows?.length || cashFlows[0] >= 0) return null;
+    let lo = -0.999;
+    let hi = 10;
+    const npvAt = (rate) => {
+      let sum = 0;
+      for (let t = 0; t < cashFlows.length; t++) {
+        sum += cashFlows[t] / Math.pow(1 + rate, t);
+      }
+      return sum;
+    };
+    if (npvAt(hi) > 0) return null;
+    for (let i = 0; i < 100; i++) {
+      const mid = (lo + hi) / 2;
+      const npv = npvAt(mid);
+      if (Math.abs(npv) < 1e-8) return mid;
+      if (npv > 0) lo = mid;
+      else hi = mid;
+    }
+    return (lo + hi) / 2;
+  }
+
+  const fmtX = fmtNum;
+
+  function npvAtRate(cashFlows, rate) {
+    let sum = 0;
+    for (let t = 0; t < cashFlows.length; t++) {
+      sum += cashFlows[t] / Math.pow(1 + rate, t);
+    }
+    return sum;
+  }
+
+  function npv(cashFlows, discountPct) {
+    if (!cashFlows?.length || !Number.isFinite(discountPct)) return null;
+    return npvAtRate(cashFlows, discountPct / 100);
+  }
+
+  function paybackYear(cashFlows) {
+    if (!cashFlows?.length || cashFlows[0] >= 0) return null;
+    let cum = cashFlows[0];
+    for (let t = 1; t < cashFlows.length; t++) {
+      cum += cashFlows[t];
+      if (cum >= 0) return t;
+    }
+    return null;
+  }
+
+  function getExitMode() {
+    const active = document.querySelector('.residual-mode-btn.active');
+    return active?.dataset.mode || 'auto';
+  }
+
+  function readCovenantInputs() {
+    return {
+      minDscr: num(byId('covMinDscr')?.value, 1.3),
+      maxLtv: num(byId('covMaxLtv')?.value, 80),
+      mvcPct: num(byId('covMvcPct')?.value, 100),
+    };
+  }
+
+  function readEquityModelInputs(overrides = {}) {
+    const exitMode = overrides.exitMode ?? getExitMode();
+    const vesselPrice = overrides.vesselPrice ?? num(byId('vesselPrice').value);
+    const fullHoldYears = Math.max(1, overrides.fullHoldYears ?? num(byId('usefulLife').value, 20));
+    const exitYear = Math.min(
+      fullHoldYears,
+      Math.max(1, overrides.exitYear ?? num(byId('exitYear')?.value, 5))
+    );
+    const balloonTreatment = overrides.balloonTreatment ?? getLoanBalloonTreatment(overrides);
+    const balloonInfo = getPrimaryBalloonInfo(null, fullHoldYears, {
+      vesselPrice,
+      sofr: overrides.sofr ?? num(byId('sofrInput').value),
+      transactionCosts: overrides.transactionCosts ?? num(byId('transactionCosts')?.value, 0),
+    });
+    let holdYears = exitMode === 'sell' ? exitYear : fullHoldYears;
+    let effectiveExitMode = exitMode;
+    if (balloonTreatment === 'sell' && balloonInfo && balloonInfo.year < holdYears) {
+      holdYears = balloonInfo.year;
+      effectiveExitMode = 'sell';
+    }
+    return {
+      vesselPrice,
+      transactionCosts: overrides.transactionCosts ?? num(byId('transactionCosts')?.value, 0),
+      dailyOpex: overrides.dailyOpex ?? num(byId('dailyOpex').value),
+      operatingDays: Math.max(1, overrides.operatingDays ?? num(byId('operatingDays')?.value, 357)),
+      opexEscalationPct: overrides.opexEscalationPct ?? num(byId('opexEscalationPct')?.value, 0),
+      drydockCost: overrides.drydockCost ?? num(byId('drydockCost')?.value, 0),
+      drydockInterval: Math.max(1, overrides.drydockInterval ?? num(byId('drydockInterval')?.value, 5)),
+      fullHoldYears,
+      holdYears,
+      exitMode: effectiveExitMode,
+      exitYear: balloonTreatment === 'sell' && balloonInfo ? balloonInfo.year : exitYear,
+      resaleValue: overrides.resaleValue ?? num(byId('resaleValue')?.value, vesselPrice),
+      saleCostPct: 1,
+      vesselAge: overrides.vesselAge ?? num(byId('vesselAge').value),
+      depreciationPct: overrides.depreciationPct ?? num(byId('depreciationPct').value, 0),
+      autoResidual: exitMode === 'auto' && balloonTreatment !== 'sell',
+      manualResidual: overrides.manualResidual ?? num(byId('residualValue').value),
+      sofr: overrides.sofr ?? num(byId('sofrInput').value),
+      dailyTce: overrides.dailyTce ?? num(byId('dailyTce')?.value),
+      balloonTreatment,
+      balloonInfo,
+    };
+  }
+
+  function scaledTranchesForPrice(vesselPrice, transactionCosts) {
+    const loanTerm = document.querySelector('#termsContainer .term-block[data-kind="loan"]');
+    if (!loanTerm) return [];
+    const uiTotal = getTotalCapitalForTerm(loanTerm);
+    const targetTotal = vesselPrice;
+    const scale = uiTotal > 0 ? targetTotal / uiTotal : 1;
+    return readTranchesFromTerm(loanTerm).map((t) => ({
+      ...t,
+      amount: t.amount * scale,
+    }));
+  }
+
+  function getLoanTermEl() {
+    return document.querySelector('#termsContainer .term-block[data-kind="loan"]');
+  }
+
+  function getLoanBalloonTreatment(overrides) {
+    if (overrides?.balloonTreatment) return overrides.balloonTreatment;
+    const el = getLoanTermEl()?.querySelector('.term-balloon-treatment');
+    const value = el?.value || 'refinance';
+    return ['refinance', 'sell', 'buyout'].includes(value) ? value : 'refinance';
+  }
+
+  function normalizeAmortYears(raw, el) {
+    const parsed = num(raw, 20);
+    const invalid = parsed < 1 || parsed > 40;
+    const value = Math.min(40, Math.max(1, invalid ? (parsed > 40 ? 40 : 15) : parsed));
+    if (el) {
+      el.classList.toggle('input-invalid', invalid);
+      el.title = invalid ? 'Check amortization — must be 1–40 years' : '';
+    }
+    return { value, invalid };
+  }
+
+  function steadyAnnualDebtServiceFromSchedule(sched, ppy) {
+    if (!sched?.periods?.length) return 0;
+    let sum = 0;
+    for (let idx = 0; idx < ppy && idx < sched.periods.length; idx++) {
+      sum += sched.periods[idx].debtService;
+    }
+    return sum;
+  }
+
+  function termBalloonAmount(sched, amortYears, termYears) {
+    if (!sched?.periods?.length) return 0;
+    if (termYears >= amortYears) return sched.balloon > 1 ? sched.balloon : 0;
+    const last = sched.periods[sched.periods.length - 1];
+    return last ? last.principal : 0;
+  }
+
+  function scheduleTrancheDebt(
+    principal,
+    allInPct,
+    ppy,
+    amortYears,
+    termYears,
+    startYear0,
+    endYear0,
+    treatment,
+    meta
+  ) {
+    const sched = buildDebtSchedule(principal, allInPct, ppy, amortYears, termYears);
+    const steadyAnnual = steadyAnnualDebtServiceFromSchedule(sched, ppy);
+    const lastIdx = sched.periods.length - 1;
+    const balloonAmount = termBalloonAmount(sched, amortYears, termYears);
+    const balloonCalYear0 = startYear0 + termYears - 1;
+    const hasTermBalloon = balloonAmount > 1 && termYears < amortYears && balloonCalYear0 < endYear0;
+
+    const operatingDebtByYear = {};
+    const balanceEndByYear = {};
+    const equityInjectionsByYear = {};
+    const equityReleasesByYear = {};
+    const balloons = [];
+
+    for (let idx = 0; idx < sched.periods.length; idx++) {
+      const y = startYear0 + Math.floor(idx / ppy);
+      if (y >= endYear0) break;
+      if (hasTermBalloon && idx === lastIdx) continue;
+      operatingDebtByYear[y] = (operatingDebtByYear[y] || 0) + sched.periods[idx].debtService;
+      balanceEndByYear[y] = (balanceEndByYear[y] || 0) + sched.periods[idx].balance;
+    }
+
+    let outstandingAtExit = 0;
+    if (hasTermBalloon) {
+      operatingDebtByYear[balloonCalYear0] = steadyAnnual;
+      balloons.push({
+        year: balloonCalYear0 + 1,
+        amount: balloonAmount,
+        rate: allInPct,
+        name: meta?.name || 'Debt',
+      });
+
+      if (treatment === 'buyout') {
+        equityInjectionsByYear[balloonCalYear0] = (equityInjectionsByYear[balloonCalYear0] || 0) + balloonAmount;
+        balanceEndByYear[balloonCalYear0] = 0;
+        outstandingAtExit = 0;
+      } else if (treatment === 'sell' || treatment === 'exit') {
+        balanceEndByYear[balloonCalYear0] = balloonAmount;
+        outstandingAtExit = balloonAmount;
+      } else {
+        balanceEndByYear[balloonCalYear0] = balloonAmount;
+        outstandingAtExit = balloonAmount;
+      }
+    } else if (lastIdx >= 0) {
+      const lastY = startYear0 + Math.floor(lastIdx / ppy);
+      if (lastY < endYear0) {
+        outstandingAtExit = sched.periods[lastIdx].balance;
+        balanceEndByYear[lastY] = (balanceEndByYear[lastY] || 0) + outstandingAtExit;
+      }
+    }
+
+    return {
+      operatingDebtByYear,
+      balanceEndByYear,
+      equityInjectionsByYear,
+      equityReleasesByYear,
+      balloons,
+      balloonAmount: hasTermBalloon ? balloonAmount : 0,
+      balloonCalYear0: hasTermBalloon ? balloonCalYear0 : null,
+      outstandingAtExit,
+    };
+  }
+
+  function mergeDebtSegments(into, from) {
+    ['operatingDebtByYear', 'balanceEndByYear', 'equityInjectionsByYear', 'equityReleasesByYear'].forEach((key) => {
+      Object.entries(from[key] || {}).forEach(([y, val]) => {
+        into[key][y] = (into[key][y] || 0) + val;
+      });
+    });
+    into.balloons.push(...(from.balloons || []));
+  }
+
+  function scheduleDebtThroughHold(
+    principal,
+    allInPct,
+    ppy,
+    amortYears,
+    termYears,
+    startYear0,
+    endYear0,
+    treatment,
+    meta
+  ) {
+    const merged = {
+      operatingDebtByYear: {},
+      balanceEndByYear: {},
+      equityInjectionsByYear: {},
+      equityReleasesByYear: {},
+      balloons: [],
+    };
+    let balance = principal;
+    let yearOffset = startYear0;
+    let outstandingAtExit = 0;
+
+    while (yearOffset < endYear0 && balance > 1) {
+      const segmentEnd = Math.min(endYear0, yearOffset + termYears);
+      const segment = scheduleTrancheDebt(
+        balance,
+        allInPct,
+        ppy,
+        amortYears,
+        termYears,
+        yearOffset,
+        segmentEnd,
+        yearOffset + termYears >= endYear0 ? 'exit' : treatment,
+        meta
+      );
+      mergeDebtSegments(merged, segment);
+
+      if (segment.balloonAmount > 1 && yearOffset + termYears < endYear0) {
+        if (treatment === 'buyout' || treatment === 'sell' || treatment === 'exit') {
+          outstandingAtExit = segment.outstandingAtExit;
+          break;
+        }
+        balance = segment.balloonAmount;
+        yearOffset += termYears;
+        continue;
+      }
+
+      outstandingAtExit = segment.outstandingAtExit;
+      break;
+    }
+
+    merged.outstandingAtExit = outstandingAtExit;
+    return merged;
+  }
+
+  function getPrimaryBalloonInfo(loanTermEl, holdYears, inp) {
+    const loanTerm = loanTermEl || getLoanTermEl();
+    if (!loanTerm) return null;
+    const inputs = inp || readEquityModelInputs();
+    const sofr = inputs.sofr;
+    const tranches = scaledTranchesForPrice(inputs.vesselPrice, inputs.transactionCosts);
+    const debtTranches = tranches.filter((t) => t.type === 'debt');
+    if (!debtTranches.length) return null;
+
+    let primary = null;
+    debtTranches.forEach((t) => {
+      const ppy = FREQ_MAP[t.freq] || 4;
+      const allIn = sofr + t.spread;
+      const amortYears = normalizeAmortYears(t.amortYears).value;
+      const sched = buildDebtSchedule(t.amount, allIn, ppy, amortYears, t.termYears);
+      const balloon = termBalloonAmount(sched, amortYears, t.termYears);
+      if (balloon <= 1 || t.termYears >= holdYears) return;
+      const year = t.termYears;
+      if (!primary || year < primary.year || (year === primary.year && balloon > primary.amount)) {
+        primary = {
+          year,
+          amount: balloon,
+          trancheName: t.name,
+          termYears: t.termYears,
+          sched,
+          ppy,
+          allIn,
+        };
+      }
+    });
+    return primary;
+  }
+
+  function aggregateDebtStateByYear(holdYears, inp, overrides) {
+    const inputs = { ...readEquityModelInputs(overrides), ...(inp || {}) };
+    const balloonTreatment = overrides?.balloonTreatment ?? getLoanBalloonTreatment(overrides);
+    const fullHold = inputs.fullHoldYears ?? inputs.holdYears;
+    const balloonInfo = getPrimaryBalloonInfo(null, fullHold, inputs);
+    let effectiveHold = inputs.holdYears;
+
+    if (balloonTreatment === 'sell' && balloonInfo && balloonInfo.year < effectiveHold) {
+      effectiveHold = balloonInfo.year;
+    }
+
+    const sofr = inputs.sofr;
+    const financingTerms = [...document.querySelectorAll('#termsContainer .term-block')]
+      .filter((el) => el.dataset.kind === 'loan' || el.dataset.kind === 'refinancing');
+    const scaled = scaledTranchesForPrice(inputs.vesselPrice, inputs.transactionCosts);
+    const state = {
+      operatingDebtByYear: {},
+      balanceEndByYear: {},
+      equityInjectionsByYear: {},
+      equityReleasesByYear: {},
+      balloons: [],
+    };
+    let outstandingAtExit = 0;
+    let calendarYear = 0;
+    let pendingBalloon = 0;
+
+    if (!financingTerms.length) {
+      return {
+        debtByYear: state.operatingDebtByYear,
+        operatingDebtByYear: state.operatingDebtByYear,
+        balanceEndByYear: state.balanceEndByYear,
+        equityInjectionsByYear: state.equityInjectionsByYear,
+        equityReleasesByYear: state.equityReleasesByYear,
+        outstandingAtExit,
+        balloons: state.balloons,
+        effectiveHoldYears: effectiveHold,
+        balloonTreatment,
+        balloonInfo,
+      };
+    }
+
+    const loanTerm = financingTerms.find((el) => el.dataset.kind === 'loan') || financingTerms[0];
+    const loanTranches = scaled.length ? scaled : readTranchesFromTerm(loanTerm);
+
+    financingTerms.forEach((termEl, termIdx) => {
+      const kind = termEl.dataset.kind;
+      if (kind === 'refinancing' && (balloonTreatment === 'buyout' || balloonTreatment === 'sell')) return;
+
+      const termSofr = kind === 'refinancing'
+        ? num(termEl.querySelector('.term-refi-sofr')?.value, sofr)
+        : sofr;
+      let tranches = kind === 'loan' ? loanTranches : readTranchesFromTerm(termEl);
+      if (kind === 'loan' && scaled.length) tranches = loanTranches;
+      const debtTranches = tranches.filter((t) => t.type === 'debt');
+      const maxTermYears = Math.max(1, ...debtTranches.map((t) => t.termYears), 1);
+      const isLastFinancingTerm = termIdx === financingTerms.length - 1;
+
+      if (kind === 'loan') {
+        const endYear = isLastFinancingTerm ? effectiveHold : calendarYear + maxTermYears;
+        const treatment = balloonTreatment;
+        debtTranches.forEach((t) => {
+          const ppy = FREQ_MAP[t.freq] || 4;
+          const amortYears = normalizeAmortYears(t.amortYears).value;
+          const segment = isLastFinancingTerm && treatment === 'refinance'
+            ? scheduleDebtThroughHold(
+              t.amount,
+              termSofr + t.spread,
+              ppy,
+              amortYears,
+              t.termYears,
+              calendarYear,
+              endYear,
+              'refinance',
+              { name: t.name }
+            )
+            : scheduleTrancheDebt(
+              t.amount,
+              termSofr + t.spread,
+              ppy,
+              amortYears,
+              t.termYears,
+              calendarYear,
+              endYear,
+              treatment,
+              { name: t.name }
+            );
+          mergeDebtSegments(state, segment);
+          if (!isLastFinancingTerm && treatment === 'refinance' && segment.balloonAmount > 0) {
+            pendingBalloon += segment.balloonAmount;
+          }
+        });
+        if (!isLastFinancingTerm) calendarYear += maxTermYears;
+      } else if (kind === 'refinancing') {
+        const refiDebt = debtTranches[0];
+        if (!refiDebt) return;
+
+        const mv = num(termEl.querySelector('.term-market-value')?.value);
+        const eqPct = num(termEl.querySelector('.term-equity-pct')?.value, 40);
+        const maxLtv = readCovenantInputs().maxLtv;
+        let newDebtPrincipal = refiDebt.amount;
+        if (mv > 0) {
+          const debtPct = Math.max(0, 100 - eqPct);
+          newDebtPrincipal = Math.min(mv * (debtPct / 100), mv * (maxLtv / 100), refiDebt.amount);
+        }
+
+        const bridgeYear0 = calendarYear;
+        if (pendingBalloon > 1) {
+          const gap = pendingBalloon - newDebtPrincipal;
+          if (gap > 1) {
+            state.equityInjectionsByYear[bridgeYear0] = (state.equityInjectionsByYear[bridgeYear0] || 0) + gap;
+          } else if (gap < -1) {
+            state.equityReleasesByYear[bridgeYear0] = (state.equityReleasesByYear[bridgeYear0] || 0) + (-gap);
+          }
+          pendingBalloon = 0;
+        }
+
+        const ppy = FREQ_MAP[refiDebt.freq] || 4;
+        const amortYears = normalizeAmortYears(
+          refiDebt.amortYears,
+          termEl.querySelector('.term-refi-amort')
+        ).value;
+        const endYear = isLastFinancingTerm ? effectiveHold : calendarYear + maxTermYears;
+        const exitTreatment = isLastFinancingTerm ? 'exit' : 'refinance';
+        const segment = isLastFinancingTerm
+          ? scheduleDebtThroughHold(
+            newDebtPrincipal,
+            termSofr + refiDebt.spread,
+            ppy,
+            amortYears,
+            refiDebt.termYears,
+            calendarYear,
+            endYear,
+            exitTreatment,
+            { name: refiDebt.name }
+          )
+          : scheduleTrancheDebt(
+            newDebtPrincipal,
+            termSofr + refiDebt.spread,
+            ppy,
+            amortYears,
+            refiDebt.termYears,
+            calendarYear,
+            endYear,
+            'refinance',
+            { name: refiDebt.name }
+          );
+        mergeDebtSegments(state, segment);
+        calendarYear += maxTermYears;
+      }
+    });
+
+    outstandingAtExit = state.balanceEndByYear[effectiveHold - 1] ?? pendingBalloon;
+    if (outstandingAtExit <= 1 && effectiveHold > 0) {
+      outstandingAtExit = state.balanceEndByYear[effectiveHold - 1] || 0;
+    }
+    if (balloonTreatment === 'sell' && balloonInfo) {
+      outstandingAtExit = balloonInfo.amount;
+    }
+
+    return {
+      debtByYear: state.operatingDebtByYear,
+      operatingDebtByYear: state.operatingDebtByYear,
+      balanceEndByYear: state.balanceEndByYear,
+      equityInjectionsByYear: state.equityInjectionsByYear,
+      equityReleasesByYear: state.equityReleasesByYear,
+      outstandingAtExit,
+      balloons: state.balloons,
+      effectiveHoldYears: effectiveHold,
+      balloonTreatment,
+      balloonInfo,
+    };
+  }
+
+  function aggregateDebtServiceByYear(holdYears, inp, overrides) {
+    return aggregateDebtStateByYear(holdYears, inp, overrides);
+  }
+
+  function computeEquityInvested(inp, overrides) {
+    const inputs = inp || readEquityModelInputs(overrides);
+    const tranches = scaledTranchesForPrice(inputs.vesselPrice, inputs.transactionCosts);
+    let equity = inputs.transactionCosts;
+    tranches.forEach((t) => {
+      if (t.type === 'equity') equity += t.amount;
+    });
+    const debtState = aggregateDebtStateByYear(inputs.holdYears, inputs, overrides);
+    Object.values(debtState.equityInjectionsByYear || {}).forEach((inj) => {
+      equity += inj;
+    });
+    return equity;
+  }
+
+  function ensureRefiTermForBalloon() {
+    if (stateRestoreActive || refiAutogenLock || balloonRefiAutogenLock) return;
+    const loanTerm = getLoanTermEl();
+    if (!loanTerm) return;
+    if (getLoanBalloonTreatment() !== 'refinance') return;
+    if (document.querySelector('#termsContainer .term-block[data-kind="refinancing"]')) return;
+
+    const fullHold = Math.max(1, num(byId('usefulLife')?.value, 20));
+    const balloonInfo = getPrimaryBalloonInfo(loanTerm, fullHold);
+    if (!balloonInfo || balloonInfo.year >= fullHold) return;
+
+    balloonRefiAutogenLock = true;
+    try {
+      const prior = getEndOfPriorTermMetrics();
+      const n = document.querySelectorAll('#termsContainer .term-block').length + 1;
+      const el = createRefiTermBlock(n, {
+        marketValue: prior.vesselValue,
+        sofr: num(byId('sofrInput').value),
+      });
+      const container = byId('termsContainer');
+      if (!container) return;
+      container.appendChild(el);
+      bindTermBlock(el);
+      regenerateRefiTranches(el, { force: true });
+      formatAllNumInputs(el);
+      renumberTerms();
+    } finally {
+      balloonRefiAutogenLock = false;
+    }
+  }
+
+  function computeBalloonComparison() {
+    const inp = readEquityModelInputs();
+    const balloonInfo = getPrimaryBalloonInfo(null, inp.fullHoldYears, inp);
+    if (!balloonInfo) return null;
+
+    const refiMetrics = computeEquityMetrics({ balloonTreatment: 'refinance' });
+    const buyoutMetrics = computeEquityMetrics({ balloonTreatment: 'buyout' });
+    if (refiMetrics.equityIrr == null || buyoutMetrics.equityIrr == null) return null;
+
+    const refiPct = refiMetrics.equityIrr * 100;
+    const buyoutPct = buyoutMetrics.equityIrr * 100;
+    const spreadPp = buyoutPct - refiPct;
+    return {
+      balloonInfo,
+      refiPct,
+      buyoutPct,
+      spreadPp,
+      refiEquity: computeEquityInvested(inp, { balloonTreatment: 'refinance' }),
+      buyoutEquity: computeEquityInvested(inp, { balloonTreatment: 'buyout' }),
+    };
+  }
+
+  function exitValueAtHold(inputs) {
+    if (inputs.exitMode === 'sell') return inputs.resaleValue;
+    if (inputs.exitMode === 'manual' || inputs.exitMode === 'scrap') {
+      if (inputs.manualResidual > 0) return inputs.manualResidual;
+    }
+    if (!inputs.autoResidual && inputs.manualResidual > 0) return inputs.manualResidual;
+    return vesselValueAtYear(
+      inputs.vesselPrice,
+      inputs.vesselAge,
+      inputs.depreciationPct,
+      inputs.holdYears,
+      inputs.manualResidual,
+      inputs.autoResidual
+    );
+  }
+
+  function vesselValueForCovenant(inputs, yearIndex) {
+    const y = Math.max(1, yearIndex);
+    if (inputs.exitMode === 'auto') {
+      return vesselValueAtYear(
+        inputs.vesselPrice,
+        inputs.vesselAge,
+        inputs.depreciationPct,
+        y,
+        inputs.manualResidual,
+        true
+      );
+    }
+    const startVal = inputs.vesselPrice;
+    const endVal = inputs.exitMode === 'sell'
+      ? inputs.resaleValue
+      : (inputs.manualResidual > 0 ? inputs.manualResidual : exitValueAtHold({ ...inputs, holdYears: inputs.fullHoldYears }));
+    const t = Math.min(1, (y - 1) / Math.max(1, inputs.holdYears - 1));
+    return startVal + t * (endVal - startVal);
+  }
+
+  function tceForYear(y, inp, revenueFn) {
+    if (typeof revenueFn === 'function') return revenueFn(y, inp);
+    return getActiveTce();
+  }
+
+  function exitModeLabel(mode) {
+    const labels = {
+      auto: 'Auto-depreciate',
+      manual: 'Manual residual',
+      scrap: 'Scrap at end of hold',
+      sell: 'Sell at year N',
+    };
+    return labels[mode] || mode;
+  }
+
+  function residualAssumptionText(inp) {
+    switch (inp.exitMode) {
+      case 'auto':
+        return 'Straight-line depreciation assumption';
+      case 'manual':
+        return 'User-defined residual at end of hold';
+      case 'scrap':
+        return 'Scrap value at end of hold';
+      case 'sell':
+        return `Resale year ${inp.exitYear} · ${fmtMoney(inp.resaleValue)} gross · 1% sale costs in cash flow`;
+      default:
+        return '';
+    }
+  }
+
+  function financingTermBoundaries() {
+    const terms = [...document.querySelectorAll('#termsContainer .term-block')]
+      .filter((el) => ['loan', 'refinancing', 'slb'].includes(el.dataset.kind));
+    const boundaries = [];
+    let calendar = 0;
+    terms.forEach((termEl) => {
+      const kind = termEl.dataset.kind;
+      let termYears = 1;
+      if (kind === 'slb') {
+        termYears = Math.max(1, num(termEl.querySelector('.term-lease-years')?.value, 5));
+      } else if (kind === 'refinancing') {
+        termYears = Math.max(1, num(termEl.querySelector('.term-refi-term-years')?.value, 7));
+      } else {
+        const tranches = readTranchesFromTerm(termEl);
+        termYears = Math.max(1, ...tranches.map((t) => t.termYears || 7), 1);
+      }
+      calendar += termYears;
+      boundaries.push({
+        endYear: calendar,
+        termEl,
+        kind,
+        termNumber: num(termEl.dataset.termNumber, boundaries.length + 1),
+      });
+    });
+    return boundaries;
+  }
+
+  function yearRowFromBundle(bundle, year1) {
+    return bundle.years?.[year1 - 1] ?? bundle.model?.years?.[year1 - 1];
+  }
+
+  function computeEquityInvestedThroughYear(endYear, overrides) {
+    const inp = readEquityModelInputs(overrides);
+    const end = Math.max(1, endYear);
+    let equity = inp.transactionCosts;
+    scaledTranchesForPrice(inp.vesselPrice, inp.transactionCosts).forEach((t) => {
+      if (t.type === 'equity') equity += t.amount;
+    });
+    const debtState = aggregateDebtStateByYear(Math.max(end, inp.holdYears), inp, overrides);
+    for (let y = 0; y < end; y++) {
+      equity += debtState.equityInjectionsByYear[y] || 0;
+    }
+    const boundaries = financingTermBoundaries();
+    boundaries.forEach((boundary, i) => {
+      if (boundary.endYear >= end) return;
+      if (i + 1 >= boundaries.length || boundaries[i + 1].kind !== 'refinancing') return;
+      const refiEl = boundaries[i + 1].termEl;
+      const mv = num(refiEl.querySelector('.term-market-value')?.value);
+      const eqPct = num(refiEl.querySelector('.term-equity-pct')?.value, 40);
+      if (mv > 0 && boundary.endYear < end) equity += mv * (eqPct / 100);
+    });
+    return equity;
+  }
+
+  function outstandingDebtAtYear(bundle, year1) {
+    const years = bundle.years || bundle.model?.years || [];
+    const yr = years[year1 - 1];
+    if (yr && yr.debtBalance > 1) return yr.debtBalance;
+    for (let i = Math.min(year1 - 1, years.length) - 1; i >= 0; i--) {
+      if (years[i].debtBalance > 1) return years[i].debtBalance;
+    }
+    return yr?.debtBalance ?? 0;
+  }
+
+  function vesselValueForExitScenario(bundle, year1) {
+    const boundaries = financingTermBoundaries();
+    for (let i = 0; i < boundaries.length; i++) {
+      if (boundaries[i].endYear !== year1) continue;
+      if (i + 1 < boundaries.length && boundaries[i + 1].kind === 'refinancing') {
+        const mv = num(boundaries[i + 1].termEl.querySelector('.term-market-value')?.value);
+        if (mv > 0) return mv;
+      }
+      break;
+    }
+    const yr = yearRowFromBundle(bundle, year1);
+    if (yr?.vesselVal > 0) return yr.vesselVal;
+    return vesselValueForCovenant(bundle.inp, year1);
+  }
+
+  function saleCostsForExit(inp, grossValue) {
+    return grossValue * (inp.saleCostPct / 100);
+  }
+
+  /** Net equity terminal at year N — same formula as final exit: value − debt − sale costs. */
+  function exitTerminalAtYear(bundle, year1) {
+    const hold = bundle.inp.holdYears;
+    if (year1 >= hold) return bundle.netTerminal ?? bundle.model?.netTerminal ?? 0;
+    const vesselVal = vesselValueForExitScenario(bundle, year1);
+    const debt = outstandingDebtAtYear(bundle, year1);
+    return vesselVal - debt - saleCostsForExit(bundle.inp, vesselVal);
+  }
+
+  function equityCashFlowForExitAtYear(bundle, endYear, equityInvested) {
+    const hold = bundle.inp.holdYears;
+    const end = Math.min(Math.max(1, endYear), hold);
+    const years = bundle.years || bundle.model?.years || [];
+    const invested = equityInvested ?? computeEquityInvestedThroughYear(end);
+    const cfs = [-invested];
+    for (let y = 1; y < end; y++) cfs.push(years[y - 1]?.cf ?? 0);
+    if (end >= hold) {
+      cfs.push(years[hold - 1]?.cf ?? 0);
+    } else {
+      cfs.push((years[end - 1]?.cf ?? 0) + exitTerminalAtYear(bundle, end));
+    }
+    return cfs;
+  }
+
+  function netProfitThroughYear(bundle, endYear, equityInvested) {
+    return equityCashFlowForExitAtYear(bundle, endYear, equityInvested).reduce((s, c) => s + c, 0);
+  }
+
+  function buildTermExitScenario(equityBundle, endYear, ctx) {
+    const bundle = equityBundle;
+    const end = Math.min(Math.max(1, endYear), bundle.inp.holdYears);
+    const equityInvested = ctx.equityInvestedOverride ?? computeEquityInvestedThroughYear(end);
+    const cfs = equityCashFlowForExitAtYear(bundle, end, equityInvested);
+    const totalNetProfit = cfs.reduce((s, c) => s + c, 0);
+    const terminal = exitTerminalAtYear(bundle, end);
+    const vesselVal = vesselValueForExitScenario(bundle, end);
+    const debt = outstandingDebtAtYear(bundle, end);
+    const saleCosts = saleCostsForExit(bundle.inp, vesselVal);
+    const equityIrr = irr(cfs);
+
+    return buildDealSummary({
+      ...ctx,
+      termYears: end,
+      termLabel: ctx.termLabel || `Exit at year ${end}`,
+      termTitleSpan: ctx.termTitleSpan || `· ${ctx.termLabel || `Exit at year ${end}`}`,
+      totalNetProfitOverride: totalNetProfit,
+      netProfitNoteOverride: 'Assumes sale at year-N vessel value, debt repaid from proceeds',
+      estResidualOverride: vesselVal,
+      residualAssumptionOverride: `Gross ${fmtMoney(vesselVal)} · debt ${fmtMoney(debt)} · ${bundle.inp.saleCostPct}% costs ${fmtMoney(saleCosts)} · net ${fmtMoney(terminal)}`,
+      equityInvestedOverride: equityInvested,
+      equityIrr,
+      equityIrrNote: `${end}-year exit · compare vs full hold`,
+    });
+  }
+
+  function buildExitAwareDealSummary(equityBundle) {
+    const bundle = equityBundle || buildEquityModelBundle(getActiveTce());
+    const inp = bundle.inp;
+    const { years, netTerminal } = bundle.model;
+    const tranches = scaledTranchesForPrice(inp.vesselPrice, inp.transactionCosts);
+    const equityAmount = bundle.equityInvested;
+    const funded = tranches.reduce((s, t) => s + t.amount, 0) + inp.transactionCosts;
+    const equityCost = equityCostForTranches(tranches, inp.holdYears);
+    const totalRevenue = years.reduce((s, y) => s + y.annualRev, 0);
+    const totalOpex = years.reduce((s, y) => s + y.annualOpex, 0);
+    const totalDebtSvc = years.reduce((s, y) => s + y.debtService, 0);
+    const totalNetProfit = bundle.totalNetProfit;
+    const yrs = Math.max(1, inp.holdYears);
+    const windowTerminal = exitTerminalAtYear(bundle, inp.holdYears);
+    const equityIrr = bundle.equityIrr;
+
+    return {
+      termYears: yrs,
+      termLabel: inp.balloonTreatment === 'sell' && inp.balloonInfo
+        ? 'hold to sale (balloon year)'
+        : inp.exitMode === 'sell' ? 'hold to sale' : 'useful life',
+      totalRevenue,
+      totalOpex,
+      totalInterestPaid: totalDebtSvc,
+      totalEquityCost: equityCost,
+      estResidual: exitValueAtHold(inp),
+      residualAssumption: residualAssumptionText(inp),
+      totalNetProfit,
+      netProfitNote: `Equity CF incl. exit terminal (${fmtMoney(windowTerminal)})`,
+      equityIrr,
+      equityIrrNote: `${yrs}-year hold to exit`,
+      annualAvgNetProfit: totalNetProfit / yrs,
+      roe: equityAmount > 0 ? (totalNetProfit / equityAmount) * 100 : null,
+      annualizedRoe: equityAmount > 0 ? (totalNetProfit / equityAmount) * 100 / yrs : null,
+      roi: funded > 0 ? (totalNetProfit / funded) * 100 : null,
+      annualizedRoi: funded > 0 ? (totalNetProfit / funded) * 100 / yrs : null,
+      exitMode: inp.exitMode,
+      netTerminal,
+    };
+  }
+
+  function overlayPnlWithDebtState(pnlParts, annualDepreciation) {
+    const inp = readEquityModelInputs();
+    const hold = inp.holdYears;
+    const debtState = aggregateDebtStateByYear(hold, inp);
+    const { operatingDebtByYear, equityInjectionsByYear, equityReleasesByYear } = debtState;
+
+    return (pnlParts || []).map((part) => ({
+      ...part,
+      rows: (part.rows || [])
+        .filter((r) => r.year <= hold)
+        .map((r) => {
+          const y0 = r.year - 1;
+          const ds = operatingDebtByYear[y0] || 0;
+          const buyout = equityInjectionsByYear[y0] || 0;
+          const release = equityReleasesByYear?.[y0] || 0;
+          const noi = r.revenue - r.opex;
+          const netProfit = noi - annualDepreciation - ds - buyout + release;
+          const dscr = ds > 0 ? noi / ds : null;
+          return {
+            ...r,
+            debtService: ds,
+            equityBuyout: buyout,
+            equityRelease: release,
+            noi,
+            netProfit,
+            dscr,
+          };
+        }),
+    })).filter((part) => part.rows.length);
+  }
+
+  function trimPnlForExitMode(pnlParts) {
+    const inp = readEquityModelInputs();
+    const hold = inp.holdYears;
+    const model = buildYearlyModel(getActiveTce());
+
+    return (pnlParts || []).map((part) => ({
+      ...part,
+      rows: (part.rows || [])
+        .filter((r) => r.year <= hold)
+        .map((r) => {
+          if (r.year !== hold) return r;
+          const patched = { ...r };
+          if (inp.balloonTreatment === 'sell' && inp.balloonInfo && r.year === inp.balloonInfo.year) {
+            patched.netProfit = r.netProfit + model.netTerminal;
+            patched.noi = r.noi + model.netTerminal;
+            patched.exitTerminal = model.netTerminal;
+            patched.exitNote = `Sale − balloon − 1% costs (${fmtMoney(model.netTerminal)})`;
+            return patched;
+          }
+          if (inp.exitMode === 'auto') return r;
+          if (inp.exitMode === 'sell') {
+            patched.netProfit = r.netProfit + model.netTerminal;
+            patched.noi = r.noi + model.netTerminal;
+            patched.exitTerminal = model.netTerminal;
+            patched.exitNote = `Resale − debt − 1% costs (${fmtMoney(model.netTerminal)})`;
+          } else if ((inp.exitMode === 'manual' || inp.exitMode === 'scrap') && inp.manualResidual > 0) {
+            const { outstandingAtExit } = aggregateDebtStateByYear(hold, inp);
+            const netExit = inp.manualResidual - outstandingAtExit;
+            patched.netProfit = r.netProfit + netExit;
+            patched.noi = r.noi + netExit;
+            patched.exitTerminal = netExit;
+            patched.exitNote = inp.exitMode === 'scrap'
+              ? `Scrap − debt (${fmtMoney(netExit)})`
+              : `Residual − debt (${fmtMoney(netExit)})`;
+          }
+          return patched;
+        }),
+    })).filter((part) => part.rows.length);
+  }
+
+  function buildYearlyModel(flatTceDaily, overrides, revenueFn) {
+    const inp = readEquityModelInputs(overrides);
+    const hold = inp.holdYears;
+    const debtState = aggregateDebtStateByYear(hold, inp, overrides);
+    const {
+      operatingDebtByYear,
+      balanceEndByYear,
+      equityInjectionsByYear,
+      equityReleasesByYear,
+      balloons,
+    } = debtState;
+
+    let grossExit = exitValueAtHold(inp);
+    if (inp.balloonTreatment === 'sell' && inp.balloonInfo) {
+      grossExit = inp.resaleValue;
+    }
+    const saleCosts = (inp.exitMode === 'sell' || inp.balloonTreatment === 'sell')
+      ? grossExit * (inp.saleCostPct / 100)
+      : 0;
+    const years = [];
+
+    for (let y = 1; y <= hold; y++) {
+      const tce = typeof revenueFn === 'function' ? revenueFn(y, inp) : flatTceDaily;
+      const opexFactor = Math.pow(1 + inp.opexEscalationPct / 100, y - 1);
+      const annualOpex = inp.dailyOpex * inp.operatingDays * opexFactor;
+      const annualRev = tce * inp.operatingDays;
+      const debtService = operatingDebtByYear[y - 1] || 0;
+      const equityBuyout = equityInjectionsByYear[y - 1] || 0;
+      const equityRelease = equityReleasesByYear?.[y - 1] || 0;
+      const noi = annualRev - annualOpex;
+      const dscr = debtService > 0 ? noi / debtService : null;
+      let cf = annualRev - annualOpex - debtService - equityBuyout + equityRelease;
+      if (inp.drydockCost > 0 && y % inp.drydockInterval === 0 && y !== hold) cf -= inp.drydockCost;
+      const debtBalance = balanceEndByYear[y - 1] ?? 0;
+      const vesselVal = vesselValueForCovenant(inp, y);
+      years.push({
+        year: y,
+        tce,
+        annualRev,
+        annualOpex,
+        debtService,
+        equityBuyout,
+        equityRelease,
+        noi,
+        dscr,
+        cf,
+        debtBalance,
+        vesselVal,
+        ltv: vesselVal > 0 ? (debtBalance / vesselVal) * 100 : null,
+      });
+    }
+
+    const debtAtExit = years.length ? years[years.length - 1].debtBalance : (balanceEndByYear[hold - 1] ?? 0);
+    const netTerminal = grossExit - saleCosts - debtAtExit;
+    if (years.length) years[years.length - 1].cf += netTerminal;
+
+    return {
+      inp,
+      years,
+      netTerminal,
+      debtAtExit,
+      outstandingAtExit: debtAtExit,
+      balloons,
+      debtState,
+    };
+  }
+
+  function buildEquityModelBundle(flatTceDaily, overrides, revenueFn) {
+    const inp = readEquityModelInputs(overrides);
+    const tce = overrides?.dailyTce != null ? overrides.dailyTce : (flatTceDaily ?? getActiveTce(overrides));
+    const model = buildYearlyModel(tce, overrides, revenueFn);
+    const equityInvested = computeEquityInvested(inp, overrides);
+    const cfs = [-equityInvested, ...model.years.map((yr) => yr.cf)];
+    const equityReturn = scaledTranchesForPrice(inp.vesselPrice, inp.transactionCosts)
+      .find((t) => t.type === 'equity')?.equityReturn ?? num(byId('targetIrr')?.value, 6);
+    return {
+      inp,
+      model,
+      cfs,
+      equityInvested,
+      totalNetProfit: cfs.reduce((s, c) => s + c, 0),
+      equityIrr: irr(cfs),
+      npv: npv(cfs, equityReturn),
+      payback: paybackYear(cfs),
+      years: model.years,
+      debtAtExit: model.debtAtExit,
+      outstandingAtExit: model.debtAtExit,
+      netTerminal: model.netTerminal,
+    };
+  }
+
+  function buildEquityCashFlow(flatTceDaily, overrides, revenueFn) {
+    return buildEquityModelBundle(flatTceDaily, overrides, revenueFn).cfs;
+  }
+
+  function computeCashBreakevenTce(overrides) {
+    const inp = readEquityModelInputs(overrides);
+    const { operatingDebtByYear } = aggregateDebtStateByYear(inp.holdYears, inp, overrides);
+    const annualOpex = inp.dailyOpex * inp.operatingDays;
+    const y1ds = operatingDebtByYear[0] || 0;
+    return (annualOpex + y1ds) / inp.operatingDays;
+  }
+
+  function solveBreakevenTce(targetIrrPct, overrides) {
+    const target = targetIrrPct / 100;
+    let lo = 1000;
+    let hi = 100000;
+    for (let i = 0; i < 60; i++) {
+      const mid = (lo + hi) / 2;
+      const rate = irr(buildEquityCashFlow(mid, overrides));
+      if (rate === null || rate < target - 1e-4) lo = mid;
+      else hi = mid;
+    }
+    return (lo + hi) / 2;
+  }
+
+  /** Single TCE source for the active mode; cached for the current recalc pass. */
+  function getActiveTce(overrides) {
+    if (overrides?.dailyTce != null && Number.isFinite(overrides.dailyTce)) {
+      return overrides.dailyTce;
+    }
+    if (calcMode === 'irr') {
+      return num(byId('dailyTce')?.value);
+    }
+    if (activeTceCache == null) {
+      const targetIrr = overrides?.targetIrr ?? num(byId('targetIrr')?.value, 6);
+      activeTceCache = solveBreakevenTce(targetIrr, overrides || undefined);
+    }
+    return activeTceCache;
+  }
+
+  function getFirstLoanTermYears() {
+    const loanTerm = document.querySelector('#termsContainer .term-block[data-kind="loan"]');
+    if (!loanTerm) return 7;
+    const tranches = readTranchesFromTerm(loanTerm);
+    return Math.max(1, ...tranches.filter((t) => t.type === 'debt').map((t) => t.termYears), 7);
+  }
+
+  function buildTroughRevenueFn() {
+    const tcYears = getFirstLoanTermYears();
+    const baseTce = num(byId('dailyTce')?.value);
+    const postTc = num(byId('postTcRate')?.value, baseTce);
+    const troughTce = 14000;
+    const troughLen = 2;
+    return (y) => {
+      if (y <= tcYears) return baseTce;
+      if (y <= tcYears + troughLen) return troughTce;
+      return postTc;
+    };
+  }
+
+  function evaluateCovenantYear(yr, covenantInputs) {
+    const breaches = [];
+    if (yr.dscr != null && yr.dscr < covenantInputs.minDscr) breaches.push('DSCR');
+    if (yr.ltv != null && yr.ltv > covenantInputs.maxLtv) breaches.push('LTV');
+    if (covenantInputs.mvcPct > 0 && yr.vesselVal > 0) {
+      const maxDebt = (covenantInputs.mvcPct / 100) * yr.vesselVal;
+      if (yr.debtBalance > maxDebt) breaches.push('MVC');
+    }
+    return breaches;
+  }
+
+  function evaluateCovenants(years, covenantInputs) {
+    return (years || []).map((yr) => ({
+      year: yr.year,
+      breaches: evaluateCovenantYear(yr, covenantInputs),
+    }));
+  }
+
+  function firstCovenantBreach(covResults) {
+    for (const row of covResults || []) {
+      if (row.breaches.length) return { year: row.year, breaches: row.breaches };
+    }
+    return null;
+  }
+
+  function computeEquityMetrics(overrides, revenueFn) {
+    const bundle = buildEquityModelBundle(null, overrides, revenueFn);
+    const minDscr = bundle.years.reduce((min, yr) => {
+      if (yr.dscr == null) return min;
+      return min == null ? yr.dscr : Math.min(min, yr.dscr);
+    }, null);
+    return {
+      inp: bundle.inp,
+      years: bundle.years,
+      cfs: bundle.cfs,
+      equityInvested: bundle.equityInvested,
+      totalNetProfit: bundle.totalNetProfit,
+      outstandingAtExit: bundle.outstandingAtExit,
+      equityIrr: bundle.equityIrr,
+      npv: bundle.npv,
+      payback: bundle.payback,
+      minDscr,
+    };
+  }
+
+  function impliedAssetAppreciation(purchase, resale, years) {
+    if (purchase <= 0 || resale <= 0 || years <= 0) return null;
+    return (Math.pow(resale / purchase, 1 / years) - 1) * 100;
+  }
+
+  function priceSensitivityRows() {
+    const basePrice = num(byId('vesselPrice').value);
+    const targetIrr = num(byId('targetIrr')?.value, 6);
+    const baseTce = num(byId('dailyTce')?.value);
+    const deltas = [-0.15, -0.10, -0.05, 0, 0.05];
+    return deltas.map((d) => {
+      const price = basePrice * (1 + d);
+      const overrides = { vesselPrice: price };
+      const tranches = scaledTranchesForPrice(price, num(byId('transactionCosts')?.value, 0));
+      const equity = tranches.filter((t) => t.type === 'equity').reduce((s, t) => s + t.amount, 0);
+      const metrics = computeEquityMetrics(overrides);
+      const breakeven = solveBreakevenTce(targetIrr, overrides);
+      return {
+        deltaPct: d * 100,
+        price,
+        equity,
+        breakevenTce: breakeven,
+        equityIrr: metrics.equityIrr,
+        minDscr: metrics.minDscr,
+        isBase: d === 0,
+      };
+    });
+  }
+
+  function computeTceCushion(rows) {
+    const base = rows.find((r) => r.isBase);
+    const cheaper = rows.find((r) => r.deltaPct === -10);
+    if (!base || !cheaper) return null;
+    const priceDiff = base.price - cheaper.price;
+    const tceDiff = base.breakevenTce - cheaper.breakevenTce;
+    if (priceDiff <= 0) return null;
+    return (tceDiff / priceDiff) * 1e6;
+  }
+
+  function tcePercentileBand(tce, p25, p50, p75, p90) {
+    if (tce <= p25) return 'below P25';
+    if (tce <= p50) return 'between P25 and P50';
+    if (tce <= p75) return 'between P50 and P75';
+    if (tce <= p90) return 'between P75 and P90';
+    return 'above P90';
+  }
+
+  function tceDistPosition(value, p25, p90) {
+    if (!Number.isFinite(value) || p90 <= p25) return 50;
+    return Math.max(0, Math.min(100, ((value - p25) / (p90 - p25)) * 100));
+  }
+
+  function spreadMarkerPositions(posA, posB, minGap = 5) {
+    let a = posA;
+    let b = posB;
+    if (Math.abs(a - b) >= minGap) return [a, b];
+    const mid = (a + b) / 2;
+    a = Math.max(2, mid - minGap / 2);
+    b = Math.min(98, mid + minGap / 2);
+    return [a, b];
+  }
+
+  function renderEquityAnalytics() {
+    const equityRow = byId('equityKpiRow');
+    const troughNote = byId('troughStressNote');
+    if (!equityRow) return;
+
+    if (calcMode === 'tce') {
+      const metrics = computeEquityMetrics();
+      const covenantInputs = readCovenantInputs();
+      const baseCov = evaluateCovenants(metrics.years, covenantInputs);
+      window.__covenantByYear = {};
+      baseCov.forEach((c) => { window.__covenantByYear[c.year] = c.breaches; });
+      if (equityRow) equityRow.innerHTML = '';
+      if (troughNote) troughNote.textContent = '';
+      const compareNote = byId('balloonCompareNote');
+      if (compareNote) {
+        compareNote.hidden = true;
+        compareNote.textContent = '';
+      }
+      return;
+    }
+
+    const covenantInputs = readCovenantInputs();
+    const baseMetrics = computeEquityMetrics();
+    const troughFn = buildTroughRevenueFn();
+    const troughMetrics = computeEquityMetrics({}, troughFn);
+    const baseCov = evaluateCovenants(baseMetrics.years, covenantInputs);
+    const troughCov = evaluateCovenants(troughMetrics.years, covenantInputs);
+    const baseBreach = firstCovenantBreach(baseCov);
+    const troughBreach = firstCovenantBreach(troughCov);
+    const inp = baseMetrics.inp;
+    const discountRate = scaledTranchesForPrice(inp.vesselPrice, inp.transactionCosts)
+      .find((t) => t.type === 'equity')?.equityReturn ?? 6;
+
+    let cards = [
+      dealSummaryCard('Equity IRR', baseMetrics.equityIrr != null ? fmtPct(baseMetrics.equityIrr * 100, 1) : '—', 'Base-case TCE', {
+        valueClass: signedMetricClass(baseMetrics.equityIrr != null ? baseMetrics.equityIrr * 100 : null),
+      }),
+      dealSummaryCard('NPV @ equity hurdle', baseMetrics.npv != null ? fmtMoney(baseMetrics.npv) : '—', `Discount ${fmtPct(discountRate, 1)}`),
+      dealSummaryCard('Payback', baseMetrics.payback != null ? `Year ${baseMetrics.payback}` : '—', 'Cumulative CF ≥ 0'),
+      dealSummaryCard('Min DSCR', baseMetrics.minDscr != null ? fmtX(baseMetrics.minDscr) : '—', `Covenant ${fmtX(covenantInputs.minDscr)}`),
+    ];
+
+    if (inp.exitMode === 'sell') {
+      const appr = impliedAssetAppreciation(inp.vesselPrice, inp.resaleValue, inp.exitYear);
+      cards.push(dealSummaryCard('Implied asset appreciation', appr != null ? fmtPct(appr, 2) + '/yr' : '—', `${inp.exitYear}-yr hold to resale`));
+    }
+
+    let breachLabel = 'None';
+    let breachClass = 'kpi__value--ok';
+    let breachSub = 'Clean across base-case hold';
+    if (baseBreach) {
+      breachLabel = `Year ${baseBreach.year}`;
+      breachClass = 'kpi__value--warn';
+      breachSub = baseBreach.breaches.join(', ') + ' breach';
+    } else if (troughBreach) {
+      breachLabel = `Year ${troughBreach.year} (trough)`;
+      breachClass = '';
+      breachSub = `Stress only · ${troughBreach.breaches.join(', ')}`;
+    }
+    cards.push(dealSummaryCard('First covenant breach', breachLabel, breachSub, { valueClass: breachClass }));
+
+    equityRow.innerHTML = cards.join('');
+
+    if (troughNote) {
+      if (troughBreach) {
+        troughNote.className = 'analytics-note analytics-note--bad';
+        troughNote.textContent = `Breaches DSCR covenant in year ${troughBreach.year} — bank can call the loan. (${troughBreach.breaches.join(', ')})`;
+      } else {
+        troughNote.className = 'analytics-note analytics-note--ok';
+        troughNote.textContent = `Survives trough within covenant (min DSCR ${fmtX(covenantInputs.minDscr)}). Rates drop to $14,000/day for 2 years after TC.`;
+      }
+    }
+
+    window.__covenantByYear = {};
+    baseCov.forEach((c) => { window.__covenantByYear[c.year] = c.breaches; });
+
+    const compareNote = byId('balloonCompareNote');
+    const comparison = computeBalloonComparison();
+    if (compareNote) {
+      if (comparison) {
+        compareNote.hidden = false;
+        const dir = comparison.spreadPp >= 0 ? 'adds' : 'subtracts';
+        compareNote.textContent = `Balloon year ${comparison.balloonInfo.year} (${fmtMoney(comparison.balloonInfo.amount)}): Refinance IRR ${fmtPct(comparison.refiPct, 1)} vs cash buyout IRR ${fmtPct(comparison.buyoutPct, 1)} on ${fmtMoney(comparison.buyoutEquity)} total equity. Cash buyout ${dir} ${Math.abs(comparison.spreadPp).toFixed(1)} pp of IRR vs refinancing.`;
+      } else {
+        compareNote.hidden = true;
+        compareNote.textContent = '';
+      }
+    }
+  }
+
+  function renderPriceSensitivity() {
+    const body = byId('priceSensitivityBody');
+    const cushionEl = byId('tceCushionMetric');
+    if (!body || calcMode === 'tce') {
+      if (body) body.innerHTML = '';
+      if (cushionEl) cushionEl.innerHTML = '';
+      return;
+    }
+
+    const rows = priceSensitivityRows();
+    body.innerHTML = rows.map((r) => `
+      <tr class="${r.isBase ? 'row-base' : ''}">
+        <td>${r.deltaPct > 0 ? '+' : ''}${r.deltaPct.toFixed(0)}%</td>
+        <td>${fmtMoney(r.price)}</td>
+        <td>${fmtMoney(r.equity)}</td>
+        <td>${fmtDay(r.breakevenTce)}</td>
+        <td>${r.equityIrr != null ? fmtPct(r.equityIrr * 100, 1) : '—'}</td>
+        <td>${r.minDscr != null ? fmtX(r.minDscr) : '—'}</td>
+      </tr>`).join('');
+
+    const cushion = computeTceCushion(rows);
+    if (cushionEl) {
+      cushionEl.innerHTML = cushion != null
+        ? `<strong>TCE cushion:</strong> ${Math.round(cushion).toLocaleString('en-US')} $/day saved per $1M off the price`
+        : '';
+    }
+  }
+
+  function renderBalloonFlags(stackRows) {
+    const inp = readEquityModelInputs();
+    const { balloons } = aggregateDebtStateByYear(inp.holdYears, inp);
+    if (!balloons.length) return stackRows;
+    const balloonByName = {};
+    balloons.forEach((b) => {
+      const key = b.name;
+      if (!balloonByName[key] || b.year < balloonByName[key].year) balloonByName[key] = b;
+    });
+    const treatment = inp.balloonTreatment;
+    return (stackRows || []).map((row) => {
+      if (row.type !== 'debt') return row;
+      const b = balloonByName[row.name];
+      if (!b) return row;
+      let note;
+      if (treatment === 'buyout') {
+        note = `Balloon of ${fmtMoney(b.amount)} in year ${b.year} — cash buyout from equity (not operating debt service).`;
+      } else if (treatment === 'sell') {
+        note = `Balloon of ${fmtMoney(b.amount)} in year ${b.year} — deal exits via sale at term.`;
+      } else {
+        note = `Balloon of ${fmtMoney(b.amount)} in year ${b.year} refinances at ${fmtPct(b.rate)} — refi risk if rates rise.`;
+      }
+      return { ...row, balloonNote: note };
+    });
+  }
+
+  function tceVerdict(solvedTce, p50, p75, p90, targetIrr) {
+    const pct = fmtPct(targetIrr, 1);
+    if (solvedTce <= p50) {
+      return `Achievable — you need a rate at or below the historical median to hit ${pct}.`;
+    }
+    if (solvedTce <= p75) {
+      return `Moderate — needs a rate between the historical median and P75.`;
+    }
+    if (solvedTce <= p90) {
+      return `Demanding — needs sustained above-P75 rates.`;
+    }
+    return `Unrealistic — needs rates above the historical 90th percentile for the full hold.`;
+  }
+
+  function renderTceSolveOutput() {
+    const section = byId('tceSolveSection');
+    const kpiRow = byId('tceSolveKpiRow');
+    const distPanel = byId('tceDistPanel');
+    if (!section || !kpiRow || !distPanel) return;
+
+    if (calcMode !== 'tce') {
+      section.hidden = true;
+      return;
+    }
+    section.hidden = false;
+
+    const targetIrr = num(byId('targetIrr')?.value, 6);
+    const p25 = num(byId('histP25')?.value, 24000);
+    const p50 = num(byId('histP50')?.value, 31500);
+    const p75 = num(byId('histP75')?.value, 34800);
+    const p90 = num(byId('histP90')?.value, 38000);
+    const solvedTce = getActiveTce();
+    const cashBreakeven = computeCashBreakevenTce();
+
+    kpiRow.innerHTML = `
+      <div class="kpi">
+        <div class="kpi__label">Lifetime avg TCE needed</div>
+        <div class="kpi__value">${fmtDay(solvedTce)}</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi__label">Cash breakeven TCE</div>
+        <div class="kpi__value">${fmtDay(cashBreakeven)}</div>
+        <div class="kpi__sub">covers OPEX + debt service, zero return</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi__label">Target IRR</div>
+        <div class="kpi__value">${fmtPct(targetIrr, 1)}</div>
+      </div>`;
+
+    const solvedPosRaw = tceDistPosition(solvedTce, p25, p90);
+    const cashPosRaw = tceDistPosition(cashBreakeven, p25, p90);
+    const [solvedPos, cashPos] = spreadMarkerPositions(solvedPosRaw, cashPosRaw);
+    const p50Pos = tceDistPosition(p50, p25, p90);
+    const p75Pos = tceDistPosition(p75, p25, p90);
+    const solvedBand = tcePercentileBand(solvedTce, p25, p50, p75, p90);
+    const cashBand = tcePercentileBand(cashBreakeven, p25, p50, p75, p90);
+    const scaleLabel = (value, pct, edge) => {
+      const style = edge === 'start'
+        ? 'left:0'
+        : edge === 'end'
+          ? 'left:100%'
+          : `left:${pct}%`;
+      const edgeClass = edge ? ` tce-dist__scale-label--${edge}` : '';
+      return `<span class="tce-dist__scale-label${edgeClass}" style="${style}">${fmtDay(value).replace('/day', '')}</span>`;
+    };
+
+    distPanel.innerHTML = `
+      <div class="section-label">Historical placement</div>
+      <div class="tce-dist__scale">
+        ${scaleLabel(p25, 0, 'start')}
+        ${scaleLabel(p50, p50Pos, '')}
+        ${scaleLabel(p75, p75Pos, '')}
+        ${scaleLabel(p90, 100, 'end')}
+      </div>
+      <div class="tce-dist__track-wrap">
+        <div class="tce-dist__track">
+          <div class="tce-dist__fill"></div>
+          <span class="tce-dist__p-tick" style="left:0" aria-hidden="true"></span>
+          <span class="tce-dist__p-tick" style="left:${p50Pos}%" aria-hidden="true"></span>
+          <span class="tce-dist__p-tick" style="left:${p75Pos}%" aria-hidden="true"></span>
+          <span class="tce-dist__p-tick" style="left:100%" aria-hidden="true"></span>
+          <span class="tce-dist__marker tce-dist__marker--solved" style="left:${solvedPos}%" title="Required TCE"></span>
+          <span class="tce-dist__marker tce-dist__marker--cash" style="left:${cashPos}%" title="Cash breakeven"></span>
+        </div>
+      </div>
+      <div class="tce-dist__legend">
+        <div class="tce-dist__legend-item tce-dist__legend-item--solved">
+          <span class="tce-dist__legend-dot" aria-hidden="true"></span>
+          <span>Required TCE · ${fmtDay(solvedTce)} · <span class="tce-dist__legend-band">${escapeHtml(solvedBand)}</span></span>
+        </div>
+        <div class="tce-dist__legend-item tce-dist__legend-item--cash">
+          <span class="tce-dist__legend-dot" aria-hidden="true"></span>
+          <span>Cash breakeven · ${fmtDay(cashBreakeven)} · <span class="tce-dist__legend-band">${escapeHtml(cashBand)}</span></span>
+        </div>
+      </div>
+      <div class="tce-dist__verdict">${escapeHtml(tceVerdict(solvedTce, p50, p75, p90, targetIrr))}</div>`;
+  }
+
+  function setCalcMode(mode, options) {
+    const { skipRecalc = false } = options || {};
+    calcMode = mode === 'tce' ? 'tce' : 'irr';
+    document.documentElement.setAttribute('data-calc-mode', calcMode);
+    document.querySelectorAll('#calcModeToggle .toggle-btn').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.mode === calcMode);
+    });
+    const scenarioSection = byId('scenarioSection');
+    const tceSection = byId('tceSolveSection');
+    if (scenarioSection) scenarioSection.hidden = calcMode === 'tce';
+    if (tceSection) tceSection.hidden = calcMode !== 'tce';
+    if (!skipRecalc && !stateRestoreActive) recalc();
+    if (!stateRestoreActive) scheduleSaveShipFinanceState();
+  }
+
   function pmt(principal, ratePerPeriod, nPeriods) {
     if (nPeriods <= 0) return 0;
     if (principal <= 0) return 0;
@@ -1203,6 +3039,8 @@
     const totalCapital = getTotalCapitalForTerm(termEl);
     return [...termEl.querySelectorAll('.tranche-card')].map((el) => {
       const pct = num(el.querySelector('.tranche-pct')?.value);
+      const amortEl = el.querySelector('.tranche-amort');
+      const amortYears = normalizeAmortYears(amortEl?.value, amortEl).value;
       return {
         id: el.dataset.id,
         name: el.querySelector('.tranche-name')?.value?.trim() || 'Tranche',
@@ -1211,7 +3049,7 @@
         amount: trancheDollarsFromPct(pct, totalCapital),
         spread: num(el.querySelector('.tranche-spread')?.value),
         freq: el.querySelector('.tranche-freq')?.value || 'quarterly',
-        amortYears: num(el.querySelector('.tranche-amort')?.value, 20),
+        amortYears,
         termYears: num(el.querySelector('.tranche-term')?.value, 7),
         equityReturn: num(el.querySelector('.tranche-equity-rate')?.value, 6),
       };
@@ -1367,7 +3205,8 @@
     const spread = num(termEl.querySelector('.term-refi-spread')?.value, 1.5);
     const eqReturn = num(termEl.querySelector('.term-equity-return')?.value, 6);
     const freq = termEl.querySelector('.term-refi-freq')?.value || 'quarterly';
-    const amort = num(termEl.querySelector('.term-refi-amort')?.value, 20);
+    const amortEl = termEl.querySelector('.term-refi-amort');
+    const amort = normalizeAmortYears(amortEl?.value, amortEl).value;
     const termY = num(termEl.querySelector('.term-refi-term-years')?.value, 7);
     const debtPct = Math.max(0, 100 - eqPct);
     refiAutogenLock = true;
@@ -1465,6 +3304,14 @@
           <input type="text" inputmode="decimal" class="num-fmt term-total-capital" data-decimals="0" value="50,000,000">
         </div>
         <div class="tranches-root"></div>
+        <div class="field balloon-treatment-field">
+          <label>Balloon at term end</label>
+          <select class="term-balloon-treatment">
+            <option value="refinance" selected>Refinance — roll into next term</option>
+            <option value="sell">Sell at term — exit in balloon year</option>
+            <option value="buyout">Cash buyout — equity pays balloon</option>
+          </select>
+        </div>
         <div class="stack-hint"></div>
       </div>`;
     return el;
@@ -1743,9 +3590,21 @@
         debtAtMaturity += sched.periods.length
           ? sched.periods[sched.periods.length - 1].balance
           : 0;
-        sched.periods.forEach((p, idx) => {
-          const y = startYear + Math.floor(idx / ppy);
-          debtByYear[y] = (debtByYear[y] || 0) + p.debtService;
+        const treatment = kind === 'loan' ? getLoanBalloonTreatment() : 'refinance';
+        const amortYears = normalizeAmortYears(t.amortYears).value;
+        const segment = scheduleTrancheDebt(
+          t.amount,
+          allIn,
+          ppy,
+          amortYears,
+          t.termYears,
+          startYear,
+          startYear + t.termYears,
+          treatment,
+          { name: t.name }
+        );
+        Object.entries(segment.operatingDebtByYear).forEach(([y, ds]) => {
+          debtByYear[y] = (debtByYear[y] || 0) + ds;
         });
         stackRows.push({
           name: t.name,
@@ -1890,15 +3749,16 @@
   function compute() {
     const sofr = num(byId('sofrInput').value);
     const vesselPrice = num(byId('vesselPrice').value);
-    const dailyTce = num(byId('dailyTce').value);
+    const dailyTce = getActiveTce();
     const dailyOpex = num(byId('dailyOpex').value);
     const vesselAge = num(byId('vesselAge').value);
     const usefulLife = Math.max(1, num(byId('usefulLife').value, 20));
     const depreciationPct = num(byId('depreciationPct').value, 0);
     const autoResidual = isAutoResidual();
     const manualResidual = num(byId('residualValue').value);
-    const annualRevenue = dailyTce * DAYS_YEAR;
-    const annualOpex = dailyOpex * DAYS_YEAR;
+    const operatingDays = Math.max(1, num(byId('operatingDays')?.value, 357));
+    const annualRevenue = dailyTce * operatingDays;
+    const annualOpex = dailyOpex * operatingDays;
     const annualDepreciation = vesselPrice * (depreciationPct / 100);
 
     const termBlocks = [...document.querySelectorAll('#termsContainer .term-block')];
@@ -1990,26 +3850,40 @@
       globalYear += result.termYears;
     });
 
+    const exitInp = readEquityModelInputs();
+    const effectiveHold = exitInp.holdYears;
+
     const stackRows = stackParts.flatMap((p) => p.stackRows);
-    const displayYears = Math.max(usefulLife, globalYear);
-    const pnlRows = extendPnlPartsToUsefulLife(pnlParts, displayYears, {
+    let displayYears = Math.max(usefulLife, globalYear);
+    displayYears = Math.min(displayYears, effectiveHold);
+    if (exitInp.exitMode === 'sell' && exitInp.balloonTreatment !== 'sell') {
+      displayYears = Math.min(displayYears, exitInp.exitYear);
+    }
+    let pnlRows = extendPnlPartsToUsefulLife(pnlParts, displayYears, {
       annualRevenue,
       annualOpex,
       annualDepreciation,
     });
+    pnlRows = overlayPnlWithDebtState(pnlRows, annualDepreciation);
+    pnlRows = trimPnlForExitMode(pnlRows);
     const holdingYears = Math.max(globalYear, 1);
 
     const noi = annualRevenue - annualOpex;
-    const year1Ds = pnlParts[0]?.rows[0]?.debtService || 0;
-    const breakEvenDaily = year1Ds > 0 ? (year1Ds + annualOpex) / DAYS_YEAR : dailyOpex;
+    const debtStateForKpi = aggregateDebtStateByYear(effectiveHold, exitInp);
+    const year1Ds = debtStateForKpi.operatingDebtByYear[0] || 0;
+    const breakEvenDaily = year1Ds > 0 ? (year1Ds + annualOpex) / operatingDays : dailyOpex;
 
     const ltvInception = vesselPrice > 0 && firstLoanDebt > 0
       ? (firstLoanDebt / vesselPrice) * 100
       : null;
-    const valMaturity = vesselValueAtYear(
-      vesselPrice, vesselAge, depreciationPct, firstLoanTermYears, manualResidual, autoResidual
-    );
-    const debtAtMaturity = firstLoanDebtAtMaturity;
+
+    const equityBundle = buildEquityModelBundle(dailyTce);
+    const valMaturity = exitInp.exitMode === 'sell'
+      ? exitInp.resaleValue
+      : vesselValueForCovenant(exitInp, effectiveHold);
+    const debtAtMaturity = (equityBundle.debtAtExit > 1)
+      ? equityBundle.debtAtExit
+      : outstandingDebtAtYear(equityBundle, effectiveHold);
     const ltvMaturity = valMaturity > 0 ? (debtAtMaturity / valMaturity) * 100 : null;
 
     const funded = firstLoanFunded || 1;
@@ -2020,16 +3894,18 @@
       else blendedNum += w * t.equityReturn;
     });
 
-    const assetYield = funded > 0 ? (annualRevenue / funded) * 100 : null;
+    const assetYield = funded > 0 ? (noi / funded) * 100 : null;
     const assetYieldCovers = assetYield != null && assetYield > blendedNum;
 
-    const cumResidual = vesselValueAtYear(
-      vesselPrice, vesselAge, depreciationPct, holdingYears, manualResidual, autoResidual
-    );
+    const cumResidual = exitValueAtHold(exitInp);
 
-    const dealSummary = buildDealSummary({
-      termYears: firstLoanTermYears,
-      termLabel: 'loan term',
+    const termCount = stackParts.length;
+
+    const txnCosts = num(byId('transactionCosts')?.value, 0);
+
+    const dealSummary = buildTermExitScenario(equityBundle, firstLoanTermYears, {
+      termLabel: `Exit at end of Term 1 (year ${firstLoanTermYears})`,
+      termTitleSpan: `· Exit at end of Term 1 (year ${firstLoanTermYears})`,
       tranches: firstLoanTranches,
       annualRevenue,
       annualOpex,
@@ -2041,47 +3917,47 @@
       autoResidual,
       totalEquityAmount: firstLoanEquity,
       funded,
-      estResidualOverride: valMaturity,
       totalEquityCostOverride: equityCostForTranches(firstLoanTranches, firstLoanTermYears),
+      equityInvestedOverride: firstLoanEquity + txnCosts,
     });
 
-    const dealSummaryLife = buildDealSummary({
-      termYears: usefulLife,
-      termLabel: 'useful life',
-      tranches: firstLoanTranches,
-      annualRevenue,
-      annualOpex,
-      totalInterestPaid: firstLoanInterest,
-      vesselPrice,
-      vesselAge,
-      depreciationPct,
-      manualResidual,
-      autoResidual,
-      totalEquityAmount: firstLoanEquity,
-      funded,
-      estResidualOverride: vesselValueAtYear(
-        vesselPrice, vesselAge, depreciationPct, usefulLife, manualResidual, autoResidual
-      ),
-      totalEquityCostOverride: equityCostForTranches(firstLoanTranches, usefulLife),
-    });
+    const dealSummaryLife = buildExitAwareDealSummary(equityBundle);
 
-    const dealSummaryCumulative = buildDealSummary({
-      termYears: holdingYears,
-      termLabel: 'cumulative holding',
-      tranches: allFinancingTranches,
-      annualRevenue,
-      annualOpex,
-      totalInterestPaid: cumulativeInterest,
-      vesselPrice,
-      vesselAge,
-      depreciationPct,
-      manualResidual,
-      autoResidual,
-      totalEquityAmount: cumulativeEquity,
-      funded: cumulativeFunded || funded,
-      estResidualOverride: cumResidual,
-      totalEquityCostOverride: cumulativeEquityCost,
-    });
+    const dealSummaryCumulative = holdingYears < effectiveHold
+      ? buildTermExitScenario(equityBundle, holdingYears, {
+        termLabel: `Exit at end of Term ${termCount} (year ${holdingYears})`,
+        termTitleSpan: `· Exit at end of Term ${termCount} (year ${holdingYears})`,
+        tranches: allFinancingTranches,
+        annualRevenue,
+        annualOpex,
+        totalInterestPaid: cumulativeInterest,
+        vesselPrice,
+        vesselAge,
+        depreciationPct,
+        manualResidual,
+        autoResidual,
+        totalEquityAmount: cumulativeEquity,
+        funded: cumulativeFunded || funded,
+        totalEquityCostOverride: cumulativeEquityCost,
+        equityInvestedOverride: computeEquityInvestedThroughYear(holdingYears),
+      })
+      : buildTermExitScenario(equityBundle, effectiveHold, {
+        termLabel: dealSummaryLife.termLabel,
+        termTitleSpan: `· ${effectiveHold}-year ${dealSummaryLife.termLabel}`,
+        tranches: allFinancingTranches,
+        annualRevenue,
+        annualOpex,
+        totalInterestPaid: cumulativeInterest,
+        vesselPrice,
+        vesselAge,
+        depreciationPct,
+        manualResidual,
+        autoResidual,
+        totalEquityAmount: cumulativeEquity,
+        funded: cumulativeFunded || funded,
+        totalEquityCostOverride: cumulativeEquityCost,
+        equityInvestedOverride: computeEquityInvestedThroughYear(holdingYears),
+      });
 
     return {
       stackRows,
@@ -2103,6 +3979,9 @@
       dealSummaryLife,
       dealSummaryCumulative,
       termCount: termBlocks.length,
+      exitInp,
+      equityMetrics: equityBundle,
+      activeTce: dailyTce,
     };
   }
 
@@ -2134,12 +4013,17 @@
       : vesselValueAtYear(
         vesselPrice, vesselAge, depreciationPct, years, manualResidual, autoResidual
       );
-    const residualAssumption = autoResidual
-      ? 'Straight-line depreciation assumption'
-      : 'User-defined assumption';
-    const totalNetProfit = totalRevenue - totalOpex - totalInterestPaid - totalEquityCost + estResidual;
+    const residualAssumption = ctx.residualAssumptionOverride != null
+      ? ctx.residualAssumptionOverride
+      : (autoResidual
+        ? 'Straight-line depreciation assumption'
+        : 'User-defined assumption');
+    const totalNetProfit = ctx.totalNetProfitOverride != null
+      ? ctx.totalNetProfitOverride
+      : totalRevenue - totalOpex - totalInterestPaid - totalEquityCost + estResidual;
+    const equityBase = ctx.equityInvestedOverride ?? totalEquityAmount;
     const annualAvgNetProfit = totalNetProfit / years;
-    const roe = totalEquityAmount > 0 ? (totalNetProfit / totalEquityAmount) * 100 : null;
+    const roe = equityBase > 0 ? (totalNetProfit / equityBase) * 100 : null;
     const roi = funded > 0 ? (totalNetProfit / funded) * 100 : null;
     const annualizedRoi = roi != null ? roi / years : null;
     const annualizedRoe = roe != null ? roe / years : null;
@@ -2147,6 +4031,7 @@
     return {
       termYears: years,
       termLabel: ctx.termLabel || 'term',
+      termTitleSpan: ctx.termTitleSpan,
       totalRevenue,
       totalOpex,
       totalInterestPaid,
@@ -2154,6 +4039,9 @@
       estResidual,
       residualAssumption,
       totalNetProfit,
+      netProfitNote: ctx.netProfitNoteOverride,
+      equityIrr: ctx.equityIrr,
+      equityIrrNote: ctx.equityIrrNote,
       annualAvgNetProfit,
       roe,
       annualizedRoe,
@@ -2181,25 +4069,37 @@
     if (!s) return;
     const termEl = byId(termSpanId);
     if (termEl) {
-      termEl.textContent = `· ${s.termYears}-year ${s.termLabel}`;
+      termEl.textContent = s.termTitleSpan
+        || `· ${s.termYears}-year ${s.termLabel}`;
     }
-    const interestNote = s.termLabel === 'useful life'
-      ? 'Interest through loan term only'
-      : s.termLabel === 'cumulative holding'
-        ? 'All financing terms'
-        : 'Principal excluded';
+    const isExitScenario = String(s.termLabel || '').startsWith('Exit at end of');
+    const interestNote = isExitScenario
+      ? 'Through exit year · principal excluded'
+      : s.termLabel === 'hold to sale'
+        ? 'Debt service through sale year'
+        : s.termLabel === 'useful life'
+          ? 'Debt service through hold (exit-aware)'
+          : 'Principal excluded';
     const row = byId(rowId);
     if (!row) return;
-    row.innerHTML = [
+    const cards = [
       dealSummaryCard('Total revenue', fmtMoney(s.totalRevenue), `Annual × ${s.termYears} yrs`),
       dealSummaryCard('Total OPEX', fmtMoney(s.totalOpex), `Annual × ${s.termYears} yrs`),
       dealSummaryCard('Total interest paid', fmtMoney(s.totalInterestPaid), interestNote),
       dealSummaryCard('Equity cost', fmtMoney(s.totalEquityCost), `Flat returns × ${s.termYears} yrs`),
       dealSummaryCard('Est. residual value', fmtMoney(s.estResidual), s.residualAssumption),
-      dealSummaryCard('Total net profit', fmtMoney(s.totalNetProfit), 'Revenue − OPEX − interest − equity + residual', {
+      dealSummaryCard('Total net profit', fmtMoney(s.totalNetProfit), s.netProfitNote || 'Sum of equity cash flow incl. window terminal', {
         cardClass: 'kpi--highlight',
         valueClass: signedMetricClass(s.totalNetProfit),
       }),
+    ];
+    if (s.equityIrr != null) {
+      cards.push(dealSummaryCard('Equity IRR', fmtPct(s.equityIrr * 100, 1), s.equityIrrNote || `${s.termYears}-year exit scenario`, {
+        cardClass: 'kpi--highlight',
+        valueClass: signedMetricClass(s.equityIrr),
+      }));
+    }
+    cards.push(
       dealSummaryCard('Annual avg net profit', fmtMoney(s.annualAvgNetProfit), `Total ÷ ${s.termYears} yrs`),
       dealSummaryCard('ROE', s.roe != null ? fmtPct(s.roe, 1) : '—', 'Net profit ÷ equity', {
         valueClass: signedMetricClass(s.roe),
@@ -2211,7 +4111,8 @@
         valueClass: signedMetricClass(s.roi),
       }),
       dealSummaryCard('Annualized ROI', s.annualizedRoi != null ? fmtPct(s.annualizedRoi, 1) : '—', 'ROI ÷ term years'),
-    ].join('');
+    );
+    row.innerHTML = cards.join('');
   }
 
   function renderDealSummary(d) {
@@ -2228,6 +4129,16 @@
   function renderKpis(r) {
     const sofrSubClass = r.sofrSource === 'live' ? 'kpi__sub--live' : 'kpi__sub--manual';
     const sofrSubText = r.sofrSource === 'live' ? '(live)' : '(manual)';
+    const eq = r.equityMetrics || {};
+    const exitInp = r.exitInp || readEquityModelInputs();
+    const activeTce = r.activeTce ?? getActiveTce();
+    const exitSub = calcMode === 'tce'
+      ? `${fmtDay(activeTce)} · ${exitInp.holdYears}-yr ${exitModeLabel(exitInp.exitMode)}`
+      : exitInp.exitMode === 'sell'
+        ? `${exitInp.holdYears}-yr hold · ${fmtMoney(exitInp.resaleValue)} resale`
+        : `${exitInp.holdYears}-yr · ${exitModeLabel(exitInp.exitMode)}`;
+    const targetIrr = num(byId('targetIrr')?.value, 6);
+    const equityIrrPct = eq.equityIrr != null ? eq.equityIrr * 100 : null;
     byId('kpiRow').innerHTML = `
       <div class="kpi">
         <div class="kpi__label">SOFR</div>
@@ -2246,7 +4157,7 @@
       <div class="kpi">
         <div class="kpi__label">Asset yield</div>
         <div class="kpi__value ${r.assetYieldCovers ? 'kpi__value--ok' : 'kpi__value--warn'}">${r.assetYield != null ? fmtPct(r.assetYield) : '—'}</div>
-        <div class="kpi__sub ${r.assetYieldCovers ? 'kpi__sub--covers' : 'kpi__sub--below'}">${r.assetYield != null ? (r.assetYieldCovers ? 'Covers cost of capital' : 'Below cost of capital') : 'Revenue ÷ capital raised'}</div>
+        <div class="kpi__sub ${r.assetYieldCovers ? 'kpi__sub--covers' : 'kpi__sub--below'}">${r.assetYield != null ? (r.assetYieldCovers ? 'Covers cost of capital' : 'Below cost of capital') : 'NOI ÷ capital raised'}</div>
       </div>
       <div class="kpi">
         <div class="kpi__label">LTV at inception</div>
@@ -2256,27 +4167,33 @@
       <div class="kpi">
         <div class="kpi__label">LTV at maturity</div>
         <div class="kpi__value ${r.ltvMaturity > 80 ? 'kpi__value--warn' : ''}">${r.ltvMaturity != null ? fmtPct(r.ltvMaturity, 1) : '—'}</div>
-        <div class="kpi__sub">Debt ${fmtMoney(r.debtAtMaturity)} · value ${fmtMoney(r.valMaturity)}</div>
+        <div class="kpi__sub">Debt at exit ${fmtMoney(r.debtAtMaturity)} · value ${fmtMoney(r.valMaturity)}</div>
       </div>
       <div class="kpi">
         <div class="kpi__label">Year 1 DSCR</div>
         <div class="kpi__value ${r.year1Dscr != null && r.year1Dscr < 1.2 ? 'kpi__value--warn' : ''}">${r.year1Dscr != null ? fmtNum(r.year1Dscr) : '—'}</div>
         <div class="kpi__sub">Threshold 1.20×</div>
       </div>
+      <div class="kpi">
+        <div class="kpi__label">Equity IRR</div>
+        <div class="kpi__value ${equityIrrPct != null && equityIrrPct >= targetIrr ? 'kpi__value--ok' : equityIrrPct != null ? 'kpi__value--warn' : ''}">${equityIrrPct != null ? fmtPct(equityIrrPct, 1) : '—'}</div>
+        <div class="kpi__sub">${escapeHtml(exitSub)}</div>
+      </div>
     `;
   }
 
   function renderStack(rows) {
+    const flagged = renderBalloonFlags(rows);
     let html = '';
     let lastTerm = null;
-    (rows || []).forEach((row) => {
+    (flagged || []).forEach((row) => {
       if (row.termLabel && row.termLabel !== lastTerm) {
         html += `<tr class="pnl-term-header"><td colspan="6">${escapeHtml(row.termLabel)}</td></tr>`;
         lastTerm = row.termLabel;
       }
       html += `
       <tr>
-        <td>${escapeHtml(row.name)}</td>
+        <td>${escapeHtml(row.name)}${row.balloonNote ? `<span class="stack-balloon-note">${escapeHtml(row.balloonNote)}</span>` : ''}</td>
         <td>${fmtMoney(row.amount)}</td>
         <td>${fmtPct(row.rate)}</td>
         <td>${fmtMoney(row.periodic)}</td>
@@ -2289,17 +4206,23 @@
   }
 
   function renderPnlRow(row) {
-    const bad = row.dscr != null && row.dscr < 1.2;
+    const covenantInputs = readCovenantInputs();
+    const breaches = window.__covenantByYear?.[row.year] || [];
+    const bad = row.dscr != null && row.dscr < covenantInputs.minDscr;
+    const covClass = breaches.length ? ' row-covenant-breach' : '';
+    const covTag = breaches.length
+      ? `<span class="covenant-tag">⚠ ${breaches.join(', ')}</span>`
+      : '';
     return `
-      <tr>
-        <td>${row.year}</td>
+      <tr class="${covClass.trim()}">
+        <td>${row.year}${covTag}</td>
         <td>${fmtMoney(row.revenue)}</td>
         <td>${fmtMoneyOutflow(row.opex)}</td>
         <td>${fmtMoneyOutflow(row.depreciation)}</td>
-        <td>${fmtMoneyOutflow(row.debtService)}</td>
-        <td class="${row.noi >= 0 ? 'val-pos' : 'val-neg'}">${fmtMoney(row.noi)}</td>
+        <td>${fmtMoneyOutflow(row.debtService)}${row.equityBuyout ? `<span class="pnl-buyout-line">Equity buyout of balloon (${fmtMoneyOutflow(row.equityBuyout)})</span>` : ''}${row.equityRelease ? `<span class="pnl-buyout-line">Equity release from refi (+${fmtMoney(row.equityRelease)})</span>` : ''}</td>
+        <td class="${row.noi >= 0 ? 'val-pos' : 'val-neg'}">${fmtMoney(row.noi)}${row.exitNote ? `<div class="kpi__sub">${escapeHtml(row.exitNote)}</div>` : ''}</td>
         <td class="${row.netProfit >= 0 ? 'val-pos' : 'val-neg'}">${fmtMoney(row.netProfit)}</td>
-        <td class="col-dscr${bad ? ' dscr-bad' : ''}">${row.dscr != null ? fmtNum(row.dscr) : '—'}</td>
+        <td class="col-dscr${bad ? ' dscr-bad' : ''}">${row.dscr != null ? fmtX(row.dscr) : '—'}</td>
       </tr>`;
   }
 
@@ -2314,12 +4237,17 @@
   }
 
   function recalc() {
+    resetActiveTceCache();
+    ensureRefiTermForBalloon();
     updateAllTrancheAmountDisplays();
     const r = compute();
+    renderEquityAnalytics();
+    renderPriceSensitivity();
     renderKpis(r);
     renderStack(r.stackRows);
     renderPnl(r.pnlRows);
     renderDealSummary(r);
+    renderTceSolveOutput();
   }
 
   const EXPORT_PAGE_BADGE_LOGO_SCALE = 1.35;
@@ -2632,23 +4560,46 @@
   }
 
   function isAutoResidual() {
-    const active = document.querySelector('.residual-mode-btn.active');
-    return !active || active.dataset.mode === 'auto';
+    return getExitMode() === 'auto';
+  }
+
+  function setExitMode(mode, skipRecalc) {
+    const valid = ['auto', 'manual', 'scrap', 'sell'];
+    const m = valid.includes(mode) ? mode : 'auto';
+    document.querySelectorAll('.residual-mode-btn').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.mode === m);
+    });
+    const residualField = byId('residualField');
+    const sellFields = byId('exitSellFields');
+    const residualLabel = byId('residualFieldLabel');
+    if (residualField) residualField.hidden = m === 'auto' || m === 'sell';
+    if (sellFields) sellFields.hidden = m !== 'sell';
+    if (residualLabel) {
+      residualLabel.textContent = m === 'scrap' ? 'Scrap value at end of hold ($)' : 'Residual value at maturity ($)';
+    }
+    const hint = byId('residualModeHint');
+    if (hint) {
+      const hints = {
+        auto: 'From depreciation % and loan term',
+        manual: 'Enter residual value below',
+        scrap: 'Scrap value at end of full hold',
+        sell: 'Hold ends at exit year; resale less debt and 1% sale costs',
+      };
+      hint.textContent = hints[m] || hints.auto;
+    }
+    if (m === 'sell') {
+      const price = num(byId('vesselPrice')?.value);
+      const resaleEl = byId('resaleValue');
+      if (resaleEl && !parseNum(resaleEl.value)) {
+        resaleEl.value = fmtNumInput(price, 0);
+      }
+    }
+    if (!skipRecalc) recalc();
+    if (!stateRestoreActive) scheduleSaveShipFinanceState();
   }
 
   function setResidualMode(mode, skipRecalc) {
-    document.querySelectorAll('.residual-mode-btn').forEach((btn) => {
-      btn.classList.toggle('active', btn.dataset.mode === mode);
-    });
-    const residualField = byId('residualField');
-    if (residualField) residualField.hidden = mode === 'auto';
-    const hint = byId('residualModeHint');
-    if (hint) {
-      hint.textContent = mode === 'auto'
-        ? 'From depreciation % and loan term'
-        : 'Enter residual value below';
-    }
-    if (!skipRecalc) recalc();
+    setExitMode(mode, skipRecalc);
   }
 
   function inputValue(el) {
@@ -2683,6 +4634,7 @@
     };
     if (kind === 'loan') {
       base.totalCapital = inputValue(termEl.querySelector('.term-total-capital'));
+      base.balloonTreatment = termEl.querySelector('.term-balloon-treatment')?.value || 'refinance';
       base.tranches = readTranchesFromTerm(termEl).map(serializeTranchePreset);
     } else if (kind === 'refinancing') {
       base.marketValue = inputValue(termEl.querySelector('.term-market-value'));
@@ -2705,20 +4657,25 @@
 
   function serializeShipFinanceState() {
     const vesselIds = [
-      'vesselPrice', 'dailyTce', 'dailyOpex', 'vesselAge', 'usefulLife',
-      'depreciationPct', 'sofrInput', 'residualValue',
+      'vesselPrice', 'dailyTce', 'postTcRate', 'dailyOpex', 'operatingDays',
+      'opexEscalationPct', 'transactionCosts', 'drydockCost', 'drydockInterval',
+      'targetIrr', 'histP25', 'histP50', 'histP75', 'histP90',
+      'vesselAge', 'usefulLife', 'depreciationPct', 'sofrInput', 'residualValue',
+      'exitYear', 'resaleValue', 'covMinDscr', 'covMaxLtv', 'covMvcPct',
     ];
     const vessel = {};
     vesselIds.forEach((id) => {
       const el = byId(id);
       if (el) vessel[id] = el.value;
     });
-    vessel.residualMode = isAutoResidual() ? 'auto' : 'manual';
+    vessel.exitMode = getExitMode();
+    vessel.residualMode = vessel.exitMode;
     return {
       version: 1,
       savedAt: Date.now(),
       sofrSource,
       activeTermId,
+      calcMode,
       vessel,
       terms: [...document.querySelectorAll('#termsContainer .term-block')].map(serializeTermBlock),
     };
@@ -2754,6 +4711,8 @@
     if (term.kind === 'loan') {
       el = createLoanTermBlock(n);
       setInputValue(el.querySelector('.term-total-capital'), term.totalCapital);
+      const balloonSel = el.querySelector('.term-balloon-treatment');
+      if (balloonSel && term.balloonTreatment) balloonSel.value = term.balloonTreatment;
     } else if (term.kind === 'refinancing') {
       el = createRefiTermBlock(n, {
         marketValue: num(term.marketValue),
@@ -2816,11 +4775,15 @@
     try {
       const vessel = state.vessel || {};
       Object.keys(vessel).forEach((key) => {
-        if (key === 'residualMode') return;
+        if (key === 'residualMode' || key === 'exitMode') return;
         setInputValue(byId(key), vessel[key]);
       });
-      if (vessel.residualMode) setResidualMode(vessel.residualMode, true);
+      const exitMode = vessel.exitMode || vessel.residualMode || 'auto';
+      setExitMode(exitMode, true);
       if (state.sofrSource === 'live' || state.sofrSource === 'manual') sofrSource = state.sofrSource;
+      if (state.calcMode === 'tce' || state.calcMode === 'irr') {
+        setCalcMode(state.calcMode, { skipRecalc: true });
+      }
 
       const container = byId('termsContainer');
       if (!container) return false;
@@ -2866,7 +4829,8 @@
       } catch (_) { /* ignore */ }
 
       Object.entries(VESSEL_DEFAULTS).forEach(([id, value]) => setInputValue(byId(id), value));
-      setResidualMode('auto', true);
+      setExitMode('auto', true);
+      setCalcMode('irr', { skipRecalc: true });
       sofrSource = 'manual';
       termSeq = 0;
       trancheId = 0;
@@ -2951,11 +4915,25 @@
 
   function init() {
     document.querySelectorAll('.residual-mode-btn').forEach((btn) => {
-      btn.addEventListener('click', () => setResidualMode(btn.dataset.mode));
+      btn.addEventListener('click', () => setExitMode(btn.dataset.mode));
     });
-    setResidualMode('auto', true);
 
-    ['vesselPrice', 'dailyTce', 'dailyOpex', 'vesselAge', 'usefulLife', 'depreciationPct', 'sofrInput', 'residualValue'].forEach((id) => {
+    byId('vesselPrice')?.addEventListener('change', () => {
+      if (getExitMode() === 'sell') {
+        const price = num(byId('vesselPrice')?.value);
+        const resaleEl = byId('resaleValue');
+        if (resaleEl) resaleEl.value = fmtNumInput(price, 0);
+      }
+      const loanTerm = document.querySelector('#termsContainer .term-block[data-kind="loan"]');
+      const capInput = loanTerm?.querySelector('.term-total-capital');
+      if (capInput) capInput.value = byId('vesselPrice')?.value || capInput.value;
+    });
+
+    ['vesselPrice', 'dailyTce', 'postTcRate', 'dailyOpex', 'operatingDays', 'opexEscalationPct',
+      'transactionCosts', 'drydockCost', 'drydockInterval', 'targetIrr',
+      'histP25', 'histP50', 'histP75', 'histP90',
+      'vesselAge', 'usefulLife', 'depreciationPct', 'sofrInput', 'residualValue',
+      'exitYear', 'resaleValue', 'covMinDscr', 'covMaxLtv', 'covMvcPct'].forEach((id) => {
       const el = byId(id);
       if (!el) return;
       el.addEventListener('input', () => {
@@ -2974,6 +4952,11 @@
       });
       el.addEventListener('blur', () => formatNumInputEl(el));
     });
+
+    document.querySelectorAll('#calcModeToggle .toggle-btn').forEach((btn) => {
+      btn.addEventListener('click', () => setCalcMode(btn.dataset.mode));
+    });
+    setCalcMode('irr', { skipRecalc: true });
 
     byId('addTrancheBtn')?.addEventListener('click', () => {
       const term = getActiveTermEl();
@@ -3014,7 +4997,10 @@
 
     termSeq = Math.max(termSeq, document.querySelectorAll('#termsContainer .term-block').length);
     const restored = loadShipFinanceState();
-    if (!restored) bootstrapFinancingTerms();
+    if (!restored) {
+      bootstrapFinancingTerms();
+      setExitMode('auto', true);
+    }
     renumberTerms();
 
     if (!restored || sofrSource !== 'manual') fetchSofr();
