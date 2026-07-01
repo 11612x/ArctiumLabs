@@ -125,6 +125,7 @@
     border-bottom: 2px solid transparent;
     margin-bottom: -1px;
     transition: color 0.15s, border-color 0.15s;
+    touch-action: manipulation;
   }
 
   .tab-btn:hover { color: var(--text-dim); }
@@ -154,7 +155,12 @@
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
   }
 
-  .tab-more:hover .tab-more-menu,
+  @media (hover: hover) and (pointer: fine) {
+    .tab-more:hover .tab-more-menu {
+      display: block;
+    }
+  }
+
   .tab-more.open .tab-more-menu {
     display: block;
   }
@@ -173,6 +179,7 @@
     text-align: left;
     text-transform: uppercase;
     transition: color 0.15s, background 0.15s;
+    touch-action: manipulation;
   }
 
   .tab-more-item:hover,
@@ -4372,7 +4379,6 @@
 
 <div class="tab-nav">
   <button class="tab-btn active" data-tab="tab-dashboard" onclick="switchTab('tab-dashboard')">Dashboard</button>
-  <button class="tab-btn" data-tab="tab-map" onclick="switchTab('tab-map')">Map</button>
   <div class="tab-more" id="tabEstimateWrap">
     <button type="button" class="tab-btn tab-more-trigger" data-tab="tab-estimate" aria-haspopup="true" aria-expanded="false" id="tabEstimateTrigger">
       Estimate
@@ -5016,7 +5022,7 @@ async function saveVoyageChains() {
 const TAB_STORAGE_KEY = 'arctium_active_tab';
 const ESTIMATE_TAB_IDS = ['tab-tc', 'tab-voy', 'tab-scenario-analysis'];
 const MORE_TAB_IDS = ['tab-bunkers', 'tab-tank-cleaning', 'tab-ship-finance'];
-const VALID_TABS = ['tab-dashboard', 'tab-map', 'tab-tc', 'tab-voy', 'tab-scenario-analysis', 'tab-emissions', 'tab-route', ...MORE_TAB_IDS];
+const VALID_TABS = ['tab-dashboard', 'tab-tc', 'tab-voy', 'tab-scenario-analysis', 'tab-emissions', 'tab-route', ...MORE_TAB_IDS];
 const SHIP_FINANCE_IFRAME_SRC = 'ship-finance-calculator.html?v=20260528q';
 
 const TAB_IFRAME_IDS = {
@@ -5081,15 +5087,23 @@ function initTabDropdown(wrapId, triggerId, menuId) {
   const trigger = document.getElementById(triggerId);
   if (!wrap || !menu || !trigger) return;
 
-  trigger.addEventListener('click', (e) => {
+  function toggleDropdown(e) {
+    e.preventDefault();
     e.stopPropagation();
     const willOpen = !wrap.classList.contains('open');
     closeAllTabDropdowns();
     setTabDropdownOpen(wrapId, triggerId, willOpen);
+  }
+
+  trigger.addEventListener('click', toggleDropdown);
+
+  menu.addEventListener('click', (e) => {
+    e.stopPropagation();
   });
 
   menu.querySelectorAll('.tab-more-item').forEach((item) => {
     item.addEventListener('click', (e) => {
+      e.preventDefault();
       e.stopPropagation();
       const tabId = item.dataset.tab;
       if (tabId) switchTab(tabId);
@@ -5416,7 +5430,10 @@ function bootHeaderChrome() {
   authBindUserMenu();
   initMoreTabNav();
   initEstimateTabNav();
-  document.addEventListener('click', closeAllTabDropdowns);
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('.tab-more')) return;
+    closeAllTabDropdowns();
+  });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeAllTabDropdowns();
   });

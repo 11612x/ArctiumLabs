@@ -236,6 +236,201 @@ body.bunker-standalone.arc-loading { overflow: hidden; }
     gap: 16px;
   }
 
+#bunker-app .bunker-vessel-tabs-wrap {
+    max-width: 980px;
+    width: 100%;
+    margin: 0 auto 12px;
+  }
+
+#bunker-app .bunker-vessel-tabs {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+#bunker-app .bunker-vtab {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    padding: 6px 6px 6px 10px;
+    text-transform: uppercase;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    max-width: 220px;
+    user-select: none;
+  }
+
+#bunker-app .bunker-vtab:hover {
+    border-color: var(--border-light);
+    color: var(--text-dim);
+  }
+
+#bunker-app .bunker-vtab.active {
+    background: var(--surface2);
+    border-color: var(--accent-dim);
+    color: var(--text);
+  }
+
+#bunker-app .bunker-vtab-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+  }
+
+#bunker-app .bunker-vtab-close {
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border-radius: 2px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s, background 0.15s;
+  }
+
+#bunker-app .bunker-vtab-close:hover {
+    color: var(--red);
+    background: rgba(184, 120, 120, 0.12);
+  }
+
+#bunker-app .bunker-vtab-add {
+    background: transparent;
+    border: 1px dashed var(--border-light);
+    border-radius: 4px;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1;
+    padding: 5px 12px;
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+#bunker-app .bunker-vtab-add:hover {
+    border-color: var(--accent-dim);
+    color: var(--text-dim);
+  }
+
+#bunker-app .bunker-vtab-summary {
+    margin-left: auto;
+  }
+
+#bunker-app .bunker-summary-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+#bunker-app .bunker-summary-vessel {
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+
+#bunker-app .bunker-summary-vessel:hover {
+    border-color: var(--accent-dim);
+  }
+
+#bunker-app .bunker-summary-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 24px;
+    margin-bottom: 14px;
+  }
+
+#bunker-app .bunker-summary-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+#bunker-app .bunker-summary-meta-key {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+#bunker-app .bunker-summary-meta-val {
+    font-size: 13px;
+    color: var(--text);
+  }
+
+#bunker-app .bunker-summary-suppliers {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+  }
+
+#bunker-app .bunker-summary-supplier {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 12px 14px;
+  }
+
+#bunker-app .bunker-summary-supplier.best {
+    border-color: rgba(120,184,168,0.35);
+    background: rgba(120,184,168,0.08);
+  }
+
+#bunker-app .bunker-summary-supplier.worst {
+    border-color: rgba(184,120,120,0.35);
+    background: rgba(184,120,120,0.08);
+  }
+
+#bunker-app .bunker-summary-supplier-name {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+
+#bunker-app .bunker-summary-supplier-total {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+#bunker-app .bunker-summary-supplier-detail {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+#bunker-app .bunker-summary-empty {
+    font-size: 13px;
+    color: var(--text-muted);
+    padding: 8px 0;
+  }
+
+#bunker-app .bunker-summary-jump {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent-dim);
+    margin-top: 10px;
+  }
+
 #bunker-app .bunker-toolbar {
     display: grid;
     grid-template-columns: 1fr auto 1fr;

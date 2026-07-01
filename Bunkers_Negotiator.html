@@ -12,7 +12,11 @@
 </head>
 <body class="bunker-standalone">
 <div id="bunker-app">
-  <div class="bunker-layout">
+  <div class="bunker-vessel-tabs-wrap">
+    <div class="bunker-vessel-tabs" id="bunk-vessel-tabs" role="tablist" aria-label="Vessel negotiations"></div>
+  </div>
+
+  <div class="bunker-layout" id="bunk-vessel-content">
     <div class="card bunker-toolbar">
       <div class="bunker-toolbar-side">
         <button class="bunker-toolbar-btn" type="button" onclick="bunkExportPDF()">Export</button>
@@ -28,23 +32,23 @@
       <div class="bunker-meta-grid">
         <div class="field">
           <label>Vessel</label>
-          <input type="text" id="bunk-vessel" onchange="bunkUpdateTitle()">
+          <input type="text" id="bunk-vessel" oninput="bunkOnMetaChange()" onchange="bunkOnMetaChange()">
         </div>
         <div class="field port-ac-field">
           <label>Port</label>
           <div class="port-ac-wrap route-port-wrap">
-            <input type="text" id="bunk-port" autocomplete="off" placeholder="Search port…" onchange="bunkUpdateTitle()">
+            <input type="text" id="bunk-port" autocomplete="off" placeholder="Search port…" onchange="bunkOnMetaChange()">
             <div class="port-meta" id="bunk-port-meta"></div>
             <div class="route-port-list" id="bunk-port-list"></div>
           </div>
         </div>
         <div class="field">
           <label>Delivery from</label>
-          <input type="text" id="bunk-date-from" placeholder="DD/MM/YY" maxlength="8" oninput="bunkFormatDateInput(this)" onchange="bunkUpdateTitle()">
+          <input type="text" id="bunk-date-from" placeholder="DD/MM/YY" maxlength="8" oninput="bunkFormatDateInput(this)" onchange="bunkOnMetaChange()">
         </div>
         <div class="field">
           <label>Delivery to</label>
-          <input type="text" id="bunk-date-to" placeholder="DD/MM/YY" maxlength="8" oninput="bunkFormatDateInput(this)" onchange="bunkUpdateTitle()">
+          <input type="text" id="bunk-date-to" placeholder="DD/MM/YY" maxlength="8" oninput="bunkFormatDateInput(this)" onchange="bunkOnMetaChange()">
         </div>
       </div>
     </div>
@@ -79,6 +83,15 @@
       </div>
       <div id="bunk-counter-results"></div>
     </div>
+  </div>
+
+  <div class="bunker-layout bunker-summary-layout" id="bunk-summary-content" hidden>
+    <div class="card bunker-toolbar">
+      <div class="bunker-toolbar-side"></div>
+      <div class="bunker-toolbar-title">Summary</div>
+      <div class="bunker-toolbar-side right"></div>
+    </div>
+    <div id="bunk-summary-body"></div>
   </div>
 </div>
 
