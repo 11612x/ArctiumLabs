@@ -4399,6 +4399,7 @@
       <button type="button" class="tab-more-item" role="menuitem" data-tab="tab-bunkers">Bunkers</button>
       <button type="button" class="tab-more-item" role="menuitem" data-tab="tab-tank-cleaning">Tank Cleaning</button>
       <button type="button" class="tab-more-item" role="menuitem" data-tab="tab-ship-finance">Ship Finance</button>
+      <button type="button" class="tab-more-item" role="menuitem" data-tab="tab-voyage-actual">Voyage Actual</button>
     </div>
   </div>
 </div>
@@ -4736,6 +4737,10 @@
   <iframe id="shipFinanceFrame" data-src="ship-finance-calculator.html?v=20260528q" title="Ship finance calculator"></iframe>
 </div>
 
+<div class="tab-panel" id="tab-voyage-actual">
+  <iframe id="voyageActualFrame" data-src="voyage-actual.html" title="Voyage Actual"></iframe>
+</div>
+
 <div id="livePosDetailOverlay" class="live-pos-overlay" hidden aria-hidden="true">
   <div class="live-pos-detail" role="dialog" aria-modal="true" aria-labelledby="livePosDetailTitle">
     <div class="live-pos-detail__head">
@@ -5021,7 +5026,7 @@ async function saveVoyageChains() {
 // ═════════════════════════════════════════════════════════════════════════════
 const TAB_STORAGE_KEY = 'arctium_active_tab';
 const ESTIMATE_TAB_IDS = ['tab-tc', 'tab-voy', 'tab-scenario-analysis'];
-const MORE_TAB_IDS = ['tab-bunkers', 'tab-tank-cleaning', 'tab-ship-finance'];
+const MORE_TAB_IDS = ['tab-bunkers', 'tab-tank-cleaning', 'tab-ship-finance', 'tab-voyage-actual'];
 const VALID_TABS = ['tab-dashboard', 'tab-tc', 'tab-voy', 'tab-scenario-analysis', 'tab-emissions', 'tab-route', ...MORE_TAB_IDS];
 const SHIP_FINANCE_IFRAME_SRC = 'ship-finance-calculator.html?v=20260528q';
 
@@ -5031,7 +5036,8 @@ const TAB_IFRAME_IDS = {
   'tab-bunkers': 'bunkerFrame',
   'tab-tank-cleaning': 'tankCleaningFrame',
   'tab-ship-finance': 'shipFinanceFrame',
-  'tab-scenario-analysis': 'scenarioAnalysisFrame'
+  'tab-scenario-analysis': 'scenarioAnalysisFrame',
+  'tab-voyage-actual': 'voyageActualFrame'
 };
 
 function resolveIframeSrc(src) {
@@ -5127,7 +5133,7 @@ function postIframeUiState() {
     isAdmin,
     isOps
   };
-  ['emissionsFrame', 'routeFrame', 'bunkerFrame', 'tankCleaningFrame', 'shipFinanceFrame', 'scenarioAnalysisFrame'].forEach((id) => {
+  ['emissionsFrame', 'routeFrame', 'bunkerFrame', 'tankCleaningFrame', 'shipFinanceFrame', 'scenarioAnalysisFrame', 'voyageActualFrame'].forEach((id) => {
     const frame = document.getElementById(id);
     if (frame?.getAttribute('src') && frame.contentWindow) {
       frame.contentWindow.postMessage(payload, '*');
@@ -5270,7 +5276,7 @@ function switchTab(id) {
   if (id === 'tab-voy') {
     wirePortAutocompleteForAppSafe();
   }
-  if (id === 'tab-emissions' || id === 'tab-bunkers' || id === 'tab-tank-cleaning' || id === 'tab-ship-finance' || id === 'tab-route' || id === 'tab-scenario-analysis') {
+  if (id === 'tab-emissions' || id === 'tab-bunkers' || id === 'tab-tank-cleaning' || id === 'tab-ship-finance' || id === 'tab-route' || id === 'tab-scenario-analysis' || id === 'tab-voyage-actual') {
     postIframeUiState();
   }
 }
@@ -5515,7 +5521,7 @@ async function authOnLogin(user) {
   dashE2UnresolvedInit();
   const afterDataReady = () => {
     applyRoleUI();
-    if (['tab-emissions', 'tab-bunkers', 'tab-tank-cleaning', 'tab-ship-finance', 'tab-route', 'tab-scenario-analysis'].includes(getActiveTab())) postIframeUiState();
+    if (['tab-emissions', 'tab-bunkers', 'tab-tank-cleaning', 'tab-ship-finance', 'tab-route', 'tab-scenario-analysis', 'tab-voyage-actual'].includes(getActiveTab())) postIframeUiState();
     livePosRefreshUI();
     void reloadDashE2UnresolvedComments();
     if (typeof twelveQuotesUpdateAdminUi === 'function') twelveQuotesUpdateAdminUi();

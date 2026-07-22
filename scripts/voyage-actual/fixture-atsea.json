@@ -1,0 +1,109 @@
+{
+  "vessel": "Alpine Link",
+  "voyNo": 190,
+  "estNo": "",
+  "charterer": "PMI",
+  "cpDate": "2026-02-12",
+  "demRate": 50000,
+  "laytime": 84,
+  "estTce": 42518,
+  "freight": 1400000,
+  "freightComm": 5,
+  "demurrage": 19062.5,
+  "demComm": 5,
+  "otherRev": [
+    {
+      "label": "Tugs Claim",
+      "amount": 97000
+    },
+    {
+      "label": "Bunker Interim",
+      "amount": 197257.99
+    }
+  ],
+  "legs": [
+    {
+      "depPort": "Tuxpan",
+      "dep": "2026-02-10T11:36",
+      "arrPort": "Tampico",
+      "arr": "2026-02-15T12:30",
+      "miles": 503,
+      "cond": "Laden",
+      "robDepV": 267.95,
+      "robDepL": 284.56,
+      "robArrV": 214.29,
+      "robArrL": 265.32
+    },
+    {
+      "depPort": "Tampico",
+      "dep": "2026-02-18T21:06",
+      "arrPort": "Rio Haina",
+      "arr": "2026-02-24T10:00",
+      "miles": 1814,
+      "cond": "Laden",
+      "robDepV": 195.87,
+      "robDepL": 265.32,
+      "robArrV": 53.21,
+      "robArrL": 262.98
+    },
+    {
+      "depPort": "Rio Haina",
+      "dep": "2026-02-26T05:42",
+      "arrPort": "Houston",
+      "arr": "2026-03-03T04:18",
+      "miles": 1690,
+      "cond": "Ballast",
+      "robDepV": 40.47,
+      "robDepL": 255.38,
+      "robArrV": 22.22,
+      "robArrL": 134.7
+    }
+  ],
+  "opening": {
+    "VLSFO": [
+      {
+        "label": "Opening ROB",
+        "qty": 267.95,
+        "price": 525
+      }
+    ],
+    "LSMGO": [
+      {
+        "label": "Opening ROB",
+        "qty": 284.56,
+        "price": 712
+      }
+    ]
+  },
+  "stems": [
+    {
+      "date": "2026-02-15T12:30",
+      "port": "Tampico",
+      "supplier": "Boundary Test",
+      "grade": "LSMGO",
+      "qty": 50,
+      "price": 700
+    },
+    {
+      "date": "2026-02-21T08:00",
+      "port": "At sea (STS)",
+      "supplier": "Mid-passage",
+      "grade": "VLSFO",
+      "qty": 100,
+      "price": 600
+    }
+  ],
+  "portCosts": [
+    {
+      "port": "Tampico",
+      "daReason": "LD",
+      "da": 55000
+    },
+    {
+      "port": "Rio Haina",
+      "daReason": "Dis",
+      "da": 30000
+    }
+  ],
+  "otherCosts": []
+}

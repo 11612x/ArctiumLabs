@@ -1,0 +1,1152 @@
+<!doctype html>
+<html lang="en" data-ui-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voyage Actual — Arctium Labs</title>
+<link rel="icon" href="Favicon.svg" type="image/svg+xml">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --bg: #0d0f0e;
+  --surface: #141714;
+  --surface2: #1a1d1a;
+  --border: #252825;
+  --border-light: #2e322e;
+  --text: #e8ede8;
+  --text-dim: #b8beb8;
+  --text-muted: #949a94;
+  --accent: #a8b8a8;
+  --accent-dim: #5a6a5a;
+  --accent-glow: rgba(168,184,168,0.07);
+  --red: #b87878;
+  --amber: #b89858;
+  --teal: #78b8a8;
+  --input-bg: #000000;
+}
+html[data-ui-theme="light"] {
+  --bg: #e8ede8;
+  --surface: #dde3dd;
+  --surface2: #d3d9d3;
+  --border: #b8beb8;
+  --border-light: #a8aea8;
+  --text: #0d0f0e;
+  --text-dim: #2a2e2a;
+  --text-muted: #4a504a;
+  --accent: #6a8a6a;
+  --accent-dim: #4a6a4a;
+  --accent-glow: rgba(80,100,80,0.10);
+  --input-bg: #ffffff;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Consolas','Courier New',monospace;
+  font-size:15px;line-height:1.5;min-height:100vh;
+}
+.wrap{max-width:min(1880px,97vw);margin:0 auto;padding:16px 20px 64px}
+
+/* ---- voyage toolbar ---- */
+.toolbar{
+  display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end;
+  margin:0 0 12px;
+}
+.toolbar select{
+  font-family:inherit;font-size:12px;padding:7px 8px;
+  border:1px solid var(--border-light);background:var(--surface2);
+  color:var(--text);border-radius:4px;max-width:220px;outline:none;
+}
+.toolbar select:focus{border-color:var(--accent-dim)}
+.toolbar .visually-hidden{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;
+}
+button{
+  font-family:inherit;font-weight:600;letter-spacing:.08em;text-transform:uppercase;font-size:11px;
+  padding:8px 13px;border-radius:4px;
+  border:1px solid var(--border-light);background:var(--surface2);
+  color:var(--text-dim);cursor:pointer;
+}
+button:hover{color:var(--text);border-color:var(--accent-dim)}
+button.primary{
+  background:var(--accent);border-color:var(--accent);color:#0d0f0e;
+}
+button.primary:hover{opacity:.88}
+button:focus-visible,input:focus-visible,select:focus-visible{
+  outline:2px solid var(--accent-dim);outline-offset:1px;
+}
+#toast{font-size:12px;color:var(--teal);min-width:70px}
+#toast.bad{color:var(--red)}
+
+/* ---- sections ---- */
+.sec{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:6px;padding:18px;margin-top:18px;
+}
+#headSec{margin-top:0}
+.sec>h2{
+  margin:0 0 14px;font-weight:600;font-size:12px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--text-dim);
+  display:flex;align-items:center;gap:8px;
+}
+.sec>h2::after{content:"";flex:1;height:1px;background:var(--border)}
+.subhead{
+  margin:0 0 6px;font-size:12px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--text-muted);font-weight:600;
+}
+.subhead.spaced{margin:16px 0 6px}
+.hint{font-size:12px;color:var(--text-muted);margin:-6px 0 10px}
+.hint.after-table{margin:14px 0 0;line-height:1.55}
+#portStays{margin-top:22px}
+#portStays .subhead{margin:0 0 10px}
+#portStays .scroll{margin-bottom:0}
+.empty-msg{text-align:left;color:var(--text-muted)}
+.row-label{letter-spacing:.06em;text-transform:uppercase;font-size:12px;color:var(--text-dim)}
+
+/* ---- KPI strip ---- */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:10px;margin-top:18px}
+.kpi{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:6px;padding:10px 12px;
+}
+.kpi b{
+  display:block;font-weight:400;font-size:10.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--text-muted);
+}
+.kpi span{
+  display:block;margin-top:4px;font-weight:600;font-size:17px;
+  white-space:nowrap;color:var(--text);
+}
+.kpi span.neg{color:var(--red)} .kpi span.pos{color:var(--teal)}
+
+/* ---- flags ---- */
+#flags{margin-top:14px;display:flex;flex-direction:column;gap:6px}
+.flag{font-size:12.5px;padding:8px 12px;border-radius:4px;border:1px solid}
+.flag.ok{
+  color:var(--teal);border-color:var(--accent-dim);
+  background:var(--accent-glow);
+}
+.flag.bad{
+  color:var(--red);border-color:rgba(184,120,120,0.45);
+  background:rgba(184,120,120,0.08);
+}
+.flag::before{content:"● ";}
+
+/* ---- tables ---- */
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th{
+  font-weight:500;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--text-muted);text-align:left;padding:6px 8px;
+  border-bottom:2px solid var(--border);white-space:nowrap;
+}
+th.num{text-align:right}
+td{padding:3px 4px;border-bottom:1px solid var(--border);vertical-align:middle}
+td.calc{
+  font-size:13px;text-align:right;padding:6px 8px;
+  white-space:nowrap;color:var(--text-dim);
+}
+td.calc.neg{color:var(--red)}
+tr.totals td{
+  border-top:2px solid var(--border-light);border-bottom:none;
+  font-weight:600;color:var(--text);
+}
+tr.totals td.lbl{
+  letter-spacing:.08em;text-transform:uppercase;font-size:12px;
+  color:var(--text-dim);
+}
+input,select.cell{
+  font-family:inherit;font-size:13px;color:var(--text);
+  border:1px solid var(--border);background:var(--input-bg);
+  border-radius:3px;padding:5px 7px;width:100%;outline:none;
+}
+input:focus,select.cell:focus{border-color:var(--accent-dim)}
+input.num{text-align:right}
+input[data-t="dt"]{min-width:112px}
+input[data-t="d"]{min-width:88px}
+#legsT input,#legsT select{padding:4px 5px;font-size:12px}
+#legsT td,#legsT th{padding:3px 3px}
+#legsT td.calc{padding:4px 5px;font-size:12px}
+input[type=number]{-moz-appearance:textfield;appearance:textfield}
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.rm{
+  border:none;background:none;color:var(--text-muted);
+  cursor:pointer;font-size:15px;padding:2px 6px;
+}
+.rm:hover{color:var(--red)}
+.add{
+  display:inline-block;margin-top:8px;background:none;
+  border:1px dashed var(--border-light);color:var(--text-muted);
+  border-radius:4px;
+}
+.add:hover{
+  background:var(--accent-glow);border-color:var(--accent-dim);
+  color:var(--accent);
+}
+
+/* ---- fifo panels ---- */
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:900px){.duo{grid-template-columns:1fr}}
+.fifo{
+  border:1px solid var(--border);border-radius:6px;padding:12px 14px;
+  background:var(--surface2);
+}
+.fifo h3{
+  margin:0 0 8px;font-size:12px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--text-muted);font-weight:600;
+}
+.fifo .head{font-size:13px;margin-bottom:8px;line-height:1.7;color:var(--text-dim)}
+.fifo .head b{font-weight:600;color:var(--text)}
+.carry{margin-top:8px;font-size:12px;color:var(--text-muted)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:900px){.grid2{grid-template-columns:1fr}}
+
+/* header fields */
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px 16px}
+.fields label{display:block}
+.fields label b{
+  display:block;font-weight:400;font-size:11px;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;
+}
+footer{margin-top:26px;font-size:11.5px;color:var(--text-muted)}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="toolbar">
+    <select id="voyList" class="visually-hidden" title="Saved voyages" tabindex="-1" aria-hidden="true"><option value="">Saved voyages…</option></select>
+    <button data-act="save" class="visually-hidden" tabindex="-1" aria-hidden="true">Save</button>
+    <button data-act="new">New</button>
+    <button data-act="next" title="New voyage seeded with this voyage's closing ROB layers and last port">Next voyage →</button>
+    <button data-act="import" title="Load a voyage from a .xlsx this tool exported">Import .xlsx</button>
+    <button class="primary" data-act="export">Export .xlsx</button>
+    <input id="importFile" type="file" accept=".xlsx" style="display:none">
+    <span id="toast"></span>
+  </div>
+
+  <section class="sec" id="headSec">
+    <h2>Voyage</h2>
+    <div class="fields">
+      <label><b>Vessel</b><input data-p="vessel" data-t="s"></label>
+      <label><b>Voyage No</b><input class="num" data-p="voyNo" data-t="n"></label>
+      <label><b>Charterer</b><input data-p="charterer" data-t="s"></label>
+      <label><b>CP Date</b><input placeholder="DD/MM/YY" data-p="cpDate" data-t="d"></label>
+      <label><b>Estimation No</b><input data-p="estNo" data-t="s"></label>
+      <label><b>Dem. Rate ($/day)</b><input class="num" data-p="demRate" data-t="n"></label>
+      <label><b>Laytime (hrs)</b><input class="num" data-p="laytime" data-t="n"></label>
+      <label><b>Estimated TCE ($/day)</b><input class="num" data-p="estTce" data-t="n"></label>
+    </div>
+  </section>
+
+  <div class="kpis" id="kpis"></div>
+  <div id="flags"></div>
+
+  <section class="sec">
+    <h2>Voyage legs</h2>
+    <p class="hint">Highlighted input cells are editable — everything else is calculated. Speed = miles ÷ (duration × 24). ROB in MT.</p>
+    <div class="scroll">
+    <table id="legsT">
+      <thead><tr>
+        <th>Dep. port</th><th>Dep. date &amp; time</th><th>Arr. port</th><th>Arr. date &amp; time</th>
+        <th class="num">Miles</th><th class="num">Dur. (d)</th><th class="num">Speed (kn)</th><th>Cond.</th>
+        <th class="num">ROB dep VLSFO</th><th class="num">ROB dep LSMGO</th><th class="num">ROB arr VLSFO</th><th class="num">ROB arr LSMGO</th>
+        <th class="num">Sea cons VLSFO</th><th class="num">Sea cons LSMGO</th><th></th>
+      </tr></thead>
+      <tbody></tbody>
+      <tfoot></tfoot>
+    </table>
+    </div>
+    <button class="add" data-act="add-leg">+ Add leg</button>
+    <div id="portStays"></div>
+  </section>
+
+  <section class="sec">
+    <h2>Bunkers — FIFO</h2>
+    <p class="hint">Opening ROB is entered as layers (one per stem it came from) so FIFO carries across voyages. Closing ROB is taken from the last leg's arrival ROB.</p>
+    <div class="grid2">
+      <div>
+        <h3 class="subhead">Opening ROB layers — VLSFO</h3>
+        <table id="layV"><thead><tr><th>Label</th><th class="num">Qty (MT)</th><th class="num">$/MT</th><th></th></tr></thead><tbody></tbody></table>
+        <button class="add" data-act="add-lay" data-g="VLSFO">+ Add layer</button>
+      </div>
+      <div>
+        <h3 class="subhead">Opening ROB layers — LSMGO</h3>
+        <table id="layL"><thead><tr><th>Label</th><th class="num">Qty (MT)</th><th class="num">$/MT</th><th></th></tr></thead><tbody></tbody></table>
+        <button class="add" data-act="add-lay" data-g="LSMGO">+ Add layer</button>
+      </div>
+    </div>
+
+    <h3 class="subhead spaced">Stems delivered this voyage</h3>
+    <div class="scroll">
+    <table id="stemsT">
+      <thead><tr><th>Date</th><th>Port</th><th>Supplier</th><th>Grade</th><th class="num">Qty (MT)</th><th class="num">$/MT</th><th class="num">Total $</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+    </div>
+    <button class="add" data-act="add-stem">+ Add stem</button>
+
+    <div class="duo" id="fifoPanels" style="margin-top:16px"></div>
+  </section>
+
+  <section class="sec">
+    <h2>Revenue &amp; commissions</h2>
+    <div class="scroll">
+    <table id="revT">
+      <thead><tr><th>Item</th><th class="num">Amount ($)</th><th class="num">Comm. %</th><th class="num">Commission ($)</th><th class="num">Net ($)</th><th></th></tr></thead>
+      <tbody></tbody>
+      <tfoot></tfoot>
+    </table>
+    </div>
+    <button class="add" data-act="add-orev">+ Add other revenue</button>
+  </section>
+
+  <section class="sec">
+    <h2>Port call expenses &amp; other costs</h2>
+    <div class="grid2">
+      <div>
+        <div class="scroll">
+        <table id="pcT">
+          <thead><tr><th>Port</th><th>DA reason</th><th class="num">DA ($)</th><th>Other reason</th><th class="num">Other ($)</th><th class="num">Total ($)</th><th></th></tr></thead>
+          <tbody></tbody><tfoot></tfoot>
+        </table>
+        </div>
+        <button class="add" data-act="add-pc">+ Add port</button>
+      </div>
+      <div>
+        <table id="ocT">
+          <thead><tr><th>Other cost</th><th class="num">Amount ($)</th><th></th></tr></thead>
+          <tbody></tbody><tfoot></tfoot>
+        </table>
+        <button class="add" data-act="add-oc">+ Add cost</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <h2>Result</h2>
+    <div class="scroll"><table id="plT"><tbody></tbody></table></div>
+  </section>
+
+  <footer>Exported workbooks carry live formulas — durations, speeds, consumptions, FIFO allocation, commissions and TCE all recalculate in Excel. Styling in the export is deliberately plain.</footer>
+</div>
+
+<script>
+/* Voyage Actual — Excel export core. Works in browser (global XLSX) and node (require). */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.VRExport = factory();
+}(typeof self !== 'undefined' ? self : this, function () {
+
+  var GRADES = ['VLSFO', 'LSMGO'];
+
+  function colL(c){ var s=''; c=c+1; while(c>0){var m=(c-1)%26; s=String.fromCharCode(65+m)+s; c=(c-m-1)/26;} return s; }
+  function A(r,c){ return colL(c)+(r+1); }
+  function Aa(r,c){ return '$'+colL(c)+'$'+(r+1); }
+
+  function dSerial(iso){ // ISO "YYYY-MM-DDTHH:MM" -> excel serial as naive wall clock (what you typed)
+    if(!iso) return null;
+    var m = iso.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/);
+    if(!m) return null;
+    // Pure calendar math — no Date/UTC — so Excel shows exactly the typed DD/MM/YY HH:MM
+    // regardless of the machine timezone. Excel 1900 system: serial 1 = 1900-01-01;
+    // day 0 of the epoch is 1899-12-30 (accounts for the Excel leap-year bug).
+    var y=+m[1], mo=+m[2], d=+m[3], hh=+(m[4]||0), mm=+(m[5]||0);
+    function daysSince1899_12_30(Y,M,D){
+      // days from civil date to 1970-01-01, then add days from 1899-12-30 to 1970-01-01
+      function civil(Y,M,D){ // Howard Hinnant algorithm → days since 1970-01-01
+        Y-=(M<=2); var era=Math.floor(Y/400); var yoe=Y-era*400;
+        var doy=Math.floor((153*(M+(M>2?-3:9))+2)/5)+D-1;
+        var doe=yoe*365+Math.floor(yoe/4)-Math.floor(yoe/100)+doy;
+        return era*146097+doe-719468;
+      }
+      return civil(Y,M,D) - civil(1899,12,30);
+    }
+    return daysSince1899_12_30(y,mo,d) + (hh*60+mm)/1440;
+  }
+
+  function Sheet(){ this.cells={}; this.maxR=0; this.maxC=0; this.merges=[]; }
+  Sheet.prototype.set=function(r,c,cell){
+    this.cells[A(r,c)]=cell;
+    if(r>this.maxR)this.maxR=r; if(c>this.maxC)this.maxC=c;
+  };
+  Sheet.prototype.S=function(r,c,v){ if(v===undefined||v===null||v==='')return; this.set(r,c,{t:'s',v:String(v)}); };
+  Sheet.prototype.N=function(r,c,v,z){ if(v===undefined||v===null||v==='')return; var cell={t:'n',v:+v}; if(z)cell.z=z; this.set(r,c,cell); };
+  Sheet.prototype.D=function(r,c,iso,z){ var s=dSerial(iso); if(s===null)return; this.set(r,c,{t:'n',v:s,z:z||'dd/mm/yy hh:mm'}); };
+  Sheet.prototype.F=function(r,c,f,z){ var cell={t:'n',f:f}; if(z)cell.z=z; this.set(r,c,cell); };
+  Sheet.prototype.done=function(){
+    var out={}; for(var k in this.cells) out[k]=this.cells[k];
+    out['!ref']='A1:'+A(this.maxR,this.maxC);
+    if(this.merges.length) out['!merges']=this.merges;
+    return out;
+  };
+
+  var MONEY='"$"#,##0.00', MT='#,##0.00', PX='"$"#,##0.00', D3='0.000', KN='0.00', DT='dd/mm/yy hh:mm';
+
+  function layersFor(V, g){
+    var out=[];
+    (V.opening[g]||[]).forEach(function(L){ if(+L.qty>0) out.push({src:(L.label||'Opening ROB'), date:V.legs.length?V.legs[0].dep:'', qty:+L.qty, price:+L.price||0}); });
+    V.stems.filter(function(s){return s.grade===g && +s.qty>0;})
+      .sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); })
+      .forEach(function(s){ out.push({src:'Stem — '+(s.port||'')+(s.supplier?(' / '+s.supplier):''), date:s.date||'', qty:+s.qty, price:+s.price||0}); });
+    return out;
+  }
+
+  function buildWorkbook(V){
+    var ws=new Sheet(), r=0;
+    var legs=V.legs||[], nL=legs.length;
+
+    ws.S(0,0,'SEA WORLD MANAGEMENT & TRADING  —  VOYAGE ACTUAL REPORT');
+    ws.S(2,1,'Vessel:');        ws.S(2,2,V.vessel);
+    ws.S(2,4,'Voyage No:');     ws.N(2,5,V.voyNo);
+    ws.S(2,7,'Charterer:');     ws.S(2,8,V.charterer);
+    ws.S(2,10,'CP Date:');      ws.D(2,11,V.cpDate,'dd/mm/yy');
+    ws.S(3,1,'Dem. Rate ($/d):'); ws.N(3,2,V.demRate,MONEY);
+    ws.S(3,4,'Laytime (hrs):');   ws.N(3,5,V.laytime,'0.00');
+    ws.S(3,7,'Estimation No:');   ws.S(3,8,V.estNo);
+    ws.S(3,10,'Estimated TCE:');  ws.N(3,11,V.estTce,MONEY);
+
+    ws.S(5,1,'SUMMARY');
+    var sumTop=6, sumRows=12;            // reserved r6..r17, filled at the end
+    r = sumTop + sumRows + 1;            // r19
+
+    /* ---- VOYAGE LEGS ---- */
+    ws.S(r,1,'VOYAGE LEGS'); r++;
+    var H=['Dep. Port','Dep. Date & Time','Arr. Port','Arr. Date & Time','Miles','Duration (d)','Speed (kn)','Condition','ROB Dep VLSFO','ROB Dep LSMGO','ROB Arr VLSFO','ROB Arr LSMGO','Stems at Sea VLSFO','Stems at Sea LSMGO','Sea Cons VLSFO','Sea Cons LSMGO'];
+    H.forEach(function(h,i){ ws.S(r,1+i,h); });
+    var legHdr=r; r++;
+    var legStart=r;
+    legs.forEach(function(L,i){
+      ws.S(r,1,L.depPort); ws.D(r,2,L.dep,DT); ws.S(r,3,L.arrPort); ws.D(r,4,L.arr,DT);
+      ws.N(r,5,L.miles,'#,##0');
+      ws.F(r,6,'IFERROR('+A(r,4)+'-'+A(r,2)+',"")',D3);
+      ws.F(r,7,'IFERROR('+A(r,5)+'/('+A(r,6)+'*24),"")',KN);
+      ws.S(r,8,L.cond);
+      ws.N(r,9,L.robDepV,MT); ws.N(r,10,L.robDepL,MT); ws.N(r,11,L.robArrV,MT); ws.N(r,12,L.robArrL,MT);
+      /* cols 13-16 (stems at sea + sea cons) are written after the stem block, whose rows the
+         SUMIFS ranges need. See "STEMS AT SEA" pass below. */
+      r++;
+    });
+    var legEnd=r-1;
+    ws.S(r,1,'Totals:');
+    ws.F(r,5,'SUM('+A(legStart,5)+':'+A(legEnd,5)+')','#,##0');
+    ws.F(r,6,'SUM('+A(legStart,6)+':'+A(legEnd,6)+')',D3);
+    ws.F(r,7,'IFERROR('+A(r,5)+'/('+A(r,6)+'*24),"")',KN);   // distance-weighted average speed
+    var legTot=r; r+=2;
+
+    /* ---- STEMS (needed by port-stay SUMIFS; laid out after port stays physically? keep before for clarity) ---- */
+    ws.S(r,1,'BUNKER STEMS (delivered this voyage)'); r++;
+    ['Date','Port','Supplier','Grade','Qty (MT)','Price ($/MT)','Total ($)'].forEach(function(h,i){ ws.S(r,1+i,h); });
+    r++;
+    var stemStart=r;
+    var stems=(V.stems||[]).slice().sort(function(a,b){return (a.date||'').localeCompare(b.date||'');});
+    if(!stems.length) stems=[{}];
+    stems.forEach(function(s){
+      ws.D(r,1,s.date,'dd/mm/yy hh:mm'); ws.S(r,2,s.port); ws.S(r,3,s.supplier); ws.S(r,4,s.grade);
+      ws.N(r,5,s.qty,MT); ws.N(r,6,s.price,PX);
+      ws.F(r,7,'IFERROR('+A(r,5)+'*'+A(r,6)+',"")',MONEY);
+      r++;
+    });
+    var stemEnd=r-1;
+    ws.S(r,1,'Total:'); ws.F(r,5,'SUM('+A(stemStart,5)+':'+A(stemEnd,5)+')',MT);
+    ws.F(r,7,'SUM('+A(stemStart,7)+':'+A(stemEnd,7)+')',MONEY);
+    r+=2;
+
+    /* ---- STEMS AT SEA (deferred leg cols 13-16) ----
+       Bunkers can be stemmed at sea. Sea window is (dep, arr) — STRICTLY between — so a stem
+       timed exactly on an arrival or departure stays with the port stay below, which keeps the
+       port window [arr, dep] inclusive and puts every stem in exactly one window. */
+    var sdR='$B$'+(stemStart+1)+':$B$'+(stemEnd+1), sgR='$E$'+(stemStart+1)+':$E$'+(stemEnd+1), sqR='$F$'+(stemStart+1)+':$F$'+(stemEnd+1);
+    legs.forEach(function(L,i){
+      var lr = legStart+i;
+      ws.F(lr,13,'SUMIFS('+sqR+','+sgR+',"VLSFO",'+sdR+',">"&'+A(lr,2)+','+sdR+',"<"&'+A(lr,4)+')',MT);
+      ws.F(lr,14,'SUMIFS('+sqR+','+sgR+',"LSMGO",'+sdR+',">"&'+A(lr,2)+','+sdR+',"<"&'+A(lr,4)+')',MT);
+      ws.F(lr,15,A(lr,9)+'+'+A(lr,13)+'-'+A(lr,11),MT);
+      ws.F(lr,16,A(lr,10)+'+'+A(lr,14)+'-'+A(lr,12),MT);
+    });
+    if(nL){
+      ws.F(legTot,13,'SUM('+A(legStart,13)+':'+A(legEnd,13)+')',MT);
+      ws.F(legTot,14,'SUM('+A(legStart,14)+':'+A(legEnd,14)+')',MT);
+      ws.F(legTot,15,'SUM('+A(legStart,15)+':'+A(legEnd,15)+')',MT);
+      ws.F(legTot,16,'SUM('+A(legStart,16)+':'+A(legEnd,16)+')',MT);
+    }
+
+    /* ---- PORT STAYS ---- */
+    ws.S(r,1,'PORT STAYS & PORT CONSUMPTION'); r++;
+    ['Port','Arrived','Departed','Stay (d)','Stems VLSFO','Stems LSMGO','Port Cons VLSFO','Port Cons LSMGO'].forEach(function(h,i){ ws.S(r,1+i,h); });
+    r++;
+    var psStart=r;
+    for(var i=0;i<nL-1;i++){
+      var la=legStart+i, ln=legStart+i+1;
+      ws.S(r,1,legs[i].arrPort);
+      ws.F(r,2,A(la,4),DT); ws.F(r,3,A(ln,2),DT);
+      ws.F(r,4,A(r,3)+'-'+A(r,2),D3);
+      var dR='$B$'+(stemStart+1)+':$B$'+(stemEnd+1), gR='$E$'+(stemStart+1)+':$E$'+(stemEnd+1), qR='$F$'+(stemStart+1)+':$F$'+(stemEnd+1);
+      ws.F(r,5,'SUMIFS('+qR+','+gR+',"VLSFO",'+dR+',">="&'+A(r,2)+','+dR+',"<="&'+A(r,3)+')',MT);
+      ws.F(r,6,'SUMIFS('+qR+','+gR+',"LSMGO",'+dR+',">="&'+A(r,2)+','+dR+',"<="&'+A(r,3)+')',MT);
+      ws.F(r,7,A(la,11)+'+'+A(r,5)+'-'+A(ln,9),MT);
+      ws.F(r,8,A(la,12)+'+'+A(r,6)+'-'+A(ln,10),MT);
+      r++;
+    }
+    var psEnd=r-1, hasPS=nL>1;
+    ws.S(r,1,'Totals:');
+    if(hasPS){ ws.F(r,4,'SUM('+A(psStart,4)+':'+A(psEnd,4)+')',D3);
+      ws.F(r,7,'SUM('+A(psStart,7)+':'+A(psEnd,7)+')',MT);
+      ws.F(r,8,'SUM('+A(psStart,8)+':'+A(psEnd,8)+')',MT); }
+    r+=2;
+
+    /* ---- FIFO per grade ---- */
+    var fifoRef={};
+    GRADES.forEach(function(g){
+      var gi = g==='VLSFO' ? 0 : 1;
+      ws.S(r,1,g+' — FIFO VALUATION'); r++;
+      var closingRef = nL ? A(legEnd, 11+gi) : null;
+      ws.S(r,1,'Closing ROB (MT):');
+      if(closingRef) ws.F(r,2,closingRef,MT); else ws.N(r,2,0,MT);
+      ws.S(r,4,'Total consumption (MT):');
+      var closCell=A(r,2), consCell=A(r,5), consRow=r;
+      r++;
+      ['Source','Date','Qty (MT)','Price ($/MT)','Consumed (MT)','Consumed ($)','Remaining (MT)','Remaining ($)'].forEach(function(h,i){ ws.S(r,1+i,h); });
+      var hdr=r; r++;
+      var Ls=layersFor(V,g); if(!Ls.length) Ls=[{src:'(no layers)',qty:0,price:0}];
+      var ls=r;
+      Ls.forEach(function(L){
+        ws.S(r,1,L.src); ws.D(r,2,L.date,'dd/mm/yy');
+        ws.N(r,3,L.qty,MT); ws.N(r,4,L.price,PX);
+        ws.F(r,5,'MAX(0,MIN('+A(r,3)+','+Aa(consRow,5)+'-SUM('+Aa(hdr,3)+':'+A(r-1,3)+')))',MT);
+        ws.F(r,6,A(r,5)+'*'+A(r,4),MONEY);
+        ws.F(r,7,A(r,3)+'-'+A(r,5),MT);
+        ws.F(r,8,A(r,7)+'*'+A(r,4),MONEY);
+        r++;
+      });
+      var le=r-1;
+      ws.F(consRow,5,'SUM('+A(ls,3)+':'+A(le,3)+')-'+closCell,MT);
+      ws.S(r,1,'Totals:');
+      ws.F(r,3,'SUM('+A(ls,3)+':'+A(le,3)+')',MT);
+      ws.F(r,5,'SUM('+A(ls,5)+':'+A(le,5)+')',MT);
+      ws.F(r,6,'SUM('+A(ls,6)+':'+A(le,6)+')',MONEY);
+      ws.F(r,7,'SUM('+A(ls,7)+':'+A(le,7)+')',MT);
+      ws.F(r,8,'SUM('+A(ls,8)+':'+A(le,8)+')',MONEY);
+      fifoRef[g]={cost:A(r,6), closVal:A(r,8), consumed:A(r,5), consTot:consCell};
+      var tot=r; r++;
+      ws.S(r,1,'Avg $/MT consumed:'); ws.F(r,2,'IFERROR('+A(tot,6)+'/'+A(tot,5)+',"")',PX);
+      ws.S(r,4,'Unallocated (data gap, MT):'); ws.F(r,5,consCell+'-'+A(tot,5),MT);
+      r+=2;
+    });
+
+    /* ---- REVENUE ---- */
+    ws.S(r,1,'REVENUE & COMMISSIONS'); r++;
+    ws.S(r,1,'Freight:'); ws.N(r,2,V.freight,MONEY); ws.S(r,3,'Comm %:'); ws.N(r,4,V.freightComm,'0.00'); ws.S(r,5,'Commission:'); ws.F(r,6,A(r,2)+'*'+A(r,4)+'/100',MONEY);
+    var fr=r; r++;
+    ws.S(r,1,'Demurrage:'); ws.N(r,2,V.demurrage,MONEY); ws.S(r,3,'Comm %:'); ws.N(r,4,V.demComm,'0.00'); ws.S(r,5,'Commission:'); ws.F(r,6,A(r,2)+'*'+A(r,4)+'/100',MONEY);
+    var dr=r; r++;
+    var orv=(V.otherRev||[]).filter(function(x){return x.label||x.amount;});
+    if(!orv.length) orv=[{label:'',amount:''}];
+    var orS=r;
+    orv.forEach(function(x){ ws.S(r,1,x.label||'Other revenue:'); ws.N(r,2,x.amount,MONEY); r++; });
+    var orE=r-1;
+    ws.S(r,1,'Total revenue:');
+    ws.F(r,2,A(fr,2)+'+'+A(dr,2)+'+SUM('+A(orS,2)+':'+A(orE,2)+')',MONEY);
+    var revTot=r; r++;
+    ws.S(r,1,'Total commissions:'); ws.F(r,2,A(fr,6)+'+'+A(dr,6),MONEY);
+    var commTot=r; r+=2;
+
+    /* ---- PORT COSTS ---- */
+    ws.S(r,1,'PORT CALL EXPENSES'); r++;
+    ['Port','DA Reason','DA ($)','Other Reason','Other ($)','Total ($)'].forEach(function(h,i){ ws.S(r,1+i,h); });
+    r++;
+    var pc=(V.portCosts||[]).filter(function(x){return x.port||x.da||x.other;});
+    if(!pc.length) pc=[{}];
+    var pcS=r;
+    pc.forEach(function(x){
+      ws.S(r,1,x.port); ws.S(r,2,x.daReason); ws.N(r,3,x.da,MONEY);
+      ws.S(r,4,x.otherReason); ws.N(r,5,x.other,MONEY);
+      ws.F(r,6,'SUM('+A(r,3)+','+A(r,5)+')',MONEY); r++;
+    });
+    var pcE=r-1;
+    ws.S(r,1,'Total:'); ws.F(r,6,'SUM('+A(pcS,6)+':'+A(pcE,6)+')',MONEY);
+    var pcTot=r; r+=2;
+
+    /* ---- OTHER COSTS ---- */
+    ws.S(r,1,'OTHER COSTS'); r++;
+    var oc=(V.otherCosts||[]).filter(function(x){return x.label||x.amount;});
+    if(!oc.length) oc=[{label:'',amount:''}];
+    var ocS=r;
+    oc.forEach(function(x){ ws.S(r,1,x.label||'Other cost:'); ws.N(r,2,x.amount,MONEY); r++; });
+    var ocE=r-1;
+    ws.S(r,1,'Total:'); ws.F(r,2,'SUM('+A(ocS,2)+':'+A(ocE,2)+')',MONEY);
+    var ocTot=r; r+=2;
+
+    /* ---- fill SUMMARY ---- */
+    var s=sumTop;
+    function pair(col, label, f, z){ ws.S(s,col,label); ws.F(s,col+1,f,z); }
+    var firstDep=nL?A(legStart,2):null, lastArr=nL?A(legEnd,4):null;
+    ws.S(s,1,'Days at sea:');   ws.F(s,2,A(legTot,6),D3);
+    ws.S(s,4,'Total revenue:'); ws.F(s,5,A(revTot,2),MONEY); s++;
+    ws.S(s,1,'Days in port:');  if(nL){ws.F(s,2,lastArr+'-'+firstDep+'-'+A(legTot,6),D3);}
+    ws.S(s,4,'Total costs:');   ws.F(s,5,A(commTot,2)+'+'+fifoRef.VLSFO.cost+'+'+fifoRef.LSMGO.cost+'+'+A(pcTot,6)+'+'+A(ocTot,2),MONEY);
+    var costsCell=A(s,5); s++;
+    ws.S(s,1,'Total duration (d):'); if(nL){ws.F(s,2,lastArr+'-'+firstDep,D3);} var durCell=A(s,2);
+    ws.S(s,4,'Net profit:');    ws.F(s,5,A(revTot,2)+'-'+costsCell,MONEY); var netCell=A(s,5); s++;
+    ws.S(s,1,'Total miles:');   ws.F(s,2,A(legTot,5),'#,##0');
+    ws.S(s,4,'Actual TCE ($/d):'); ws.F(s,5,'IFERROR('+netCell+'/'+durCell+',"")',MONEY); var tceCell=A(s,5); s++;
+    ws.S(s,1,'Avg speed (kn):'); ws.F(s,2,A(legTot,7),KN);
+    ws.S(s,4,'Estimated TCE ($/d):'); ws.F(s,5,A(3,11),MONEY); var estCell=A(s,5); s++;
+    ws.S(s,1,'Commenced:'); if(nL)ws.F(s,2,firstDep,DT);
+    ws.S(s,4,'TCE variation ($/d):'); ws.F(s,5,'IFERROR('+tceCell+'-'+estCell+',"")',MONEY); s++;
+    ws.S(s,1,'Completed:'); if(nL)ws.F(s,2,lastArr,DT);
+    ws.S(s,4,'TCE variation (%):'); ws.F(s,5,'IFERROR(('+tceCell+'-'+estCell+')/'+estCell+',"")','0.0%'); s++;
+    ws.S(s,1,'Bunkers consumed (FIFO):'); ws.F(s,2,fifoRef.VLSFO.cost+'+'+fifoRef.LSMGO.cost,MONEY);
+    ws.S(s,4,'Commissions:'); ws.F(s,5,A(commTot,2),MONEY); s++;
+    ws.S(s,1,'VLSFO cons (MT / $):'); ws.F(s,2,fifoRef.VLSFO.consTot,MT); ws.F(s,3,fifoRef.VLSFO.cost,MONEY);
+    ws.S(s,4,'Port call expenses:'); ws.F(s,5,A(pcTot,6),MONEY); s++;
+    ws.S(s,1,'LSMGO cons (MT / $):'); ws.F(s,2,fifoRef.LSMGO.consTot,MT); ws.F(s,3,fifoRef.LSMGO.cost,MONEY);
+    ws.S(s,4,'Other costs:'); ws.F(s,5,A(ocTot,2),MONEY); s++;
+    ws.S(s,1,'Closing ROB value ($):'); ws.F(s,2,fifoRef.VLSFO.closVal+'+'+fifoRef.LSMGO.closVal,MONEY);
+
+    var sheet=ws.done();
+    sheet['!cols']=[{wch:2},{wch:26},{wch:18},{wch:18},{wch:18},{wch:18},{wch:12},{wch:11},{wch:12},{wch:14},{wch:15},{wch:14},{wch:15},{wch:16},{wch:16},{wch:14},{wch:14}];
+    var wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, sheet, 'Voyage Actual');
+    /* resumable snapshot — its own sheet so Import can restore exactly */
+    var meta=XLSX.utils.aoa_to_sheet([['VR_DATA_V1'],[JSON.stringify(V)]]);
+    XLSX.utils.book_append_sheet(wb, meta, 'VR_DATA');
+    try{ wb.Workbook={Sheets:wb.SheetNames.map(function(n){return {Hidden:n==='VR_DATA'?1:0};})}; }catch(e){}
+    return wb;
+  }
+
+  function demoVoyage(){
+    return {
+      vessel:'Alpine Link', voyNo:189, estNo:'', charterer:'PMI', cpDate:'2026-02-12',
+      demRate:50000, laytime:84, estTce:42518,
+      freight:1400000, freightComm:5, demurrage:19062.5, demComm:5,
+      otherRev:[{label:'Tugs Claim',amount:97000},{label:'Bunker Interim',amount:197257.99}],
+      legs:[
+        {depPort:'Tuxpan',   dep:'2026-02-10T11:36', arrPort:'Tampico',  arr:'2026-02-15T12:30', miles:503,  cond:'Laden',  robDepV:267.95, robDepL:284.56, robArrV:214.29, robArrL:265.32},
+        {depPort:'Tampico',  dep:'2026-02-18T21:06', arrPort:'Rio Haina',arr:'2026-02-24T10:00', miles:1814, cond:'Laden',  robDepV:195.87, robDepL:265.32, robArrV:53.21,  robArrL:262.98},
+        {depPort:'Rio Haina',dep:'2026-02-26T05:42', arrPort:'Houston',  arr:'2026-03-03T04:18', miles:1690, cond:'Ballast',robDepV:40.47,  robDepL:255.38, robArrV:22.22,  robArrL:134.70}
+      ],
+      opening:{ VLSFO:[{label:'Opening ROB', qty:267.95, price:525}], LSMGO:[{label:'Opening ROB', qty:284.56, price:712}] },
+      stems:[],
+      portCosts:[{port:'Tampico',daReason:'LD',da:55000},{port:'Rio Haina',daReason:'Dis',da:30000}],
+      otherCosts:[]
+    };
+  }
+
+  return { buildWorkbook: buildWorkbook, demoVoyage: demoVoyage, GRADES: GRADES, layersFor: layersFor, dSerial: dSerial };
+}));
+
+</script>
+<script>
+(function(){
+'use strict';
+var G = VRExport.GRADES;
+var V = VRExport.demoVoyage();
+var STORE = null;
+
+/* ---------- helpers ---------- */
+function num(x){ var n = parseFloat(x); return isNaN(n) ? 0 : n; }
+function fmt(x,dp){ dp = dp===undefined?2:dp; if(x===null||x===undefined||isNaN(x)) return '—';
+  return Number(x).toLocaleString('en-GB',{minimumFractionDigits:dp,maximumFractionDigits:dp}); }
+function money(x){ return (x<0?'−$':'$')+fmt(Math.abs(x)); }
+function isoToDMY(iso, withTime){ if(!iso) return '';
+  var m=String(iso).match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/); if(!m) return '';
+  var s=m[3]+'/'+m[2]+'/'+m[1].slice(2); if(withTime&&m[4]) s+=' '+m[4]+':'+m[5]; return s; }
+function dmyToIso(str, withTime){ if(str==null) return ''; str=String(str).trim(); if(str==='') return '';
+  var m=str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:[ T](\d{1,2}):(\d{2}))?$/); if(!m) return null;
+  var yy=m[3]; if(yy.length===2) yy='20'+yy; if(yy.length===1) yy='200'+yy;
+  var dd=('0'+m[1]).slice(-2), mo=('0'+m[2]).slice(-2), iso=yy+'-'+mo+'-'+dd;
+  if(withTime) iso+='T'+(m[4]?('0'+m[4]).slice(-2):'00')+':'+(m[5]||'00'); return iso; }
+function dstr(iso){ return isoToDMY(iso,true) || '—'; }
+function ms(iso){ // parse ISO as naive wall clock (same components the user typed / dSerial uses)
+  if(!iso) return null;
+  var m=String(iso).match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/); if(!m) return null;
+  var t=new Date(+m[1], +m[2]-1, +m[3], +(m[4]||0), +(m[5]||0), 0, 0).getTime();
+  return isNaN(t)?null:t; }
+function days(a,b){ var A=ms(a),B=ms(b); return (A===null||B===null)?null:(B-A)/86400000; }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+/* live thousands grouping — keeps decimals and a trailing dot as typed */
+function fmtLive(v){ if(v===''||v===null||v===undefined) return '';
+  var s=String(v), neg=s.charAt(0)==='-'; if(neg) s=s.slice(1);
+  s=s.replace(/[^0-9.]/g,''); var dot=s.indexOf('.'), intp, dec=null;
+  if(dot===-1){ intp=s; } else { intp=s.slice(0,dot); dec=s.slice(dot+1).replace(/\./g,''); }
+  intp=intp.replace(/^0+(?=\d)/,''); if(intp===''&&dec!==null) intp='0';
+  intp=intp.replace(/\B(?=(\d{3})+(?!\d))/g,',');
+  var out=intp; if(dec!==null) out+='.'+dec; return (neg?'-':'')+out; }
+function onNumInput(el){
+  var raw=el.value, caret=el.selectionStart||0, sig=0, i;
+  for(i=0;i<caret;i++){ if(raw.charAt(i)!==',') sig++; }
+  var cleaned=raw.replace(/,/g,'').replace(/[^0-9.\-]/g,'').replace(/(?!^)-/g,'');
+  var d=cleaned.indexOf('.'); if(d!==-1) cleaned=cleaned.slice(0,d+1)+cleaned.slice(d+1).replace(/\./g,'');
+  var f=fmtLive(cleaned); el.value=f;
+  var pos=0,seen=0; while(pos<f.length&&seen<sig){ if(f.charAt(pos)!==',') seen++; pos++; }
+  try{ el.setSelectionRange(pos,pos); }catch(e){}
+  if(cleaned===''||cleaned==='-'||cleaned==='.') return '';
+  var n=parseFloat(cleaned); return isNaN(n)?'':n; }
+function inp(cls,p,t,v,type){
+  var a='autocomplete="off" spellcheck="false"';
+  if(t==='n') return '<input class="'+cls+'" type="text" inputmode="decimal" '+a+' data-p="'+p+'" data-t="n" value="'+esc(fmtLive(v))+'">';
+  if(type==='datetime-local') return '<input class="'+cls+'" type="text" inputmode="numeric" placeholder="DD/MM/YY HH:MM" '+a+' data-p="'+p+'" data-t="dt" value="'+esc(isoToDMY(v,true))+'">';
+  if(type==='date') return '<input class="'+cls+'" type="text" inputmode="numeric" placeholder="DD/MM/YY" '+a+' data-p="'+p+'" data-t="d" value="'+esc(isoToDMY(v,false))+'">';
+  return '<input class="'+cls+'" type="'+(type||'text')+'" '+a+' data-p="'+p+'" data-t="'+t+'" value="'+esc(v==null?'':v)+'">'; }
+function ninp(p,v){ return inp('num',p,'n',v); }
+
+function blankVoyage(){
+  return { vessel:'', voyNo:'', estNo:'', charterer:'', cpDate:'', demRate:'', laytime:'', estTce:'',
+    freight:'', freightComm:5, demurrage:'', demComm:5, otherRev:[],
+    legs:[{depPort:'',dep:'',arrPort:'',arr:'',miles:'',cond:'Laden',robDepV:'',robDepL:'',robArrV:'',robArrL:''}],
+    opening:{VLSFO:[{label:'Opening ROB',qty:'',price:''}], LSMGO:[{label:'Opening ROB',qty:'',price:''}]},
+    stems:[], portCosts:[], otherCosts:[] };
+}
+
+/* ---------- FIFO (mirrors the exported Excel formulas) ---------- */
+function fifoRun(layers, cons){
+  var rem = Math.max(0, cons), alloc=[], closing=[], cost=0;
+  layers.forEach(function(L){
+    var take = Math.max(0, Math.min(L.qty, rem)); rem -= take;
+    cost += take*L.price;
+    alloc.push({src:L.src,date:L.date,qty:L.qty,price:L.price,consumed:take,left:L.qty-take});
+    if(L.qty-take > 1e-9) closing.push({label:L.src,date:L.date,qty:+(L.qty-take).toFixed(3),price:L.price});
+  });
+  return {alloc:alloc, closing:closing, cost:cost, short: rem>1e-6 ? rem : 0};
+}
+
+/* ---------- render ---------- */
+function bindHeader(){
+  document.querySelectorAll('#headSec [data-p]').forEach(function(el){
+    el.setAttribute('autocomplete','off'); el.setAttribute('spellcheck','false');
+    if(el.dataset.t==='n') el.setAttribute('inputmode','decimal');
+    var raw = V[el.dataset.p]==null ? '' : V[el.dataset.p], t=el.dataset.t;
+    if(t==='n') el.value = fmtLive(raw);
+    else if(t==='d') el.value = isoToDMY(raw,false);
+    else if(t==='dt') el.value = isoToDMY(raw,true);
+    else el.value = raw;
+  });
+}
+function renderLegs(){
+  var tb = document.querySelector('#legsT tbody'), h='';
+  V.legs.forEach(function(L,i){
+    var p='legs.'+i+'.';
+    h += '<tr>'
+      +'<td>'+inp('',p+'depPort','s',L.depPort)+'</td>'
+      +'<td>'+inp('',p+'dep','s',L.dep,'datetime-local')+'</td>'
+      +'<td>'+inp('',p+'arrPort','s',L.arrPort)+'</td>'
+      +'<td>'+inp('',p+'arr','s',L.arr,'datetime-local')+'</td>'
+      +'<td>'+ninp(p+'miles',L.miles)+'</td>'
+      +'<td class="calc" data-c="dur'+i+'"></td><td class="calc" data-c="spd'+i+'"></td>'
+      +'<td><select class="cell" data-p="'+p+'cond" data-t="s">'
+        +['Laden','Ballast'].map(function(c){return '<option'+(L.cond===c?' selected':'')+'>'+c+'</option>';}).join('')+'</select></td>'
+      +'<td>'+ninp(p+'robDepV',L.robDepV)+'</td><td>'+ninp(p+'robDepL',L.robDepL)+'</td>'
+      +'<td>'+ninp(p+'robArrV',L.robArrV)+'</td><td>'+ninp(p+'robArrL',L.robArrL)+'</td>'
+      +'<td class="calc" data-c="seaV'+i+'"></td><td class="calc" data-c="seaL'+i+'"></td>'
+      +'<td><button class="rm" data-act="del-leg" data-i="'+i+'" title="Remove leg">✕</button></td></tr>';
+  });
+  tb.innerHTML = h;
+  document.querySelector('#legsT tfoot').innerHTML =
+    '<tr class="totals"><td class="lbl" colspan="4">Totals</td>'
+    +'<td class="calc" data-c="milesT"></td><td class="calc" data-c="seaDays"></td><td class="calc" data-c="avgSpd"></td><td></td>'
+    +'<td colspan="4"></td><td class="calc" data-c="seaVT"></td><td class="calc" data-c="seaLT"></td><td></td></tr>';
+}
+function renderLayers(){
+  G.forEach(function(g){
+    var tb = document.querySelector(g==='VLSFO'?'#layV tbody':'#layL tbody'), h='';
+    (V.opening[g]||[]).forEach(function(L,i){
+      var p='opening.'+g+'.'+i+'.';
+      h += '<tr><td>'+inp('',p+'label','s',L.label)+'</td><td>'+ninp(p+'qty',L.qty)+'</td><td>'+ninp(p+'price',L.price)+'</td>'
+        +'<td><button class="rm" data-act="del-lay" data-g="'+g+'" data-i="'+i+'">✕</button></td></tr>';
+    });
+    tb.innerHTML = h || '<tr><td colspan="4" class="calc empty-msg">No layers — tanks empty at commencement.</td></tr>';
+  });
+}
+function renderStems(){
+  var tb = document.querySelector('#stemsT tbody'), h='';
+  V.stems.forEach(function(s,i){
+    var p='stems.'+i+'.';
+    h += '<tr><td>'+inp('',p+'date','s',s.date,'datetime-local')+'</td><td>'+inp('',p+'port','s',s.port)+'</td>'
+      +'<td>'+inp('',p+'supplier','s',s.supplier)+'</td>'
+      +'<td><select class="cell" data-p="'+p+'grade" data-t="s">'
+        +G.map(function(g){return '<option'+(s.grade===g?' selected':'')+'>'+g+'</option>';}).join('')+'</select></td>'
+      +'<td>'+ninp(p+'qty',s.qty)+'</td><td>'+ninp(p+'price',s.price)+'</td>'
+      +'<td class="calc" data-c="stem$'+i+'"></td>'
+      +'<td><button class="rm" data-act="del-stem" data-i="'+i+'">✕</button></td></tr>';
+  });
+  tb.innerHTML = h || '<tr><td colspan="8" class="calc empty-msg">No stems this voyage.</td></tr>';
+}
+function renderRev(){
+  var tb = document.querySelector('#revT tbody'), h='';
+  h += '<tr><td class="row-label">FREIGHT</td><td>'+ninp('freight',V.freight)+'</td>'
+     +'<td>'+ninp('freightComm',V.freightComm)+'</td><td class="calc" data-c="frC"></td><td class="calc" data-c="frN"></td><td></td></tr>';
+  h += '<tr><td class="row-label">DEMURRAGE</td><td>'+ninp('demurrage',V.demurrage)+'</td>'
+     +'<td>'+ninp('demComm',V.demComm)+'</td><td class="calc" data-c="deC"></td><td class="calc" data-c="deN"></td><td></td></tr>';
+  V.otherRev.forEach(function(x,i){
+    var p='otherRev.'+i+'.';
+    h += '<tr><td>'+inp('',p+'label','s',x.label)+'</td><td>'+ninp(p+'amount',x.amount)+'</td><td></td><td></td>'
+      +'<td class="calc" data-c="orN'+i+'"></td><td><button class="rm" data-act="del-orev" data-i="'+i+'">✕</button></td></tr>';
+  });
+  tb.innerHTML = h;
+  document.querySelector('#revT tfoot').innerHTML =
+    '<tr class="totals"><td class="lbl">Total revenue</td><td class="calc" data-c="revT"></td>'
+    +'<td class="lbl" style="text-align:right">Commissions</td><td class="calc" data-c="commT"></td><td class="calc" data-c="revNet"></td><td></td></tr>';
+}
+function renderPc(){
+  var tb = document.querySelector('#pcT tbody'), h='';
+  V.portCosts.forEach(function(x,i){
+    var p='portCosts.'+i+'.';
+    h += '<tr><td>'+inp('',p+'port','s',x.port)+'</td><td>'+inp('',p+'daReason','s',x.daReason)+'</td>'
+      +'<td>'+ninp(p+'da',x.da)+'</td><td>'+inp('',p+'otherReason','s',x.otherReason)+'</td>'
+      +'<td>'+ninp(p+'other',x.other)+'</td><td class="calc" data-c="pc'+i+'"></td>'
+      +'<td><button class="rm" data-act="del-pc" data-i="'+i+'">✕</button></td></tr>';
+  });
+  tb.innerHTML = h || '<tr><td colspan="7" class="calc empty-msg">No port expenses entered.</td></tr>';
+  document.querySelector('#pcT tfoot').innerHTML =
+    '<tr class="totals"><td class="lbl" colspan="5">Total</td><td class="calc" data-c="pcT"></td><td></td></tr>';
+}
+function renderOc(){
+  var tb = document.querySelector('#ocT tbody'), h='';
+  V.otherCosts.forEach(function(x,i){
+    var p='otherCosts.'+i+'.';
+    h += '<tr><td>'+inp('',p+'label','s',x.label)+'</td><td>'+ninp(p+'amount',x.amount)+'</td>'
+      +'<td><button class="rm" data-act="del-oc" data-i="'+i+'">✕</button></td></tr>';
+  });
+  tb.innerHTML = h || '<tr><td colspan="3" class="calc empty-msg">None.</td></tr>';
+  document.querySelector('#ocT tfoot').innerHTML =
+    '<tr class="totals"><td class="lbl">Total</td><td class="calc" data-c="ocT"></td><td></td></tr>';
+}
+function renderAll(){ bindHeader(); renderLegs(); renderLayers(); renderStems(); renderRev(); renderPc(); renderOc(); compute(); }
+
+/* ---------- compute ---------- */
+function put(c, txt, negRed){
+  var el = document.querySelector('[data-c="'+c+'"]'); if(!el) return;
+  el.textContent = txt;
+  if(negRed!==undefined) el.classList.toggle('neg', !!negRed);
+}
+function compute(){
+  var flags = [];
+  var nL = V.legs.length;
+
+  /* legs */
+  var stemInWindow = V.stems.map(function(){return false;});
+  var milesT=0, seaDays=0, seaT={VLSFO:0,LSMGO:0}, seaStems=[];
+  V.legs.forEach(function(L,i){
+    var d = days(L.dep, L.arr);
+    var m = num(L.miles);
+    milesT += m; if(d!==null){ seaDays += d; }
+    put('dur'+i, d===null?'—':fmt(d,3), d!==null&&d<0);
+    if(d!==null&&d<0) flags.push(['bad','Leg '+(i+1)+': arrival is before departure.']);
+    var spd = (d&&d>0) ? m/(d*24) : null;
+    put('spd'+i, spd===null?'—':fmt(spd,2));
+    /* Bunkers can be stemmed at sea. Sea window is (dep, arr) — STRICTLY between, so a stem
+       stamped exactly on an arrival or departure stays with the port stay, which keeps port
+       windows [arr, dep] unchanged and every stem in exactly one window. */
+    var xV=0, xL=0;
+    V.stems.forEach(function(s,si){
+      if(!s.date||!L.dep||!L.arr) return;
+      var sm=ms(s.date), dm=ms(L.dep), am=ms(L.arr);
+      if(sm!==null&&dm!==null&&am!==null&&sm>dm&&sm<am){
+        stemInWindow[si]=true;
+        if(s.grade==='VLSFO') xV+=num(s.qty); else if(s.grade==='LSMGO') xL+=num(s.qty);
+      }
+    });
+    var sv = num(L.robDepV)+xV-num(L.robArrV), sl = num(L.robDepL)+xL-num(L.robArrL);
+    seaStems.push({V:xV,L:xL,cV:sv,cL:sl});
+    seaT.VLSFO+=sv; seaT.LSMGO+=sl;
+    put('seaV'+i, fmt(sv), sv<-0.001); put('seaL'+i, fmt(sl), sl<-0.001);
+    if(sv<-0.001||sl<-0.001) flags.push(['bad','Leg '+(i+1)+': ROB rises at sea by more than the stems delivered on that leg — check ROB figures.']);
+  });
+  put('milesT', fmt(milesT,0)); put('seaDays', fmt(seaDays,3));
+  put('avgSpd', seaDays>0?fmt(milesT/(seaDays*24),2):'—');
+  put('seaVT', fmt(seaT.VLSFO)); put('seaLT', fmt(seaT.LSMGO));
+
+  var first=V.legs[0], last=V.legs[nL-1];
+  var dur = nL? days(first.dep, last.arr) : null;
+  var inPort = (dur!==null)? dur-seaDays : null;
+
+  /* port stays + stem windows — window is [arr, dep] inclusive; sea legs took (dep, arr) */
+  var portT={VLSFO:0,LSMGO:0}, ports=[];
+  for(var i=0;i<nL-1;i++){
+    var a=V.legs[i], b=V.legs[i+1];
+    var stay = days(a.arr, b.dep);
+    var sV=0,sL=0;
+    V.stems.forEach(function(s,si){
+      if(!s.date||!a.arr||!b.dep) return;
+      var sm=ms(s.date), am=ms(a.arr), bm=ms(b.dep);
+      if(sm!==null&&am!==null&&bm!==null&&sm>=am&&sm<=bm){ stemInWindow[si]=true; if(s.grade==='VLSFO') sV+=num(s.qty); else if(s.grade==='LSMGO') sL+=num(s.qty); }
+    });
+    var pV = num(a.robArrV)+sV-num(b.robDepV), pL = num(a.robArrL)+sL-num(b.robDepL);
+    portT.VLSFO+=pV; portT.LSMGO+=pL;
+    if(pV<-0.001||pL<-0.001) flags.push(['bad','Port '+esc(a.arrPort||('#'+(i+1)))+': ROB on next departure exceeds arrival ROB + stems — a stem is missing or a figure is wrong.']);
+    ports.push({port:a.arrPort, from:a.arr, to:b.dep, stay:stay, sV:sV, sL:sL, cV:pV, cL:pL});
+  }
+
+  /* Chronological ledger: sea leg, port stay, sea leg … Every stem falls in exactly one row,
+     so the totals here equal total consumption on the ROB-movement basis (check 8). */
+  function ledRow(label, from, to, dur, sV, sL, cV, cL, bold){
+    var st = bold ? ' style="font-weight:600"' : '';
+    return '<tr'+st+'><td class="calc" style="text-align:left">'+label+'</td>'
+      +'<td class="calc">'+(from?dstr(from):'')+'</td><td class="calc">'+(to?dstr(to):'')+'</td>'
+      +'<td class="calc">'+(dur===null||dur===''?'—':fmt(dur,3))+'</td>'
+      +'<td class="calc">'+fmt(sV)+'</td><td class="calc">'+fmt(sL)+'</td>'
+      +'<td class="calc'+(cV<-0.001?' neg':'')+'">'+fmt(cV)+'</td>'
+      +'<td class="calc'+(cL<-0.001?' neg':'')+'">'+fmt(cL)+'</td></tr>';
+  }
+  var ledH='', stemTV=0, stemTL=0;
+  V.legs.forEach(function(L,i){
+    var x = seaStems[i] || {V:0,L:0,cV:0,cL:0};
+    stemTV+=x.V; stemTL+=x.L;
+    ledH += ledRow('At sea: '+esc(L.depPort||'—')+' → '+esc(L.arrPort||'—'), L.dep, L.arr, days(L.dep,L.arr), x.V, x.L, x.cV, x.cL);
+    if(i<ports.length){
+      var p = ports[i];
+      stemTV+=p.sV; stemTL+=p.sL;
+      ledH += ledRow('In port: '+esc(p.port||('#'+(i+1))), p.from, p.to, p.stay, p.sV, p.sL, p.cV, p.cL);
+    }
+  });
+  if(nL) ledH += ledRow('Totals', '', '', dur, stemTV, stemTL, seaT.VLSFO+portT.VLSFO, seaT.LSMGO+portT.LSMGO, true);
+  document.getElementById('portStays').innerHTML = nL ?
+    '<h3 class="subhead">Consumption ledger — sea legs &amp; port stays</h3>'
+    +'<div class="scroll"><table><thead><tr><th>Window</th><th class="num">From</th><th class="num">To</th><th class="num">Dur. (d)</th><th class="num">Stems VLSFO</th><th class="num">Stems LSMGO</th><th class="num">Cons VLSFO</th><th class="num">Cons LSMGO</th></tr></thead><tbody>'+ledH+'</tbody></table></div>'
+    +'<p class="hint after-table">Bunkers can be stemmed at sea or in port. Each stem is counted in exactly one window — a stem timed exactly on an arrival or departure belongs to the port stay.</p>' : '';
+
+  V.stems.forEach(function(s,si){
+    put('stem$'+si, fmt(num(s.qty)*num(s.price)));
+    if(s.date && nL && !stemInWindow[si]) flags.push(['bad','Stem '+dstr(s.date)+' '+esc(s.port||'')+' falls outside the voyage — it is not inside any sea leg or port stay. It is still counted in totals, but check the date (a stem before the first departure belongs in opening layers).']);
+  });
+
+  /* FIFO */
+  var closing={}, cons={}, fifo={};
+  G.forEach(function(g){
+    var gi = g==='VLSFO'?'V':'L';
+    closing[g] = nL? num(last['robArr'+gi]) : 0;
+    var layers = VRExport.layersFor(V,g);
+    var avail = layers.reduce(function(s,x){return s+x.qty;},0);
+    cons[g] = avail - closing[g];
+    fifo[g] = fifoRun(layers, cons[g]);
+    var open = (V.opening[g]||[]).reduce(function(s,x){return s+num(x.qty);},0);
+    if(nL && Math.abs(open - num(first['robDep'+gi]))>0.011)
+      flags.push(['bad',g+': opening layers total '+fmt(open)+' MT ≠ ROB on first departure '+fmt(num(first['robDep'+gi]))+' MT.']);
+    if(cons[g] < -0.001) flags.push(['bad',g+': closing ROB exceeds opening + stems by '+fmt(-cons[g])+' MT — a stem or opening layer is missing.']);
+    if(fifo[g].short>0.001) flags.push(['bad',g+': '+fmt(fifo[g].short)+' MT of consumption has no layer to draw from — add the missing stem/opening layer.']);
+    var recon = seaT[g]+portT[g];
+    if(nL && Math.abs(recon - cons[g])>0.011)
+      flags.push(['bad',g+': leg-by-leg consumption ('+fmt(recon)+' MT) ≠ ROB movement ('+fmt(cons[g])+' MT) — a ROB or stem entry is inconsistent.']);
+  });
+
+  /* FIFO panels */
+  var fp='';
+  G.forEach(function(g){
+    var f=fifo[g], avg = (cons[g]>0)? f.cost/cons[g] : null;
+    var closVal = f.closing.reduce(function(s,x){return s+x.qty*x.price;},0);
+    var rowsH = f.alloc.map(function(a2){
+      return '<tr><td class="calc" style="text-align:left">'+esc(a2.src)+'</td><td class="calc">'+dstr(a2.date)+'</td>'
+        +'<td class="calc">'+fmt(a2.qty)+'</td><td class="calc">'+fmt(a2.price)+'</td>'
+        +'<td class="calc">'+fmt(a2.consumed)+'</td><td class="calc">'+fmt(a2.left)+'</td></tr>';
+    }).join('');
+    fp += '<div class="fifo"><h3>'+g+'</h3><div class="head">'
+      +'Consumed <b>'+fmt(cons[g])+' MT</b> · <b>'+money(f.cost)+'</b>'+(avg!==null?' · avg <b>$'+fmt(avg)+'/MT</b>':'')+'<br>'
+      +'Closing ROB <b>'+fmt(closing[g])+' MT</b> · <b>'+money(closVal)+'</b></div>'
+      +'<div class="scroll"><table><thead><tr><th>Layer</th><th class="num">Date</th><th class="num">Qty</th><th class="num">$/MT</th><th class="num">Consumed</th><th class="num">Left</th></tr></thead><tbody>'+rowsH+'</tbody></table></div>'
+      +'<div class="carry">Carry to next voyage: '+(f.closing.length? f.closing.map(function(c){return fmt(c.qty)+' MT @ $'+fmt(c.price);}).join('  +  ') : 'nil')+'</div></div>';
+    fifo[g].closVal = closVal;
+  });
+  document.getElementById('fifoPanels').innerHTML = fp;
+
+  /* revenue & costs */
+  var frC = num(V.freight)*num(V.freightComm)/100, deC = num(V.demurrage)*num(V.demComm)/100;
+  put('frC', fmt(frC)); put('frN', fmt(num(V.freight)-frC));
+  put('deC', fmt(deC)); put('deN', fmt(num(V.demurrage)-deC));
+  var orT=0; V.otherRev.forEach(function(x,i){ orT+=num(x.amount); put('orN'+i, fmt(num(x.amount))); });
+  var revT = num(V.freight)+num(V.demurrage)+orT, commT = frC+deC;
+  put('revT', fmt(revT)); put('commT', fmt(commT)); put('revNet', fmt(revT-commT));
+
+  var pcT=0; V.portCosts.forEach(function(x,i){ var t=num(x.da)+num(x.other); pcT+=t; put('pc'+i, fmt(t)); });
+  put('pcT', fmt(pcT));
+  var ocT=0; V.otherCosts.forEach(function(x){ ocT+=num(x.amount); });
+  put('ocT', fmt(ocT));
+
+  var bunkers = fifo.VLSFO.cost + fifo.LSMGO.cost;
+  var costs = commT + bunkers + pcT + ocT;
+  var net = revT - costs;
+  var tce = (dur&&dur>0)? net/dur : null;
+  var est = num(V.estTce);
+  var varAbs = (tce!==null&&est)? tce-est : null;
+  var varPct = (varAbs!==null&&est)? varAbs/est*100 : null;
+
+  /* KPIs */
+  document.getElementById('kpis').innerHTML = [
+    ['Duration', dur===null?'—':fmt(dur,2)+' d',''],
+    ['At sea', fmt(seaDays,2)+' d',''],
+    ['In port', inPort===null?'—':fmt(inPort,2)+' d',''],
+    ['Miles', fmt(milesT,0),''],
+    ['Avg speed', seaDays>0?fmt(milesT/(seaDays*24),2)+' kn':'—',''],
+    ['Net profit', money(net), net<0?'neg':'pos'],
+    ['Actual TCE', tce===null?'—':money(tce)+'/d',''],
+    ['Δ vs est.', varAbs===null?'—':(varAbs<0?'−':'+')+'$'+fmt(Math.abs(varAbs),0)+'/d', varAbs===null?'':(varAbs<0?'neg':'pos')]
+  ].map(function(k){ return '<div class="kpi"><b>'+k[0]+'</b><span class="'+k[2]+'">'+k[1]+'</span></div>'; }).join('');
+
+  /* flags */
+  var fl = document.getElementById('flags');
+  if(!flags.length) fl.innerHTML = '<div class="flag ok">All reconciliations OK — ROB movement, leg consumptions and FIFO layers agree.</div>';
+  else fl.innerHTML = flags.map(function(f){return '<div class="flag '+f[0]+'">'+f[1]+'</div>';}).join('');
+
+  /* result table */
+  function pl(l,v,strong,red){ return '<tr'+(strong?' class="totals"':'')+'><td class="'+(strong?'lbl':'')+'" style="width:60%">'+l+'</td><td class="calc'+(red?' neg':'')+'">'+v+'</td></tr>'; }
+  document.querySelector('#plT tbody').innerHTML =
+    pl('Freight + demurrage + other revenue', money(revT))
+    + pl('Commissions', '− '+money(commT))
+    + pl('Bunkers consumed — FIFO (VLSFO '+money(fifo.VLSFO.cost)+' · LSMGO '+money(fifo.LSMGO.cost)+')', '− '+money(bunkers))
+    + pl('Port call expenses', '− '+money(pcT))
+    + pl('Other costs', '− '+money(ocT))
+    + pl('Net profit', money(net), true, net<0)
+    + pl('Actual TCE', tce===null?'—':money(tce)+'/day', true, tce!==null&&tce<0)
+    + pl('Estimated TCE', est?money(est)+'/day':'—')
+    + pl('Variation vs estimate', varAbs===null?'—':((varAbs<0?'−':'+')+'$'+fmt(Math.abs(varAbs),0)+'/day ('+(varPct<0?'−':'+')+fmt(Math.abs(varPct),1)+'%)'), false, varAbs!==null&&varAbs<0)
+    + pl('Closing ROB value (carried to next voyage)', money(fifo.VLSFO.closVal+fifo.LSMGO.closVal));
+
+  window.__fifo = fifo; /* for Next-voyage seeding */
+}
+
+/* ---------- events ---------- */
+function setPath(path, val){
+  var parts = path.split('.'), o = V;
+  for(var i=0;i<parts.length-1;i++) o = o[parts[i]];
+  o[parts[parts.length-1]] = val;
+}
+function getPath(path){ var parts=path.split('.'), o=V; for(var i=0;i<parts.length;i++){ if(o==null) return undefined; o=o[parts[i]]; } return o; }
+document.addEventListener('input', function(e){
+  var d = e.target.dataset ? e.target : null; if(!d) return;
+  var p = e.target.dataset.p; if(!p) return;
+  var t = e.target.dataset.t, v;
+  if(t==='n'){ v = onNumInput(e.target); }
+  else if(t==='d' || t==='dt'){
+    if(e.target.value.trim()===''){ v=''; }
+    else { var iso = dmyToIso(e.target.value, t==='dt'); if(iso===null) return; v=iso; }
+  }
+  else { v = e.target.value; }
+  setPath(p, v);
+  compute();
+});
+/* normalise date fields to canonical DD/MM/YY on blur */
+document.addEventListener('change', function(e){
+  var t = e.target.dataset ? e.target.dataset.t : null;
+  if(t==='d' || t==='dt'){ e.target.value = isoToDMY(getPath(e.target.dataset.p), t==='dt'); }
+});
+document.addEventListener('click', function(e){
+  var b = e.target.closest('[data-act]'); if(!b) return;
+  var act=b.dataset.act, i=+b.dataset.i, g=b.dataset.g;
+  if(act==='add-leg'){
+    var prev = V.legs[V.legs.length-1] || {};
+    V.legs.push({depPort:prev.arrPort||'', dep:'', arrPort:'', arr:'', miles:'', cond:'Laden',
+      robDepV:prev.robArrV!==''&&prev.robArrV!==undefined?prev.robArrV:'',
+      robDepL:prev.robArrL!==''&&prev.robArrL!==undefined?prev.robArrL:'',
+      robArrV:'', robArrL:''});
+    renderLegs(); compute();
+  }
+  else if(act==='del-leg'){ V.legs.splice(i,1); renderLegs(); compute(); }
+  else if(act==='add-lay'){ V.opening[g].push({label:'',qty:'',price:''}); renderLayers(); compute(); }
+  else if(act==='del-lay'){ V.opening[g].splice(i,1); renderLayers(); compute(); }
+  else if(act==='add-stem'){ V.stems.push({date:'',port:'',supplier:'',grade:'VLSFO',qty:'',price:''}); renderStems(); compute(); }
+  else if(act==='del-stem'){ V.stems.splice(i,1); renderStems(); compute(); }
+  else if(act==='add-orev'){ V.otherRev.push({label:'',amount:''}); renderRev(); compute(); }
+  else if(act==='del-orev'){ V.otherRev.splice(i,1); renderRev(); compute(); }
+  else if(act==='add-pc'){ V.portCosts.push({port:'',daReason:'',da:'',otherReason:'',other:''}); renderPc(); compute(); }
+  else if(act==='del-pc'){ V.portCosts.splice(i,1); renderPc(); compute(); }
+  else if(act==='add-oc'){ V.otherCosts.push({label:'',amount:''}); renderOc(); compute(); }
+  else if(act==='del-oc'){ V.otherCosts.splice(i,1); renderOc(); compute(); }
+  else if(act==='export') doExport();
+  else if(act==='import'){ var fi=document.getElementById('importFile'); if(fi) fi.click(); }
+  else if(act==='save') saveVoyage();
+  else if(act==='new'){ V=blankVoyage(); renderAll(); toast('New voyage'); }
+  else if(act==='next') nextVoyage();
+});
+
+function toast(t, bad){ var el=document.getElementById('toast'); el.textContent=t; el.className = bad?'bad':'';
+  setTimeout(function(){ if(el.textContent===t) el.textContent=''; }, 3500); }
+
+/* ---------- export ---------- */
+function doExport(){
+  try{
+    var wb = VRExport.buildWorkbook(V);
+    var name = ((V.vessel||'Vessel')+'_voy_'+(V.voyNo||'x')+'_actual.xlsx').replace(/[^\w.\-]+/g,'_');
+    XLSX.writeFile(wb, name);
+    toast('Exported');
+  }catch(err){ toast('Export failed', true); if(window.console) console.error(err); }
+}
+
+function doImport(file){
+  var rd = new FileReader();
+  rd.onload = function(){
+    try{
+      var wb = XLSX.read(new Uint8Array(rd.result), {type:'array'});
+      var sh = wb.Sheets['VR_DATA'] || wb.Sheets['_vrdata'];
+      if(!sh){ toast('No embedded voyage data — re-export from this updated tool, then import', true); return; }
+      var json = (sh['A1'] && sh['A1'].v==='VR_DATA_V1' && sh['A2']) ? sh['A2'].v : (sh['A2'] ? sh['A2'].v : (sh['A1'] ? sh['A1'].v : ''));
+      var data = JSON.parse(json);
+      if(!data || !data.legs){ toast('Voyage data is unreadable', true); return; }
+      V = data; renderAll();
+      toast('Imported '+((V.vessel||'')+' voy '+(V.voyNo||'')).trim());
+    }catch(e){ toast('Import failed — could not read voyage data', true); if(window.console) console.error(e); }
+  };
+  rd.onerror = function(){ toast('Import failed — could not read file', true); };
+  rd.readAsArrayBuffer(file);
+}
+document.getElementById('importFile').addEventListener('change', function(e){
+  var f = e.target.files && e.target.files[0]; if(f) doImport(f); e.target.value='';
+});
+
+/* ---------- persistence (window.storage) ---------- */
+function vKey(){ return ((V.vessel||'vessel')+'_'+(V.voyNo||'x')).replace(/[^\w\-]+/g,'_'); }
+async function loadStore(){
+  try{ var r = await window.storage.get('vr-data'); STORE = r&&r.value? JSON.parse(r.value) : {voyages:{}}; }
+  catch(e){ STORE = {voyages:{}}; }
+  refreshList();
+}
+function refreshList(){
+  var sel=document.getElementById('voyList'), keys=Object.keys(STORE.voyages).sort();
+  sel.innerHTML = '<option value="">Saved voyages…</option>'
+    + keys.map(function(k){ var v=STORE.voyages[k]; return '<option value="'+esc(k)+'">'+esc((v.vessel||'?')+' — voy '+(v.voyNo||'?'))+'</option>'; }).join('');
+}
+async function saveVoyage(){
+  if(!STORE) STORE={voyages:{}};
+  STORE.voyages[vKey()] = V;
+  try{
+    var r = await window.storage.set('vr-data', JSON.stringify(STORE));
+    if(r){ toast('Saved'); refreshList(); } else toast('Save failed', true);
+  }catch(e){ toast('Save failed', true); }
+}
+document.getElementById('voyList').addEventListener('change', function(e){
+  var k=e.target.value; if(!k||!STORE||!STORE.voyages[k]) return;
+  V = STORE.voyages[k]; renderAll(); toast('Loaded');
+});
+function nextVoyage(){
+  var f = window.__fifo || {};
+  var nv = blankVoyage();
+  nv.vessel = V.vessel;
+  nv.voyNo = V.voyNo!=='' && !isNaN(+V.voyNo) ? +V.voyNo+1 : '';
+  nv.demRate = V.demRate; nv.freightComm = V.freightComm; nv.demComm = V.demComm;
+  var lastPort = V.legs.length ? V.legs[V.legs.length-1].arrPort : '';
+  nv.legs[0].depPort = lastPort;
+  G.forEach(function(g){
+    var cl = (f[g]&&f[g].closing&&f[g].closing.length) ? f[g].closing : [];
+    nv.opening[g] = cl.length ? cl.map(function(c){ return {label:(c.label||'Carried')+' (carried)', qty:c.qty, price:c.price}; })
+                              : [{label:'Opening ROB',qty:'',price:''}];
+    var tot = cl.reduce(function(s,x){return s+x.qty;},0);
+    nv.legs[0]['robDep'+(g==='VLSFO'?'V':'L')] = tot? +tot.toFixed(2) : '';
+  });
+  V = nv; renderAll(); toast('Seeded from closing ROB');
+}
+
+renderAll();
+loadStore();
+
+function receiveUiState(data){
+  if(!data || data.type!=='arctium-ui') return;
+  document.documentElement.setAttribute('data-ui-theme', data.theme==='light'?'light':'dark');
+}
+window.addEventListener('message', function(e){ receiveUiState(e.data); });
+})();
+
+</script>
+</body>
+</html>
