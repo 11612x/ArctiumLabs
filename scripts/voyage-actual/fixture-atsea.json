@@ -29,10 +29,8 @@
       "arr": "2026-02-15T12:30",
       "miles": 503,
       "cond": "Laden",
-      "robDepV": 267.95,
-      "robDepL": 284.56,
-      "robArrV": 214.29,
-      "robArrL": 265.32
+      "robDep": { "VLSFO": 267.95, "LSMGO": 284.56 },
+      "robArr": { "VLSFO": 214.29, "LSMGO": 265.32 }
     },
     {
       "depPort": "Tampico",
@@ -41,10 +39,8 @@
       "arr": "2026-02-24T10:00",
       "miles": 1814,
       "cond": "Laden",
-      "robDepV": 195.87,
-      "robDepL": 265.32,
-      "robArrV": 53.21,
-      "robArrL": 262.98
+      "robDep": { "VLSFO": 195.87, "LSMGO": 265.32 },
+      "robArr": { "VLSFO": 53.21, "LSMGO": 262.98 }
     },
     {
       "depPort": "Rio Haina",
@@ -53,10 +49,8 @@
       "arr": "2026-03-03T04:18",
       "miles": 1690,
       "cond": "Ballast",
-      "robDepV": 40.47,
-      "robDepL": 255.38,
-      "robArrV": 22.22,
-      "robArrL": 134.7
+      "robDep": { "VLSFO": 40.47, "LSMGO": 255.38 },
+      "robArr": { "VLSFO": 22.22, "LSMGO": 134.7 }
     }
   ],
   "opening": {

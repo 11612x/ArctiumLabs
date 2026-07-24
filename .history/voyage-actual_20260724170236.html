@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Voyage Actual — Arctium Labs</title>
 <link rel="icon" href="Favicon.svg" type="image/svg+xml">
-<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root {
   --bg: #0d0f0e;
@@ -226,10 +226,10 @@ footer{margin-top:26px;font-size:11.5px;color:var(--text-muted)}
   <div class="toolbar">
     <select id="voyList" class="visually-hidden" title="Saved voyages" tabindex="-1" aria-hidden="true"><option value="">Saved voyages…</option></select>
     <button data-act="save" class="visually-hidden" tabindex="-1" aria-hidden="true">Save</button>
-    <button data-act="new">CLEAR</button>
-    <button data-act="next" title="New voyage seeded with this voyage's closing ROB layers and last port">Next voyage</button>
-    <button data-act="import" title="Load a voyage from a .xlsx this tool exported">Import Excel</button>
-    <button class="primary" data-act="export">Export Excel</button>
+    <button data-act="new">New</button>
+    <button data-act="next" title="New voyage seeded with this voyage's closing ROB layers and last port">Next voyage →</button>
+    <button data-act="import" title="Load a voyage from a .xlsx this tool exported">Import .xlsx</button>
+    <button class="primary" data-act="export">Export .xlsx</button>
     <input id="importFile" type="file" accept=".xlsx" style="display:none">
     <span id="toast"></span>
   </div>
@@ -253,7 +253,7 @@ footer{margin-top:26px;font-size:11.5px;color:var(--text-muted)}
 
   <section class="sec">
     <h2>Voyage legs</h2>
-    <p class="hint">Highlighted input cells are editable — everything else is calculated.</p>
+    <p class="hint">Highlighted input cells are editable — everything else is calculated. Speed = miles ÷ (duration × 24). ROB in MT.</p>
     <div class="scroll">
     <table id="legsT">
       <thead></thead>
@@ -267,6 +267,7 @@ footer{margin-top:26px;font-size:11.5px;color:var(--text-muted)}
 
   <section class="sec">
     <h2>Bunkers — FIFO</h2>
+    <p class="hint">Opening ROB is entered as layers (one per stem it came from) so FIFO carries across voyages. Closing ROB is taken from the last leg's arrival ROB. ROB dep/arr columns on legs follow the grades present here and in stems.</p>
     <div class="grid2" id="layPanels"></div>
     <div class="grade-add">
       <select id="addGradeSel" aria-label="Fuel grade to add"></select>
@@ -324,10 +325,7 @@ footer{margin-top:26px;font-size:11.5px;color:var(--text-muted)}
     <div class="scroll"><table id="plT"><tbody></tbody></table></div>
   </section>
 
-  <footer>Opening ROB is entered as layers (one per stem it came from) so FIFO carries across voyages. Closing ROB is taken from the last leg's arrival ROB. ROB dep/arr columns on legs follow the grades present here and in stems.</footer>
-  <footer>Bunkers can be stemmed at sea or in port. Each stem is counted in exactly one window — a stem timed exactly on an arrival or departure belongs to the port stay.</footer>
-  <footer>Exported workbooks carry live formulas — durations, speeds, consumptions, FIFO allocation, commissions and TCE all recalculate in Excel. Field labels and section titles are bold.</footer>
-
+  <footer>Exported workbooks carry live formulas — durations, speeds, consumptions, FIFO allocation, commissions and TCE all recalculate in Excel. Styling in the export is deliberately plain.</footer>
 </div>
 
 <script>
@@ -379,9 +377,8 @@ footer{margin-top:26px;font-size:11.5px;color:var(--text-muted)}
   }
 
   function colL(c){ var s=''; c=c+1; while(c>0){var m=(c-1)%26; s=String.fromCharCode(65+m)+s; c=(c-m-1)/26;} return s; }
-  /* Logical col 1 = Excel A (no empty margin column). */
-  function A(r,c){ return colL(c-1)+(r+1); }
-  function Aa(r,c){ return '$'+colL(c-1)+'$'+(r+1); }
+  function A(r,c){ return colL(c)+(r+1); }
+  function Aa(r,c){ return '$'+colL(c)+'$'+(r+1); }
 
   function dSerial(iso){ // ISO "YYYY-MM-DDTHH:MM" -> excel serial as naive wall clock (what you typed)
     if(!iso) return null;
@@ -410,19 +407,9 @@ footer{margin-top:26px;font-size:11.5px;color:var(--text-muted)}
     if(r>this.maxR)this.maxR=r; if(c>this.maxC)this.maxC=c;
   };
   Sheet.prototype.S=function(r,c,v){ if(v===undefined||v===null||v==='')return; this.set(r,c,{t:'s',v:String(v)}); };
-  /* Labels / titles / column headers — bold, not user-entered values */
-  Sheet.prototype.L=function(r,c,v){ if(v===undefined||v===null||v==='')return; this.set(r,c,{t:'s',v:String(v),s:{font:{bold:true}}}); };
   Sheet.prototype.N=function(r,c,v,z){ if(v===undefined||v===null||v==='')return; var cell={t:'n',v:+v}; if(z)cell.z=z; this.set(r,c,cell); };
   Sheet.prototype.D=function(r,c,iso,z){ var s=dSerial(iso); if(s===null)return; this.set(r,c,{t:'n',v:s,z:z||'dd/mm/yy hh:mm'}); };
   Sheet.prototype.F=function(r,c,f,z){ var cell={t:'n',f:f}; if(z)cell.z=z; this.set(r,c,cell); };
-  /* Merge style onto a cell (creates an empty cell if needed so fills cover the whole box). */
-  Sheet.prototype.style=function(r,c, patch){
-    var addr=A(r,c), cell=this.cells[addr];
-    if(!cell){ cell={t:'s',v:''}; }
-    var prev=cell.s||{}, font=Object.assign({}, prev.font||{}, patch.font||{});
-    cell.s=Object.assign({}, prev, patch, {font:font});
-    this.set(r,c,cell);
-  };
   Sheet.prototype.done=function(){
     var out={}; for(var k in this.cells) out[k]=this.cells[k];
     out['!ref']='A1:'+A(this.maxR,this.maxC);
@@ -447,28 +434,28 @@ footer{margin-top:26px;font-size:11.5px;color:var(--text-muted)}
     var legs=V.legs||[], nL=legs.length;
     var grades=gradesInUse(V), nG=grades.length;
 
-    ws.L(0,1,'Vessel:');        ws.S(0,2,V.vessel);
-    ws.L(0,4,'Voyage No:');     ws.N(0,5,V.voyNo);
-    ws.L(0,7,'Charterer:');     ws.S(0,8,V.charterer);
-    ws.L(0,10,'CP Date:');      ws.D(0,11,V.cpDate,'dd/mm/yy');
-    ws.L(1,1,'Dem. Rate ($/d):'); ws.N(1,2,V.demRate,MONEY);
-    ws.L(1,4,'Laytime (hrs):');   ws.N(1,5,V.laytime,'0.00');
-    ws.L(1,7,'Estimation No:');   ws.S(1,8,V.estNo);
-    ws.L(1,10,'Estimated TCE:');  ws.N(1,11,V.estTce,MONEY);
+    ws.S(0,0,'SEA WORLD MANAGEMENT & TRADING  —  VOYAGE ACTUAL REPORT');
+    ws.S(2,1,'Vessel:');        ws.S(2,2,V.vessel);
+    ws.S(2,4,'Voyage No:');     ws.N(2,5,V.voyNo);
+    ws.S(2,7,'Charterer:');     ws.S(2,8,V.charterer);
+    ws.S(2,10,'CP Date:');      ws.D(2,11,V.cpDate,'dd/mm/yy');
+    ws.S(3,1,'Dem. Rate ($/d):'); ws.N(3,2,V.demRate,MONEY);
+    ws.S(3,4,'Laytime (hrs):');   ws.N(3,5,V.laytime,'0.00');
+    ws.S(3,7,'Estimation No:');   ws.S(3,8,V.estNo);
+    ws.S(3,10,'Estimated TCE:');  ws.N(3,11,V.estTce,MONEY);
 
-    ws.L(3,1,'SUMMARY');
-    var sumTop=4, sumRows=9+nG;            // reserved, filled at the end
-    r = sumTop + sumRows + 2;              // +2 leaves one blank row before legs
-
+    ws.S(5,1,'SUMMARY');
+    var sumTop=6, sumRows=9+nG;            // reserved, filled at the end
+    r = sumTop + sumRows + 1;
 
     /* ---- VOYAGE LEGS ---- */
-    ws.L(r,1,'VOYAGE LEGS'); r++;
+    ws.S(r,1,'VOYAGE LEGS'); r++;
     var H=['Dep. Port','Dep. Date & Time','Arr. Port','Arr. Date & Time','Miles','Duration (d)','Speed (kn)','Condition'];
     grades.forEach(function(g){ H.push('ROB Dep '+g); });
     grades.forEach(function(g){ H.push('ROB Arr '+g); });
     grades.forEach(function(g){ H.push('Stems at Sea '+g); });
-    grades.forEach(function(g){ H.push('Cons '+g); });
-    H.forEach(function(h,i){ ws.L(r,1+i,h); });
+    grades.forEach(function(g){ H.push('Sea Cons '+g); });
+    H.forEach(function(h,i){ ws.S(r,1+i,h); });
     var legHdr=r; r++;
     var legStart=r;
     var robDep0=9, robArr0=9+nG, stemSea0=9+2*nG, seaCons0=9+3*nG;
@@ -485,15 +472,15 @@ footer{margin-top:26px;font-size:11.5px;color:var(--text-muted)}
       r++;
     });
     var legEnd=r-1;
-    ws.L(r,1,'Totals:');
+    ws.S(r,1,'Totals:');
     ws.F(r,5,'SUM('+A(legStart,5)+':'+A(legEnd,5)+')','#,##0');
     ws.F(r,6,'SUM('+A(legStart,6)+':'+A(legEnd,6)+')',D3);
     ws.F(r,7,'IFERROR('+A(r,5)+'/('+A(r,6)+'*24),"")',KN);
     var legTot=r; r+=2;
 
     /* ---- STEMS ---- */
-    ws.L(r,1,'BUNKER STEMS (delivered this voyage)'); r++;
-    ['Date','Port','Supplier','Grade','Qty (MT)','Price ($/MT)','Total ($)'].forEach(function(h,i){ ws.L(r,1+i,h); });
+    ws.S(r,1,'BUNKER STEMS (delivered this voyage)'); r++;
+    ['Date','Port','Supplier','Grade','Qty (MT)','Price ($/MT)','Total ($)'].forEach(function(h,i){ ws.S(r,1+i,h); });
     r++;
     var stemStart=r;
     var stems=(V.stems||[]).slice().sort(function(a,b){return (a.date||'').localeCompare(b.date||'');});
@@ -505,12 +492,12 @@ footer{margin-top:26px;font-size:11.5px;color:var(--text-muted)}
       r++;
     });
     var stemEnd=r-1;
-    ws.L(r,1,'Total:'); ws.F(r,5,'SUM('+A(stemStart,5)+':'+A(stemEnd,5)+')',MT);
+    ws.S(r,1,'Total:'); ws.F(r,5,'SUM('+A(stemStart,5)+':'+A(stemEnd,5)+')',MT);
     ws.F(r,7,'SUM('+A(stemStart,7)+':'+A(stemEnd,7)+')',MONEY);
     r+=2;
 
     /* ---- STEMS AT SEA (deferred leg cols) — sea window (dep, arr) strict ---- */
-    var sdR='$A$'+(stemStart+1)+':$A$'+(stemEnd+1), sgR='$D$'+(stemStart+1)+':$D$'+(stemEnd+1), sqR='$E$'+(stemStart+1)+':$E$'+(stemEnd+1);
+    var sdR='$B$'+(stemStart+1)+':$B$'+(stemEnd+1), sgR='$E$'+(stemStart+1)+':$E$'+(stemEnd+1), sqR='$F$'+(stemStart+1)+':$F$'+(stemEnd+1);
     legs.forEach(function(L,i){
       var lr = legStart+i;
       grades.forEach(function(g,gi){
@@ -526,11 +513,11 @@ footer{margin-top:26px;font-size:11.5px;color:var(--text-muted)}
     }
 
     /* ---- PORT STAYS ---- */
-    ws.L(r,1,'PORT STAYS & PORT CONSUMPTION'); r++;
+    ws.S(r,1,'PORT STAYS & PORT CONSUMPTION'); r++;
     var psH=['Port','Arrived','Departed','Stay (d)'];
     grades.forEach(function(g){ psH.push('Stems '+g); });
     grades.forEach(function(g){ psH.push('Port Cons '+g); });
-    psH.forEach(function(h,i){ ws.L(r,1+i,h); });
+    psH.forEach(function(h,i){ ws.S(r,1+i,h); });
     r++;
     var psStart=r;
     var psStem0=5, psCons0=5+nG;
@@ -539,7 +526,7 @@ footer{margin-top:26px;font-size:11.5px;color:var(--text-muted)}
       ws.S(r,1,legs[i].arrPort);
       ws.F(r,2,A(la,4),DT); ws.F(r,3,A(ln,2),DT);
       ws.F(r,4,A(r,3)+'-'+A(r,2),D3);
-      var dR='$A$'+(stemStart+1)+':$A$'+(stemEnd+1), gR='$D$'+(stemStart+1)+':$D$'+(stemEnd+1), qR='$E$'+(stemStart+1)+':$E$'+(stemEnd+1);
+      var dR='$B$'+(stemStart+1)+':$B$'+(stemEnd+1), gR='$E$'+(stemStart+1)+':$E$'+(stemEnd+1), qR='$F$'+(stemStart+1)+':$F$'+(stemEnd+1);
       grades.forEach(function(g,gi){
         ws.F(r, psStem0+gi, 'SUMIFS('+qR+','+gR+',"'+g+'",'+dR+',">="&'+A(r,2)+','+dR+',"<="&'+A(r,3)+')',MT);
         ws.F(r, psCons0+gi, A(la,robArr0+gi)+'+'+A(r,psStem0+gi)+'-'+A(ln,robDep0+gi),MT);
@@ -547,7 +534,7 @@ footer{margin-top:26px;font-size:11.5px;color:var(--text-muted)}
       r++;
     }
     var psEnd=r-1, hasPS=nL>1;
-    ws.L(r,1,'Totals:');
+    ws.S(r,1,'Totals:');
     if(hasPS){
       ws.F(r,4,'SUM('+A(psStart,4)+':'+A(psEnd,4)+')',D3);
       grades.forEach(function(g,gi){
@@ -559,14 +546,14 @@ footer{margin-top:26px;font-size:11.5px;color:var(--text-muted)}
     /* ---- FIFO per grade ---- */
     var fifoRef={};
     grades.forEach(function(g,gi){
-      ws.L(r,1,g+' — FIFO VALUATION'); r++;
+      ws.S(r,1,g+' — FIFO VALUATION'); r++;
       var closingRef = nL ? A(legEnd, robArr0+gi) : null;
-      ws.L(r,1,'Closing ROB (MT):');
+      ws.S(r,1,'Closing ROB (MT):');
       if(closingRef) ws.F(r,2,closingRef,MT); else ws.N(r,2,0,MT);
-      ws.L(r,4,'Total consumption (MT):');
+      ws.S(r,4,'Total consumption (MT):');
       var closCell=A(r,2), consCell=A(r,5), consRow=r;
       r++;
-      ['Source','Date','Qty (MT)','Price ($/MT)','Consumed (MT)','Consumed ($)','Remaining (MT)','Remaining ($)'].forEach(function(h,i){ ws.L(r,1+i,h); });
+      ['Source','Date','Qty (MT)','Price ($/MT)','Consumed (MT)','Consumed ($)','Remaining (MT)','Remaining ($)'].forEach(function(h,i){ ws.S(r,1+i,h); });
       var hdr=r; r++;
       var Ls=layersFor(V,g); if(!Ls.length) Ls=[{src:'(no layers)',qty:0,price:0}];
       var ls=r;
@@ -581,7 +568,7 @@ footer{margin-top:26px;font-size:11.5px;color:var(--text-muted)}
       });
       var le=r-1;
       ws.F(consRow,5,'SUM('+A(ls,3)+':'+A(le,3)+')-'+closCell,MT);
-      ws.L(r,1,'Totals:');
+      ws.S(r,1,'Totals:');
       ws.F(r,3,'SUM('+A(ls,3)+':'+A(le,3)+')',MT);
       ws.F(r,5,'SUM('+A(ls,5)+':'+A(le,5)+')',MT);
       ws.F(r,6,'SUM('+A(ls,6)+':'+A(le,6)+')',MONEY);
@@ -589,31 +576,31 @@ footer{margin-top:26px;font-size:11.5px;color:var(--text-muted)}
       ws.F(r,8,'SUM('+A(ls,8)+':'+A(le,8)+')',MONEY);
       fifoRef[g]={cost:A(r,6), closVal:A(r,8), consumed:A(r,5), consTot:consCell};
       var tot=r; r++;
-      ws.L(r,1,'Avg $/MT consumed:'); ws.F(r,2,'IFERROR('+A(tot,6)+'/'+A(tot,5)+',"")',PX);
-      ws.L(r,4,'Unallocated (data gap, MT):'); ws.F(r,5,consCell+'-'+A(tot,5),MT);
+      ws.S(r,1,'Avg $/MT consumed:'); ws.F(r,2,'IFERROR('+A(tot,6)+'/'+A(tot,5)+',"")',PX);
+      ws.S(r,4,'Unallocated (data gap, MT):'); ws.F(r,5,consCell+'-'+A(tot,5),MT);
       r+=2;
     });
 
     /* ---- REVENUE ---- */
-    ws.L(r,1,'REVENUE & COMMISSIONS'); r++;
-    ws.L(r,1,'Freight:'); ws.N(r,2,V.freight,MONEY); ws.L(r,3,'Comm %:'); ws.N(r,4,V.freightComm,'0.00'); ws.L(r,5,'Commission:'); ws.F(r,6,A(r,2)+'*'+A(r,4)+'/100',MONEY);
+    ws.S(r,1,'REVENUE & COMMISSIONS'); r++;
+    ws.S(r,1,'Freight:'); ws.N(r,2,V.freight,MONEY); ws.S(r,3,'Comm %:'); ws.N(r,4,V.freightComm,'0.00'); ws.S(r,5,'Commission:'); ws.F(r,6,A(r,2)+'*'+A(r,4)+'/100',MONEY);
     var fr=r; r++;
-    ws.L(r,1,'Demurrage:'); ws.N(r,2,V.demurrage,MONEY); ws.L(r,3,'Comm %:'); ws.N(r,4,V.demComm,'0.00'); ws.L(r,5,'Commission:'); ws.F(r,6,A(r,2)+'*'+A(r,4)+'/100',MONEY);
+    ws.S(r,1,'Demurrage:'); ws.N(r,2,V.demurrage,MONEY); ws.S(r,3,'Comm %:'); ws.N(r,4,V.demComm,'0.00'); ws.S(r,5,'Commission:'); ws.F(r,6,A(r,2)+'*'+A(r,4)+'/100',MONEY);
     var dr=r; r++;
     var orv=(V.otherRev||[]).filter(function(x){return x.label||x.amount;});
     if(!orv.length) orv=[{label:'',amount:''}];
     var orS=r;
-    orv.forEach(function(x){ if(x.label) ws.S(r,1,x.label); else ws.L(r,1,'Other revenue:'); ws.N(r,2,x.amount,MONEY); r++; });
+    orv.forEach(function(x){ ws.S(r,1,x.label||'Other revenue:'); ws.N(r,2,x.amount,MONEY); r++; });
     var orE=r-1;
-    ws.L(r,1,'Total revenue:');
+    ws.S(r,1,'Total revenue:');
     ws.F(r,2,A(fr,2)+'+'+A(dr,2)+'+SUM('+A(orS,2)+':'+A(orE,2)+')',MONEY);
     var revTot=r; r++;
-    ws.L(r,1,'Total commissions:'); ws.F(r,2,A(fr,6)+'+'+A(dr,6),MONEY);
+    ws.S(r,1,'Total commissions:'); ws.F(r,2,A(fr,6)+'+'+A(dr,6),MONEY);
     var commTot=r; r+=2;
 
     /* ---- PORT COSTS ---- */
-    ws.L(r,1,'PORT CALL EXPENSES'); r++;
-    ['Port','DA Reason','DA ($)','Other Reason','Other ($)','Total ($)'].forEach(function(h,i){ ws.L(r,1+i,h); });
+    ws.S(r,1,'PORT CALL EXPENSES'); r++;
+    ['Port','DA Reason','DA ($)','Other Reason','Other ($)','Total ($)'].forEach(function(h,i){ ws.S(r,1+i,h); });
     r++;
     var pc=(V.portCosts||[]).filter(function(x){return x.port||x.da||x.other;});
     if(!pc.length) pc=[{}];
@@ -624,17 +611,17 @@ footer{margin-top:26px;font-size:11.5px;color:var(--text-muted)}
       ws.F(r,6,'SUM('+A(r,3)+','+A(r,5)+')',MONEY); r++;
     });
     var pcE=r-1;
-    ws.L(r,1,'Total:'); ws.F(r,6,'SUM('+A(pcS,6)+':'+A(pcE,6)+')',MONEY);
+    ws.S(r,1,'Total:'); ws.F(r,6,'SUM('+A(pcS,6)+':'+A(pcE,6)+')',MONEY);
     var pcTot=r; r+=2;
 
     /* ---- OTHER COSTS ---- */
-    ws.L(r,1,'OTHER COSTS'); r++;
+    ws.S(r,1,'OTHER COSTS'); r++;
     var oc=(V.otherCosts||[]).filter(function(x){return x.label||x.amount;});
     if(!oc.length) oc=[{label:'',amount:''}];
     var ocS=r;
-    oc.forEach(function(x){ if(x.label) ws.S(r,1,x.label); else ws.L(r,1,'Other cost:'); ws.N(r,2,x.amount,MONEY); r++; });
+    oc.forEach(function(x){ ws.S(r,1,x.label||'Other cost:'); ws.N(r,2,x.amount,MONEY); r++; });
     var ocE=r-1;
-    ws.L(r,1,'Total:'); ws.F(r,2,'SUM('+A(ocS,2)+':'+A(ocE,2)+')',MONEY);
+    ws.S(r,1,'Total:'); ws.F(r,2,'SUM('+A(ocS,2)+':'+A(ocE,2)+')',MONEY);
     var ocTot=r; r+=2;
 
     /* ---- fill SUMMARY ---- */
@@ -644,54 +631,39 @@ footer{margin-top:26px;font-size:11.5px;color:var(--text-muted)}
     var closSum = closValParts.join('+') || '0';
     var s=sumTop;
     var firstDep=nL?A(legStart,2):null, lastArr=nL?A(legEnd,4):null;
-    ws.L(s,1,'Days at sea:');   ws.F(s,2,A(legTot,6),D3);
-    ws.L(s,4,'Total revenue:'); ws.F(s,5,A(revTot,2),MONEY); s++;
-    ws.L(s,1,'Days in port:');  if(nL){ws.F(s,2,lastArr+'-'+firstDep+'-'+A(legTot,6),D3);}
-    ws.L(s,4,'Total costs:');   ws.F(s,5,A(commTot,2)+'+'+bunkSum+'+'+A(pcTot,6)+'+'+A(ocTot,2),MONEY);
+    ws.S(s,1,'Days at sea:');   ws.F(s,2,A(legTot,6),D3);
+    ws.S(s,4,'Total revenue:'); ws.F(s,5,A(revTot,2),MONEY); s++;
+    ws.S(s,1,'Days in port:');  if(nL){ws.F(s,2,lastArr+'-'+firstDep+'-'+A(legTot,6),D3);}
+    ws.S(s,4,'Total costs:');   ws.F(s,5,A(commTot,2)+'+'+bunkSum+'+'+A(pcTot,6)+'+'+A(ocTot,2),MONEY);
     var costsCell=A(s,5); s++;
-    ws.L(s,1,'Total duration (d):'); if(nL){ws.F(s,2,lastArr+'-'+firstDep,D3);} var durCell=A(s,2);
-    ws.L(s,4,'Net profit:');    ws.F(s,5,A(revTot,2)+'-'+costsCell,MONEY); var netCell=A(s,5); s++;
-    ws.L(s,1,'Total miles:');   ws.F(s,2,A(legTot,5),'#,##0');
-    ws.L(s,4,'Actual TCE ($/d):'); ws.F(s,5,'IFERROR('+netCell+'/'+durCell+',"")',MONEY); var tceCell=A(s,5); s++;
-    ws.L(s,1,'Avg speed (kn):'); ws.F(s,2,A(legTot,7),KN);
-    ws.L(s,4,'Estimated TCE ($/d):'); ws.F(s,5,A(1,11),MONEY); var estCell=A(s,5); s++;
-    ws.L(s,1,'Commenced:'); if(nL)ws.F(s,2,firstDep,DT);
-    ws.L(s,4,'TCE variation ($/d):'); ws.F(s,5,'IFERROR('+tceCell+'-'+estCell+',"")',MONEY); s++;
-    ws.L(s,1,'Completed:'); if(nL)ws.F(s,2,lastArr,DT);
-    ws.L(s,4,'TCE variation (%):'); ws.F(s,5,'IFERROR(('+tceCell+'-'+estCell+')/'+estCell+',"")','0.0%'); s++;
-    ws.L(s,1,'Bunkers consumed (FIFO):'); ws.F(s,2,bunkSum,MONEY);
-    ws.L(s,4,'Commissions:'); ws.F(s,5,A(commTot,2),MONEY); s++;
+    ws.S(s,1,'Total duration (d):'); if(nL){ws.F(s,2,lastArr+'-'+firstDep,D3);} var durCell=A(s,2);
+    ws.S(s,4,'Net profit:');    ws.F(s,5,A(revTot,2)+'-'+costsCell,MONEY); var netCell=A(s,5); s++;
+    ws.S(s,1,'Total miles:');   ws.F(s,2,A(legTot,5),'#,##0');
+    ws.S(s,4,'Actual TCE ($/d):'); ws.F(s,5,'IFERROR('+netCell+'/'+durCell+',"")',MONEY); var tceCell=A(s,5); s++;
+    ws.S(s,1,'Avg speed (kn):'); ws.F(s,2,A(legTot,7),KN);
+    ws.S(s,4,'Estimated TCE ($/d):'); ws.F(s,5,A(3,11),MONEY); var estCell=A(s,5); s++;
+    ws.S(s,1,'Commenced:'); if(nL)ws.F(s,2,firstDep,DT);
+    ws.S(s,4,'TCE variation ($/d):'); ws.F(s,5,'IFERROR('+tceCell+'-'+estCell+',"")',MONEY); s++;
+    ws.S(s,1,'Completed:'); if(nL)ws.F(s,2,lastArr,DT);
+    ws.S(s,4,'TCE variation (%):'); ws.F(s,5,'IFERROR(('+tceCell+'-'+estCell+')/'+estCell+',"")','0.0%'); s++;
+    ws.S(s,1,'Bunkers consumed (FIFO):'); ws.F(s,2,bunkSum,MONEY);
+    ws.S(s,4,'Commissions:'); ws.F(s,5,A(commTot,2),MONEY); s++;
     grades.forEach(function(g,gi){
-      ws.L(s,1,g+' cons (MT / $):'); ws.F(s,2,fifoRef[g].consTot,MT); ws.F(s,3,fifoRef[g].cost,MONEY);
-      if(gi===0){ ws.L(s,4,'Port call expenses:'); ws.F(s,5,A(pcTot,6),MONEY); }
-      else if(gi===1){ ws.L(s,4,'Other costs:'); ws.F(s,5,A(ocTot,2),MONEY); }
-      else if(gi===2){ ws.L(s,4,'Closing ROB value ($):'); ws.F(s,5,closSum,MONEY); }
+      ws.S(s,1,g+' cons (MT / $):'); ws.F(s,2,fifoRef[g].consTot,MT); ws.F(s,3,fifoRef[g].cost,MONEY);
+      if(gi===0){ ws.S(s,4,'Port call expenses:'); ws.F(s,5,A(pcTot,6),MONEY); }
+      else if(gi===1){ ws.S(s,4,'Other costs:'); ws.F(s,5,A(ocTot,2),MONEY); }
+      else if(gi===2){ ws.S(s,4,'Closing ROB value ($):'); ws.F(s,5,closSum,MONEY); }
       s++;
     });
     if(nG<3){
       if(nG<1){ /* noop */ }
-      if(nG<=1){ ws.L(s,4,'Port call expenses:'); ws.F(s,5,A(pcTot,6),MONEY); s++; }
-      if(nG<=2){ ws.L(s,4,'Other costs:'); ws.F(s,5,A(ocTot,2),MONEY); s++; }
-      ws.L(s,1,'Closing ROB value ($):'); ws.F(s,2,closSum,MONEY);
-    }
-    var sumEnd = (nG<3) ? s : (s-1);
-
-    /* Summary box A4:E{end} — light green fill, black text */
-    var green={ patternType:'solid', fgColor:{ rgb:'D9EAD3' } };
-    for(var sr=3; sr<=sumEnd; sr++){
-      for(var sc=1; sc<=5; sc++){
-        ws.style(sr, sc, { fill:green, font:{ color:{ rgb:'000000' } } });
-      }
-    }
-    /* D8:E10 — bold + underline (Actual / Estimated / Δ TCE) */
-    for(var tr=7; tr<=9; tr++){
-      for(var tc=4; tc<=5; tc++){
-        ws.style(tr, tc, { font:{ bold:true, underline:true, color:{ rgb:'000000' } } });
-      }
+      if(nG<=1){ ws.S(s,4,'Port call expenses:'); ws.F(s,5,A(pcTot,6),MONEY); s++; }
+      if(nG<=2){ ws.S(s,4,'Other costs:'); ws.F(s,5,A(ocTot,2),MONEY); s++; }
+      ws.S(s,1,'Closing ROB value ($):'); ws.F(s,2,closSum,MONEY);
     }
 
     var sheet=ws.done();
-    sheet['!cols']=[{wch:26},{wch:18},{wch:18},{wch:18},{wch:18},{wch:12},{wch:11},{wch:12}].concat(
+    sheet['!cols']=[{wch:2},{wch:26},{wch:18},{wch:18},{wch:18},{wch:18},{wch:12},{wch:11},{wch:12}].concat(
       grades.map(function(){return {wch:14};}),
       grades.map(function(){return {wch:14};}),
       grades.map(function(){return {wch:15};}),
@@ -837,7 +809,7 @@ function renderLegs(){
     +'<th class="num">Miles</th><th class="num">Dur. (d)</th><th class="num">Speed (kn)</th><th>Cond.</th>';
   grades.forEach(function(g){ th += '<th class="num">ROB dep '+esc(g)+'</th>'; });
   grades.forEach(function(g){ th += '<th class="num">ROB arr '+esc(g)+'</th>'; });
-  grades.forEach(function(g){ th += '<th class="num"> Cons '+esc(g)+'</th>'; });
+  grades.forEach(function(g){ th += '<th class="num">Sea cons '+esc(g)+'</th>'; });
   th += '<th></th></tr>';
   document.querySelector('#legsT thead').innerHTML = th;
 

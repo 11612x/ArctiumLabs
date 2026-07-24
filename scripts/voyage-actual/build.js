@@ -2,7 +2,7 @@
    Usage: node build.js <in.html> <out.xlsx> [voyage.json] */
 const fs = require('fs');
 const path = require('path');
-const XLSX = require('xlsx');
+const XLSX = require('xlsx-js-style');
 
 const htmlPath = process.argv[2];
 const outPath = process.argv[3];
@@ -30,7 +30,7 @@ fs.writeFileSync(corePath, core);
 global.XLSX = XLSX;
 const VR = require(corePath);
 
-const V = voyPath ? JSON.parse(fs.readFileSync(voyPath, 'utf8')) : VR.demoVoyage();
+const V = VR.migrateVoyage(voyPath ? JSON.parse(fs.readFileSync(voyPath, 'utf8')) : VR.demoVoyage());
 const wb = VR.buildWorkbook(V);
 XLSX.writeFile(wb, outPath);
 console.log('wrote', outPath, '| sheets:', wb.SheetNames.join(', '));
