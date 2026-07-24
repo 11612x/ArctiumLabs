@@ -28,6 +28,16 @@ Model **voyage arcs** with vessel defaults (speeds laden/ballast, broker commiss
 
 **Bunker Negotiator** — Configure delivery, quantities, and a **lump sum counter** with a target figure; use **Export** for outputs and **Reset** to start over.
 
+### Voyage Actual
+
+Post-fixture **voyage actual / TCE reconciler** (`voyage-actual.html`, also under **More → Voyage Actual**). Enter the completed voyage and get live reconciliations plus an Excel workbook with formulas.
+
+- **Legs** — dep/arr ports and times, miles, condition; **ROB dep/arr** and calculated sea consumption. Dep ROB is not auto-copied from the previous arr ROB (port burn is entered separately).
+- **Fuel grades** — defaults to empty **VLSFO** and **LSMGO** opening layers. Add **HFO, ULSD, Bio, UREA** (or pick them on a stem); ROB columns, the consumption ledger, and FIFO panels follow whichever grades are in use.
+- **Bunkers FIFO** — opening ROB as priced layers; stems at sea or in port (boundary rule: a stem timed exactly on arrival/departure counts in the port stay). Closing ROB and carry layers for the next voyage.
+- **P&L** — freight, demurrage, other revenue, commissions, port costs, other costs → net profit, actual TCE, vs estimate.
+- **Excel export** — plain data layout (no report banner), bold labels/headers, light-green summary box, bold+underline on the TCE block; import restores the voyage from the embedded data sheet. **Next voyage** seeds opening ROB from closing layers.
+
 ### Emissions
 
 **EU ETS–oriented voyage emissions** — Enter voyage details (vessel, route coverage 100% / 50%, compliance year, load/discharge ports with autocomplete backed by project port data), **fuel consumption** by type with emission factors, and **ETS parameters** (e.g. EUA price). **Calculate emissions** to populate the summary on the right.
@@ -38,7 +48,7 @@ Model **voyage arcs** with vessel defaults (speeds laden/ballast, broker commiss
 
 | Area | Notes |
 |------|--------|
-| **Frontend** | One self-contained `index.html` (markup, styles, and client logic). |
+| **Frontend** | Main shell is `index.html`; several tools load as iframes (e.g. `voyage-actual.html`). |
 | **Auth** | [Supabase](https://supabase.com/) — sign-in overlay; user profiles support roles such as **admin** and **ops** (e.g. who may upload the position list). |
 | **Data** | `ports.json`, `all_cargo_grades.json`, and `wet_cargo_grades.json` ship with the site for lookups and autocomplete. |
 | **Assets** | `logo.svg`, `Favicon.svg`; `CNAME` is set for GitHub Pages–style hosting on `arctiumlabs.com`. |
@@ -63,7 +73,7 @@ Then open **http://127.0.0.1:8080/**. Use `serve.py` (or **serve.bat** on Window
 
 ## Who it is for
 
-Operators, charterers, and analysts who want **TC comparison**, **voyage / spot chain comparison**, **bunker negotiation aids**, **ETS-related emission estimates**, and a **shared dashboard** for fleet visibility and market context—without juggling separate spreadsheets for every task.
+Operators, charterers, and analysts who want **TC comparison**, **voyage / spot chain comparison**, **voyage actuals & TCE**, **bunker negotiation aids**, **ETS-related emission estimates**, and a **shared dashboard** for fleet visibility and market context—without juggling separate spreadsheets for every task.
 
 ---
 
