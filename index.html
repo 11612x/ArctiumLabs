@@ -4391,6 +4391,7 @@
   </div>
   <button class="tab-btn" data-tab="tab-emissions" onclick="switchTab('tab-emissions')">Emissions</button>
   <button class="tab-btn" data-tab="tab-route" onclick="switchTab('tab-route')">Route</button>
+  <button class="tab-btn" data-tab="tab-cp" onclick="switchTab('tab-cp')">CP LIBRARY</button>
   <div class="tab-more" id="tabMoreWrap">
     <button type="button" class="tab-btn tab-more-trigger" data-tab="tab-more" aria-haspopup="true" aria-expanded="false" id="tabMoreTrigger">
       More
@@ -4725,6 +4726,10 @@
   <iframe id="routeFrame" data-src="route-calculator.html" title="Route calculator"></iframe>
 </div>
 
+<div class="tab-panel" id="tab-cp">
+  <iframe id="cpFrame" data-src="cp-database.html" title="CP Library"></iframe>
+</div>
+
 <div class="tab-panel" id="tab-bunkers">
   <iframe id="bunkerFrame" data-src="Bunkers_Negotiator.html" title="Bunker negotiator"></iframe>
 </div>
@@ -5027,12 +5032,13 @@ async function saveVoyageChains() {
 const TAB_STORAGE_KEY = 'arctium_active_tab';
 const ESTIMATE_TAB_IDS = ['tab-tc', 'tab-voy', 'tab-scenario-analysis'];
 const MORE_TAB_IDS = ['tab-bunkers', 'tab-tank-cleaning', 'tab-ship-finance', 'tab-voyage-actual'];
-const VALID_TABS = ['tab-dashboard', 'tab-tc', 'tab-voy', 'tab-scenario-analysis', 'tab-emissions', 'tab-route', ...MORE_TAB_IDS];
+const VALID_TABS = ['tab-dashboard', 'tab-tc', 'tab-voy', 'tab-scenario-analysis', 'tab-emissions', 'tab-route', 'tab-cp', ...MORE_TAB_IDS];
 const SHIP_FINANCE_IFRAME_SRC = 'ship-finance-calculator.html?v=20260528q';
 
 const TAB_IFRAME_IDS = {
   'tab-emissions': 'emissionsFrame',
   'tab-route': 'routeFrame',
+  'tab-cp': 'cpFrame',
   'tab-bunkers': 'bunkerFrame',
   'tab-tank-cleaning': 'tankCleaningFrame',
   'tab-ship-finance': 'shipFinanceFrame',
@@ -5133,7 +5139,7 @@ function postIframeUiState() {
     isAdmin,
     isOps
   };
-  ['emissionsFrame', 'routeFrame', 'bunkerFrame', 'tankCleaningFrame', 'shipFinanceFrame', 'scenarioAnalysisFrame', 'voyageActualFrame'].forEach((id) => {
+  ['emissionsFrame', 'routeFrame', 'cpFrame', 'bunkerFrame', 'tankCleaningFrame', 'shipFinanceFrame', 'scenarioAnalysisFrame', 'voyageActualFrame'].forEach((id) => {
     const frame = document.getElementById(id);
     if (frame?.getAttribute('src') && frame.contentWindow) {
       frame.contentWindow.postMessage(payload, '*');
@@ -5153,6 +5159,7 @@ window.addEventListener('message', (e) => {
     e.data?.type === 'arctium-tank-cleaning-ready' ||
     e.data?.type === 'arctium-ship-finance-ready' ||
     e.data?.type === 'arctium-route-ready' ||
+    e.data?.type === 'arctium-cp-ready' ||
     e.data?.type === 'arctium-scenario-analysis-ready'
   ) {
     postIframeUiState();
@@ -5276,7 +5283,7 @@ function switchTab(id) {
   if (id === 'tab-voy') {
     wirePortAutocompleteForAppSafe();
   }
-  if (id === 'tab-emissions' || id === 'tab-bunkers' || id === 'tab-tank-cleaning' || id === 'tab-ship-finance' || id === 'tab-route' || id === 'tab-scenario-analysis' || id === 'tab-voyage-actual') {
+  if (id === 'tab-emissions' || id === 'tab-bunkers' || id === 'tab-tank-cleaning' || id === 'tab-ship-finance' || id === 'tab-route' || id === 'tab-cp' || id === 'tab-scenario-analysis' || id === 'tab-voyage-actual') {
     postIframeUiState();
   }
 }

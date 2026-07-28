@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="en" data-ui-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CP Library — Arctium Lab</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --bg: #0d0f0e;
+  --surface: #141714;
+  --surface2: #1a1d1a;
+  --border: #252825;
+  --border-light: #2e322e;
+  --text: #e8ede8;
+  --text-dim: #b8beb8;
+  --text-muted: #949a94;
+  --accent: #a8b8a8;
+  --accent-dim: #5a6a5a;
+  --accent-glow: rgba(168,184,168,0.07);
+  --red: #b87878;
+  --amber: #b89858;
+  --blue: #7898b8;
+  --teal: #78b8a8;
+  --input-bg: #000000;
+}
+
+html[data-ui-theme="light"] {
+  --bg: #e8ede8;
+  --surface: #dde3dd;
+  --surface2: #d3d9d3;
+  --border: #b8beb8;
+  --border-light: #a8aea8;
+  --text: #0d0f0e;
+  --text-dim: #2a2e2a;
+  --text-muted: #4a504a;
+  --accent: #6a8a6a;
+  --accent-dim: #4a6a4a;
+  --accent-glow: rgba(80, 100, 80, 0.10);
+  --input-bg: #ffffff;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="hidden"]):not([type="color"]),
+select,
+textarea {
+  background-color: var(--input-bg);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Consolas', 'Courier New', monospace;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  padding: 16px 20px 24px;
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+.banner {
+  display: none;
+  background: rgba(184,120,120,0.15);
+  border: 1px solid var(--red);
+  color: var(--red);
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 16px;
+  border-radius: 3px;
+}
+.banner.visible { display: block; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.card-title {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+}
+.field label {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.field input[type="text"],
+.field input[type="date"],
+.field input[type="number"],
+.field select,
+.field textarea {
+  width: 100%;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 8px;
+  font-family: inherit;
+  font-size: 14px;
+  border-radius: 3px;
+  outline: none;
+}
+.field textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--accent-dim);
+}
+
+.run-btn {
+  background: var(--accent);
+  border: none;
+  border-radius: 4px;
+  color: #0d0f0e;
+  cursor: pointer;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  padding: 13px 16px;
+  text-transform: uppercase;
+  transition: opacity 0.15s;
+}
+.run-btn:hover { opacity: 0.88; }
+.run-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ghost-btn {
+  background: transparent;
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  padding: 10px 14px;
+  text-transform: uppercase;
+  transition: opacity 0.15s, border-color 0.15s, color 0.15s;
+}
+.ghost-btn:hover {
+  opacity: 0.88;
+  border-color: var(--accent-dim);
+  color: var(--text);
+}
+.ghost-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.section-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  margin: 16px 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.summary-table th {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  font-weight: 400;
+}
+.summary-table th:first-child { text-align: left; }
+.summary-table td {
+  padding: 10px 12px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-dim);
+  vertical-align: middle;
+}
+.summary-table td:first-child { text-align: left; color: var(--text); }
+.summary-table tr:last-child td { border-bottom: none; }
+.summary-table tbody tr:hover td { background: var(--surface2); }
+.summary-table tbody tr.cp-row { cursor: pointer; }
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  color: var(--text-muted);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  gap: 12px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+}
+
+.inline-error {
+  color: var(--red);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  margin-top: 8px;
+  display: none;
+}
+.inline-error.visible { display: block; }
+
+.val-pos { color: var(--accent); }
+.val-neg { color: var(--red); }
+.val-neu { color: var(--text); }
+
+.view { display: none; }
+.view.active { display: block; }
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  margin-bottom: 16px;
+}
+.toolbar .field { min-width: 140px; flex: 1; }
+.toolbar .field.grow { flex: 2; min-width: 200px; }
+.toolbar-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.form-grid .field.full { grid-column: 1 / -1; }
+@media (max-width: 720px) {
+  .form-grid { grid-template-columns: 1fr; }
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+.meta-item label {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.meta-item .meta-value {
+  color: var(--text);
+  font-size: 14px;
+  word-break: break-word;
+}
+
+.detail-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.status-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+.status-dot::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  flex-shrink: 0;
+}
+.status-dot.active::before { background: var(--teal); }
+
+.toggle-group {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.toggle-btn {
+  flex: 1;
+  padding: 5px 10px;
+  background: var(--surface2);
+  border: none;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.toggle-btn.active {
+  background: var(--accent);
+  color: #0d0f0e;
+  font-weight: 600;
+}
+.toggle-btn + .toggle-btn { border-left: 1px solid var(--border); }
+.toggle-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dropzone {
+  border: 1px dashed var(--border-light);
+  background: var(--surface2);
+  border-radius: 6px;
+  padding: 20px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.dropzone:hover,
+.dropzone.dragover {
+  border-color: var(--accent-dim);
+  color: var(--text-dim);
+  background: var(--accent-glow);
+}
+.dropzone input[type="file"] { display: none; }
+
+.doc-group { margin-bottom: 16px; }
+.doc-group-title {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.doc-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.doc-row:last-child { border-bottom: none; }
+.doc-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.doc-name { color: var(--text); font-size: 14px; word-break: break-word; }
+.doc-meta { color: var(--text-muted); font-size: 12px; }
+.doc-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.stack { display: flex; flex-direction: column; gap: 16px; }
+.muted { color: var(--text-muted); font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div id="errorBanner" class="banner" role="alert"></div>
+
+<!-- VIEW: AUTH GATE -->
+<div id="viewAuth" class="view">
+  <div class="empty-state">Sign in required</div>
+</div>
+
+<!-- VIEW: LIST -->
+<div id="viewList" class="view">
+  <div class="toolbar">
+    <div class="field grow">
+      <label for="filterSearch">Search</label>
+      <input type="text" id="filterSearch" placeholder="Vessel or charterer">
+    </div>
+    <div class="field">
+      <label for="filterType">Voyage type</label>
+      <select id="filterType">
+        <option value="ALL">ALL</option>
+        <option value="TC">TC</option>
+        <option value="SPOT">SPOT</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="filterStatus">Status</label>
+      <select id="filterStatus">
+        <option value="ALL">ALL</option>
+        <option value="ACTIVE">ACTIVE</option>
+        <option value="PAST">PAST</option>
+      </select>
+    </div>
+    <div class="toolbar-actions">
+      <button type="button" class="run-btn" id="btnNewCp">+ New CP</button>
+    </div>
+  </div>
+  <div id="listEmpty" class="empty-state" hidden>No CPs found</div>
+  <div id="listTableWrap" class="table-wrap" hidden>
+    <table class="summary-table" id="listTable">
+      <thead>
+        <tr>
+          <th>Vessel</th>
+          <th>Charterer</th>
+          <th>CP Date</th>
+          <th>Type</th>
+          <th>Duration</th>
+          <th>Rate</th>
+          <th>Docs</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="listBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- VIEW: CREATE -->
+<div id="viewCreate" class="view">
+  <div class="card">
+    <div class="card-title">New CP</div>
+    <form id="createForm" class="stack" novalidate>
+      <div class="form-grid">
+        <div class="field">
+          <label for="createVessel">Vessel *</label>
+          <input type="text" id="createVessel" required>
+        </div>
+        <div class="field">
+          <label for="createCharterer">Charterer *</label>
+          <input type="text" id="createCharterer" required>
+        </div>
+        <div class="field">
+          <label for="createDate">CP Date *</label>
+          <input type="date" id="createDate" required>
+        </div>
+        <div class="field">
+          <label for="createType">Voyage type *</label>
+          <select id="createType" required>
+            <option value="TC">TC</option>
+            <option value="SPOT">SPOT</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="createDuration">Duration</label>
+          <input type="text" id="createDuration" placeholder="e.g. 12 mos +/- 30d or MED-UKC">
+        </div>
+        <div class="field">
+          <label for="createRate">Freight rate</label>
+          <input type="text" id="createRate" placeholder="Optional">
+        </div>
+        <div class="field full">
+          <label for="createNotes">Notes</label>
+          <textarea id="createNotes" placeholder="Optional"></textarea>
+        </div>
+      </div>
+      <div id="createError" class="inline-error"></div>
+      <div class="form-actions">
+        <button type="submit" class="run-btn" id="btnCreateSubmit">Create</button>
+        <button type="button" class="ghost-btn" id="btnCreateCancel">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- VIEW: DETAIL -->
+<div id="viewDetail" class="view">
+  <div class="stack">
+    <div class="card">
+      <div class="detail-head">
+        <button type="button" class="ghost-btn" id="btnBackList">← Back</button>
+        <div class="detail-actions">
+          <div class="toggle-group" id="statusToggle" role="group" aria-label="Status">
+            <button type="button" class="toggle-btn" data-status="ACTIVE">Active</button>
+            <button type="button" class="toggle-btn" data-status="PAST">Past</button>
+          </div>
+          <button type="button" class="ghost-btn" id="btnEditCp">Edit</button>
+        </div>
+      </div>
+      <div class="card-title" id="detailTitle">CP Detail</div>
+      <div class="meta-grid" id="detailMeta"></div>
+      <div id="detailError" class="inline-error"></div>
+    </div>
+
+    <div class="card" id="editCard" hidden>
+      <div class="card-title">Edit CP</div>
+      <form id="editForm" class="stack" novalidate>
+        <div class="form-grid">
+          <div class="field">
+            <label for="editVessel">Vessel *</label>
+            <input type="text" id="editVessel" required>
+          </div>
+          <div class="field">
+            <label for="editCharterer">Charterer *</label>
+            <input type="text" id="editCharterer" required>
+          </div>
+          <div class="field">
+            <label for="editDate">CP Date *</label>
+            <input type="date" id="editDate" required>
+          </div>
+          <div class="field">
+            <label for="editType">Voyage type *</label>
+            <select id="editType" required>
+              <option value="TC">TC</option>
+              <option value="SPOT">SPOT</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="editDuration">Duration</label>
+            <input type="text" id="editDuration">
+          </div>
+          <div class="field">
+            <label for="editRate">Freight rate</label>
+            <input type="text" id="editRate">
+          </div>
+          <div class="field full">
+            <label for="editNotes">Notes</label>
+            <textarea id="editNotes"></textarea>
+          </div>
+        </div>
+        <div id="editError" class="inline-error"></div>
+        <div class="form-actions">
+          <button type="submit" class="run-btn" id="btnEditSave">Save</button>
+          <button type="button" class="ghost-btn" id="btnEditCancel">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Documents</div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="docType">Doc type *</label>
+          <select id="docType">
+            <option value="">Select type</option>
+            <option value="RECAP">RECAP</option>
+            <option value="CP_FORM">CP FORM</option>
+            <option value="Q88">Q88</option>
+            <option value="STANDING_ORDERS">STANDING ORDERS</option>
+            <option value="SPEED_CONS">SPEED CONS</option>
+            <option value="ADDENDUM">ADDENDUM</option>
+            <option value="OTHER">OTHER</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="docLabel">Label</label>
+          <input type="text" id="docLabel" placeholder="Optional">
+        </div>
+        <div class="field full">
+          <label>Upload</label>
+          <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload document">
+            Drop file here or click to browse
+            <input type="file" id="docFile" accept=".pdf,.doc,.docx,.xls,.xlsx,.msg,.eml,.txt">
+          </div>
+          <div class="muted" style="margin-top:6px">pdf, doc, docx, xls, xlsx, msg, eml, txt — max 25 MB</div>
+          <div id="uploadError" class="inline-error"></div>
+        </div>
+      </div>
+      <div class="section-title">Files</div>
+      <div id="docsEmpty" class="empty-state" style="min-height:120px" hidden>No documents</div>
+      <div id="docsList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://hxwahnackweyozhragli.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4d2FobmFja3dleW96aHJhZ2xpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NjA5MTMsImV4cCI6MjA5NDIzNjkxM30.FQEt55o70i1ogRc52rI05rMbfAGzvI_RT_7B0HT-EeA';
+const ADMIN_EMAIL = 'admin@arctium.so';
+const DOC_TYPE_ORDER = ['RECAP', 'CP_FORM', 'Q88', 'STANDING_ORDERS', 'SPEED_CONS', 'ADDENDUM', 'OTHER'];
+const DOC_TYPE_LABELS = {
+  RECAP: 'RECAP',
+  CP_FORM: 'CP FORM',
+  Q88: 'Q88',
+  STANDING_ORDERS: 'STANDING ORDERS',
+  SPEED_CONS: 'SPEED CONS',
+  ADDENDUM: 'ADDENDUM',
+  OTHER: 'OTHER'
+};
+const ALLOWED_EXT = new Set(['pdf', 'doc', 'docx', 'xls', 'xlsx', 'msg', 'eml', 'txt']);
+const MAX_BYTES = 25 * 1024 * 1024;
+
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let isAdmin = false;
+let currentUser = null;
+let allCps = [];
+let currentCp = null;
+let currentDocs = [];
+let uploaderEmailCache = {};
+
+const els = {
+  errorBanner: document.getElementById('errorBanner'),
+  viewAuth: document.getElementById('viewAuth'),
+  viewList: document.getElementById('viewList'),
+  viewCreate: document.getElementById('viewCreate'),
+  viewDetail: document.getElementById('viewDetail'),
+  filterSearch: document.getElementById('filterSearch'),
+  filterType: document.getElementById('filterType'),
+  filterStatus: document.getElementById('filterStatus'),
+  listEmpty: document.getElementById('listEmpty'),
+  listTableWrap: document.getElementById('listTableWrap'),
+  listBody: document.getElementById('listBody'),
+  createForm: document.getElementById('createForm'),
+  createError: document.getElementById('createError'),
+  editCard: document.getElementById('editCard'),
+  editForm: document.getElementById('editForm'),
+  editError: document.getElementById('editError'),
+  detailTitle: document.getElementById('detailTitle'),
+  detailMeta: document.getElementById('detailMeta'),
+  detailError: document.getElementById('detailError'),
+  statusToggle: document.getElementById('statusToggle'),
+  btnEditCp: document.getElementById('btnEditCp'),
+  docsEmpty: document.getElementById('docsEmpty'),
+  docsList: document.getElementById('docsList'),
+  docType: document.getElementById('docType'),
+  docLabel: document.getElementById('docLabel'),
+  docFile: document.getElementById('docFile'),
+  dropzone: document.getElementById('dropzone'),
+  uploadError: document.getElementById('uploadError')
+};
+
+function showError(msg) {
+  els.errorBanner.textContent = msg || 'Something went wrong';
+  els.errorBanner.classList.add('visible');
+}
+function clearError() {
+  els.errorBanner.textContent = '';
+  els.errorBanner.classList.remove('visible');
+}
+function showInline(el, msg) {
+  if (!el) return;
+  el.textContent = msg || '';
+  el.classList.toggle('visible', !!msg);
+}
+function clearInline(el) {
+  showInline(el, '');
+}
+
+function receiveUiState(data) {
+  if (!data || data.type !== 'arctium-ui') return;
+  document.documentElement.setAttribute('data-ui-theme', data.theme === 'light' ? 'light' : 'dark');
+  isAdmin = !!data.isAdmin;
+  if (currentCp) renderDetailPermissions();
+}
+window.addEventListener('message', (e) => receiveUiState(e.data));
+
+function showView(id) {
+  ['viewAuth', 'viewList', 'viewCreate', 'viewDetail'].forEach((key) => {
+    els[key].classList.toggle('active', key === id);
+  });
+}
+
+function canManageCp(cp) {
+  if (!currentUser || !cp) return false;
+  const email = String(currentUser.email || '').toLowerCase();
+  if (email === ADMIN_EMAIL) return true;
+  if (isAdmin) return true;
+  return cp.created_by === currentUser.id;
+}
+
+function escapeHtml(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function formatDate(d) {
+  if (!d) return '—';
+  const s = String(d).slice(0, 10);
+  return s || '—';
+}
+
+function formatDateTime(d) {
+  if (!d) return '—';
+  try {
+    return new Date(d).toLocaleString();
+  } catch (_) {
+    return String(d);
+  }
+}
+
+function docCount(cp) {
+  const c = cp?.cp_documents;
+  if (Array.isArray(c) && c.length && typeof c[0]?.count === 'number') return c[0].count;
+  if (typeof c === 'number') return c;
+  return 0;
+}
+
+function sanitizeFilename(name) {
+  return String(name || 'file')
+    .replace(/[\\/]+/g, '_')
+    .replace(/[^a-zA-Z0-9._\- ]+/g, '_')
+    .replace(/\s+/g, '_')
+    .slice(0, 180) || 'file';
+}
+
+function fileExt(name) {
+  const parts = String(name || '').toLowerCase().split('.');
+  return parts.length > 1 ? parts.pop() : '';
+}
+
+function basenameFromPath(path) {
+  const parts = String(path || '').split('/');
+  const last = parts[parts.length - 1] || path || 'file';
+  return last.replace(/^\d+_/, '');
+}
+
+/* ─── LIST ─── */
+async function loadCps() {
+  clearError();
+  const { data, error } = await sb
+    .from('cp_base')
+    .select('*, cp_documents(count)')
+    .order('cp_date', { ascending: false });
+  if (error) {
+    showError(error.message || 'Failed to load CPs');
+    allCps = [];
+    renderList();
+    return;
+  }
+  allCps = data || [];
+  renderList();
+}
+
+function filteredCps() {
+  const q = (els.filterSearch.value || '').trim().toLowerCase();
+  const type = els.filterType.value;
+  const status = els.filterStatus.value;
+  return allCps.filter((cp) => {
+    if (type !== 'ALL' && cp.voyage_type !== type) return false;
+    if (status !== 'ALL' && cp.status !== status) return false;
+    if (!q) return true;
+    const vessel = String(cp.vessel || '').toLowerCase();
+    const charterer = String(cp.charterer || '').toLowerCase();
+    return vessel.includes(q) || charterer.includes(q);
+  });
+}
+
+function renderList() {
+  const rows = filteredCps();
+  if (!rows.length) {
+    els.listEmpty.hidden = false;
+    els.listTableWrap.hidden = true;
+    els.listBody.innerHTML = '';
+    return;
+  }
+  els.listEmpty.hidden = true;
+  els.listTableWrap.hidden = false;
+  els.listBody.innerHTML = rows.map((cp) => {
+    const active = cp.status === 'ACTIVE';
+    return `<tr class="cp-row" data-id="${escapeHtml(cp.id)}">
+      <td>${escapeHtml(cp.vessel || '—')}</td>
+      <td>${escapeHtml(cp.charterer || '—')}</td>
+      <td>${escapeHtml(formatDate(cp.cp_date))}</td>
+      <td>${escapeHtml(cp.voyage_type || '—')}</td>
+      <td>${escapeHtml(cp.duration_desc || '—')}</td>
+      <td>${escapeHtml(cp.freight_rate || '—')}</td>
+      <td>${docCount(cp)}</td>
+      <td><span class="status-dot${active ? ' active' : ''}">${escapeHtml(cp.status || '—')}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+/* ─── CREATE ─── */
+function openCreate() {
+  clearError();
+  clearInline(els.createError);
+  els.createForm.reset();
+  showView('viewCreate');
+}
+
+async function submitCreate(e) {
+  e.preventDefault();
+  clearInline(els.createError);
+  clearError();
+  if (!currentUser) {
+    showInline(els.createError, 'Sign in required');
+    return;
+  }
+  const vessel = document.getElementById('createVessel').value.trim();
+  const charterer = document.getElementById('createCharterer').value.trim();
+  const cp_date = document.getElementById('createDate').value;
+  const voyage_type = document.getElementById('createType').value;
+  const duration_desc = document.getElementById('createDuration').value.trim() || null;
+  const freight_rate = document.getElementById('createRate').value.trim() || null;
+  const notes = document.getElementById('createNotes').value.trim() || null;
+
+  if (!vessel || !charterer || !cp_date || !voyage_type) {
+    showInline(els.createError, 'Vessel, charterer, CP date, and voyage type are required');
+    return;
+  }
+
+  const btn = document.getElementById('btnCreateSubmit');
+  btn.disabled = true;
+  const { data, error } = await sb
+    .from('cp_base')
+    .insert({
+      vessel,
+      charterer,
+      cp_date,
+      voyage_type,
+      duration_desc,
+      freight_rate,
+      notes,
+      status: 'ACTIVE',
+      created_by: currentUser.id
+    })
+    .select()
+    .single();
+  btn.disabled = false;
+
+  if (error) {
+    showInline(els.createError, error.message || 'Failed to create CP');
+    showError(error.message || 'Failed to create CP');
+    return;
+  }
+  await openDetail(data.id);
+}
+
+/* ─── DETAIL ─── */
+async function openDetail(id) {
+  clearError();
+  clearInline(els.detailError);
+  clearInline(els.editError);
+  clearInline(els.uploadError);
+  els.editCard.hidden = true;
+
+  const { data, error } = await sb
+    .from('cp_base')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (error) {
+    showError(error.message || 'Failed to load CP');
+    return;
+  }
+  currentCp = data;
+  showView('viewDetail');
+  renderDetail();
+  await loadDocuments();
+}
+
+function renderDetail() {
+  const cp = currentCp;
+  if (!cp) return;
+  els.detailTitle.textContent = `${cp.vessel || 'CP'} — ${cp.charterer || ''}`;
+  els.detailMeta.innerHTML = [
+    ['Vessel', cp.vessel],
+    ['Charterer', cp.charterer],
+    ['CP Date', formatDate(cp.cp_date)],
+    ['Type', cp.voyage_type],
+    ['Duration', cp.duration_desc || '—'],
+    ['Freight rate', cp.freight_rate || '—'],
+    ['Status', cp.status],
+    ['Notes', cp.notes || '—']
+  ].map(([label, val]) => `
+    <div class="meta-item">
+      <label>${escapeHtml(label)}</label>
+      <div class="meta-value">${escapeHtml(val ?? '—')}</div>
+    </div>
+  `).join('');
+
+  els.statusToggle.querySelectorAll('.toggle-btn').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.status === cp.status);
+  });
+  renderDetailPermissions();
+}
+
+function renderDetailPermissions() {
+  const manage = canManageCp(currentCp);
+  els.btnEditCp.disabled = !manage;
+  els.btnEditCp.hidden = !manage;
+  els.statusToggle.querySelectorAll('.toggle-btn').forEach((btn) => {
+    btn.disabled = !manage;
+  });
+  renderDocuments();
+}
+
+async function setStatus(status) {
+  if (!currentCp || !canManageCp(currentCp)) return;
+  clearInline(els.detailError);
+  clearError();
+  const { data, error } = await sb
+    .from('cp_base')
+    .update({ status })
+    .eq('id', currentCp.id)
+    .select()
+    .single();
+  if (error) {
+    showInline(els.detailError, error.message || 'Failed to update status');
+    showError(error.message || 'Failed to update status');
+    return;
+  }
+  currentCp = data;
+  renderDetail();
+  const idx = allCps.findIndex((c) => c.id === data.id);
+  if (idx >= 0) allCps[idx] = { ...allCps[idx], ...data };
+}
+
+function openEdit() {
+  if (!currentCp || !canManageCp(currentCp)) return;
+  clearInline(els.editError);
+  document.getElementById('editVessel').value = currentCp.vessel || '';
+  document.getElementById('editCharterer').value = currentCp.charterer || '';
+  document.getElementById('editDate').value = String(currentCp.cp_date || '').slice(0, 10);
+  document.getElementById('editType').value = currentCp.voyage_type || 'TC';
+  document.getElementById('editDuration').value = currentCp.duration_desc || '';
+  document.getElementById('editRate').value = currentCp.freight_rate || '';
+  document.getElementById('editNotes').value = currentCp.notes || '';
+  els.editCard.hidden = false;
+}
+
+async function submitEdit(e) {
+  e.preventDefault();
+  if (!currentCp || !canManageCp(currentCp)) return;
+  clearInline(els.editError);
+  clearError();
+
+  const vessel = document.getElementById('editVessel').value.trim();
+  const charterer = document.getElementById('editCharterer').value.trim();
+  const cp_date = document.getElementById('editDate').value;
+  const voyage_type = document.getElementById('editType').value;
+  const duration_desc = document.getElementById('editDuration').value.trim() || null;
+  const freight_rate = document.getElementById('editRate').value.trim() || null;
+  const notes = document.getElementById('editNotes').value.trim() || null;
+
+  if (!vessel || !charterer || !cp_date || !voyage_type) {
+    showInline(els.editError, 'Vessel, charterer, CP date, and voyage type are required');
+    return;
+  }
+
+  const btn = document.getElementById('btnEditSave');
+  btn.disabled = true;
+  const { data, error } = await sb
+    .from('cp_base')
+    .update({ vessel, charterer, cp_date, voyage_type, duration_desc, freight_rate, notes })
+    .eq('id', currentCp.id)
+    .select()
+    .single();
+  btn.disabled = false;
+
+  if (error) {
+    showInline(els.editError, error.message || 'Failed to save CP');
+    showError(error.message || 'Failed to save CP');
+    return;
+  }
+  currentCp = data;
+  els.editCard.hidden = true;
+  renderDetail();
+  const idx = allCps.findIndex((c) => c.id === data.id);
+  if (idx >= 0) allCps[idx] = { ...allCps[idx], ...data };
+}
+
+/* ─── DOCUMENTS ─── */
+async function loadDocuments() {
+  if (!currentCp) return;
+  clearInline(els.uploadError);
+  const { data, error } = await sb
+    .from('cp_documents')
+    .select('*')
+    .eq('cp_id', currentCp.id)
+    .order('uploaded_at', { ascending: true });
+  if (error) {
+    showError(error.message || 'Failed to load documents');
+    currentDocs = [];
+    renderDocuments();
+    return;
+  }
+  currentDocs = data || [];
+  await hydrateUploaderEmails(currentDocs);
+  renderDocuments();
+}
+
+async function hydrateUploaderEmails(docs) {
+  const ids = [...new Set(docs.map((d) => d.uploaded_by).filter(Boolean))]
+    .filter((id) => !(id in uploaderEmailCache));
+  if (!ids.length) return;
+
+  // Prefer session email for current user; best-effort profiles lookup for others.
+  if (currentUser?.id && ids.includes(currentUser.id) && currentUser.email) {
+    uploaderEmailCache[currentUser.id] = currentUser.email;
+  }
+  const remaining = ids.filter((id) => !(id in uploaderEmailCache));
+  if (!remaining.length) return;
+
+  try {
+    const { data, error } = await sb
+      .from('profiles')
+      .select('id, email')
+      .in('id', remaining);
+    if (error) {
+      // No email column / RLS — omit silently per plan
+      remaining.forEach((id) => { uploaderEmailCache[id] = null; });
+      return;
+    }
+    (data || []).forEach((row) => {
+      uploaderEmailCache[row.id] = row.email || null;
+    });
+    remaining.forEach((id) => {
+      if (!(id in uploaderEmailCache)) uploaderEmailCache[id] = null;
+    });
+  } catch (_) {
+    remaining.forEach((id) => { uploaderEmailCache[id] = null; });
+  }
+}
+
+function sortedDocsForType(type, docs) {
+  const list = docs.filter((d) => d.doc_type === type);
+  if (type === 'ADDENDUM') {
+    return list.slice().sort((a, b) => String(a.uploaded_at || '').localeCompare(String(b.uploaded_at || '')));
+  }
+  return list.slice().sort((a, b) => String(b.uploaded_at || '').localeCompare(String(a.uploaded_at || '')));
+}
+
+function renderDocuments() {
+  const manage = canManageCp(currentCp);
+  if (!currentDocs.length) {
+    els.docsEmpty.hidden = false;
+    els.docsList.innerHTML = '';
+    return;
+  }
+  els.docsEmpty.hidden = true;
+  const groups = DOC_TYPE_ORDER
+    .map((type) => ({ type, docs: sortedDocsForType(type, currentDocs) }))
+    .filter((g) => g.docs.length);
+
+  els.docsList.innerHTML = groups.map((g) => `
+    <div class="doc-group">
+      <div class="doc-group-title">${escapeHtml(DOC_TYPE_LABELS[g.type] || g.type)}</div>
+      ${g.docs.map((doc) => {
+        const name = doc.label || basenameFromPath(doc.file_path);
+        const email = uploaderEmailCache[doc.uploaded_by];
+        const metaParts = [formatDateTime(doc.uploaded_at)];
+        if (email) metaParts.push(email);
+        return `<div class="doc-row" data-doc-id="${escapeHtml(doc.id)}">
+          <div class="doc-info">
+            <div class="doc-name">${escapeHtml(name)}</div>
+            <div class="doc-meta">${escapeHtml(metaParts.join(' · '))}</div>
+          </div>
+          <div class="doc-actions">
+            <button type="button" class="ghost-btn doc-download" data-id="${escapeHtml(doc.id)}">Download</button>
+            ${manage ? `<button type="button" class="ghost-btn doc-delete" data-id="${escapeHtml(doc.id)}">Delete</button>` : ''}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  `).join('');
+}
+
+function validateUploadFile(file) {
+  if (!file) return 'Choose a file to upload';
+  const ext = fileExt(file.name);
+  if (!ALLOWED_EXT.has(ext)) {
+    return `Rejected: .${ext || '?'} not allowed. Use pdf, doc, docx, xls, xlsx, msg, eml, or txt.`;
+  }
+  if (file.size > MAX_BYTES) {
+    return 'Rejected: file exceeds 25 MB limit';
+  }
+  return null;
+}
+
+async function uploadFile(file) {
+  clearInline(els.uploadError);
+  clearError();
+  if (!currentUser || !currentCp) {
+    showInline(els.uploadError, 'Sign in required');
+    return;
+  }
+  const docType = els.docType.value;
+  if (!docType) {
+    showInline(els.uploadError, 'Select a document type before uploading');
+    return;
+  }
+  const err = validateUploadFile(file);
+  if (err) {
+    showInline(els.uploadError, err);
+    return;
+  }
+
+  const label = els.docLabel.value.trim() || null;
+  const path = `${currentCp.id}/${Date.now()}_${sanitizeFilename(file.name)}`;
+
+  const { error: upErr } = await sb.storage.from('cp-docs').upload(path, file, {
+    upsert: false,
+    contentType: file.type || undefined
+  });
+  if (upErr) {
+    showInline(els.uploadError, upErr.message || 'Upload failed');
+    showError(upErr.message || 'Upload failed');
+    return;
+  }
+
+  const { error: insErr } = await sb.from('cp_documents').insert({
+    cp_id: currentCp.id,
+    doc_type: docType,
+    label,
+    file_path: path,
+    uploaded_by: currentUser.id
+  });
+  if (insErr) {
+    await sb.storage.from('cp-docs').remove([path]);
+    showInline(els.uploadError, insErr.message || 'Failed to save document metadata');
+    showError(insErr.message || 'Failed to save document metadata');
+    return;
+  }
+
+  els.docLabel.value = '';
+  els.docFile.value = '';
+  await loadDocuments();
+  // refresh list doc counts
+  await loadCps();
+}
+
+async function downloadDoc(docId) {
+  clearError();
+  const doc = currentDocs.find((d) => d.id === docId);
+  if (!doc) return;
+  const { data, error } = await sb.storage.from('cp-docs').createSignedUrl(doc.file_path, 60);
+  if (error) {
+    showError(error.message || 'Failed to create download link');
+    return;
+  }
+  if (!data?.signedUrl) {
+    showError('Failed to create download link');
+    return;
+  }
+  window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+}
+
+async function deleteDoc(docId) {
+  if (!canManageCp(currentCp)) return;
+  clearError();
+  const doc = currentDocs.find((d) => d.id === docId);
+  if (!doc) return;
+  if (!confirm('Delete this document?')) return;
+
+  const { error: rmErr } = await sb.storage.from('cp-docs').remove([doc.file_path]);
+  if (rmErr) {
+    showError(rmErr.message || 'Failed to delete storage object');
+    return;
+  }
+  const { error: delErr } = await sb.from('cp_documents').delete().eq('id', doc.id);
+  if (delErr) {
+    showError(delErr.message || 'Storage removed but failed to delete document row');
+    return;
+  }
+  await loadDocuments();
+  await loadCps();
+}
+
+/* ─── AUTH / BOOT ─── */
+async function onAuthed(user) {
+  currentUser = user;
+  showView('viewList');
+  await loadCps();
+}
+
+function onSignedOut() {
+  currentUser = null;
+  currentCp = null;
+  allCps = [];
+  currentDocs = [];
+  showView('viewAuth');
+}
+
+async function boot() {
+  const { data: { session }, error } = await sb.auth.getSession();
+  if (error) showError(error.message || 'Auth error');
+  if (session?.user) await onAuthed(session.user);
+  else onSignedOut();
+
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'INITIAL_SESSION') return;
+    if (session?.user) await onAuthed(session.user);
+    else onSignedOut();
+  });
+
+  if (window.parent !== window) {
+    window.parent.postMessage({ type: 'arctium-cp-ready' }, '*');
+  }
+}
+
+/* ─── EVENTS ─── */
+document.getElementById('btnNewCp').addEventListener('click', openCreate);
+document.getElementById('btnCreateCancel').addEventListener('click', () => {
+  showView('viewList');
+  renderList();
+});
+els.createForm.addEventListener('submit', submitCreate);
+
+els.filterSearch.addEventListener('input', renderList);
+els.filterType.addEventListener('change', renderList);
+els.filterStatus.addEventListener('change', renderList);
+
+els.listBody.addEventListener('click', (e) => {
+  const row = e.target.closest('tr.cp-row');
+  if (!row) return;
+  openDetail(row.dataset.id);
+});
+
+document.getElementById('btnBackList').addEventListener('click', async () => {
+  els.editCard.hidden = true;
+  currentCp = null;
+  showView('viewList');
+  await loadCps();
+});
+
+els.statusToggle.addEventListener('click', (e) => {
+  const btn = e.target.closest('.toggle-btn');
+  if (!btn || btn.disabled) return;
+  setStatus(btn.dataset.status);
+});
+
+els.btnEditCp.addEventListener('click', openEdit);
+document.getElementById('btnEditCancel').addEventListener('click', () => {
+  els.editCard.hidden = true;
+});
+els.editForm.addEventListener('submit', submitEdit);
+
+els.dropzone.addEventListener('click', () => els.docFile.click());
+els.dropzone.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    els.docFile.click();
+  }
+});
+els.docFile.addEventListener('change', () => {
+  const file = els.docFile.files?.[0];
+  if (file) uploadFile(file);
+});
+
+['dragenter', 'dragover'].forEach((ev) => {
+  els.dropzone.addEventListener(ev, (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    els.dropzone.classList.add('dragover');
+  });
+});
+['dragleave', 'drop'].forEach((ev) => {
+  els.dropzone.addEventListener(ev, (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    els.dropzone.classList.remove('dragover');
+  });
+});
+els.dropzone.addEventListener('drop', (e) => {
+  const file = e.dataTransfer?.files?.[0];
+  if (file) uploadFile(file);
+});
+
+els.docsList.addEventListener('click', (e) => {
+  const dl = e.target.closest('.doc-download');
+  if (dl) {
+    downloadDoc(dl.dataset.id);
+    return;
+  }
+  const del = e.target.closest('.doc-delete');
+  if (del) deleteDoc(del.dataset.id);
+});
+
+boot();
+</script>
+</body>
+</html>
