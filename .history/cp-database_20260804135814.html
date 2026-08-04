@@ -68,6 +68,11 @@ body {
   border-radius: 3px;
 }
 .banner.visible { display: block; }
+.banner.unlock {
+  background: rgba(184,152,88,0.15);
+  border-color: var(--amber);
+  color: var(--amber);
+}
 
 .card {
   background: var(--surface);
@@ -208,11 +213,6 @@ body {
   border-bottom: 1px solid var(--border);
   font-weight: 400;
 }
-.summary-table th[data-sort] {
-  cursor: pointer;
-  user-select: none;
-}
-.summary-table th[data-sort]:hover { color: var(--text-dim); }
 .summary-table th:first-child { text-align: left; }
 .summary-table td {
   padding: 10px 12px;
@@ -271,17 +271,6 @@ body {
   display: flex;
   gap: 8px;
   align-items: center;
-}
-.toolbar-actions .run-btn {
-  padding: 6px 12px;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  border-radius: 3px;
-  line-height: normal;
-  border: 1px solid transparent;
-  box-sizing: border-box;
-  align-self: flex-end;
 }
 
 .form-grid {
@@ -414,8 +403,6 @@ body {
   flex-shrink: 0;
 }
 .status-dot.active::before { background: var(--teal); }
-.status-dot.subs::before { background: var(--amber); }
-.status-dot.past::before { background: var(--text-muted); }
 
 .toggle-group {
   display: flex;
@@ -482,50 +469,28 @@ body {
   color: var(--text-muted);
   margin-bottom: 8px;
 }
-.docs-files {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  margin-top: 6px;
-}
-.docs-files .section-title {
-  margin: 8px 0 0;
-}
-#docsList {
-  display: flex;
-  flex-direction: column;
-}
 .doc-row {
   display: flex;
-  flex-wrap: nowrap;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 0;
-  margin: 0;
+  padding: 10px 0;
   border-bottom: 1px solid var(--border);
 }
 .doc-row:last-child { border-bottom: none; }
-.doc-row.editing { align-items: flex-start; }
-.doc-row.editing .doc-actions { padding-top: 2px; }
 .doc-info {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 6px;
   min-width: 0;
   flex: 1;
 }
-.doc-name {
-  color: var(--text);
-  font-size: 14px;
-  line-height: 1.3;
-  word-break: break-word;
-}
+.doc-name { color: var(--text); font-size: 14px; word-break: break-word; }
 .doc-meta { color: var(--text-muted); font-size: 12px; }
 .doc-summary {
   color: var(--text-dim);
   font-size: 12px;
-  line-height: 1.3;
   letter-spacing: 0.04em;
 }
 .doc-tags {
@@ -533,7 +498,6 @@ body {
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
-  margin-top: 4px;
 }
 .doc-tags select,
 .doc-tags input {
@@ -547,19 +511,13 @@ body {
 }
 .doc-tags select { min-width: 140px; }
 .doc-tags input { min-width: 160px; flex: 1; }
-.doc-actions {
-  display: flex;
-  gap: 2px;
-  flex-shrink: 0;
-  align-items: center;
-  margin-left: auto;
-}
+.doc-actions { display: flex; gap: 8px; flex-shrink: 0; align-items: center; }
 .doc-icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   background: none;
   border: none;
@@ -592,10 +550,6 @@ body {
   color: var(--red);
   background: rgba(184, 120, 120, 0.12);
 }
-.docs-files .empty-state {
-  margin-top: 10px;
-  min-height: 100px;
-}
 
 .table-wrap {
   overflow-x: auto;
@@ -611,6 +565,7 @@ body {
 <body>
 
 <div id="errorBanner" class="banner" role="alert"></div>
+<div id="unlockBanner" class="banner unlock" role="status">UI unlocked — local mock data only. Set <code>UI_UNLOCKED = false</code> to lock again.</div>
 
 <!-- VIEW: AUTH GATE -->
 <div id="viewAuth" class="view">
@@ -637,12 +592,11 @@ body {
       <select id="filterStatus">
         <option value="ALL">ALL</option>
         <option value="ACTIVE">ACTIVE</option>
-        <option value="SUBS">SUBS</option>
         <option value="PAST">PAST</option>
       </select>
     </div>
     <div class="toolbar-actions">
-      <button type="button" class="run-btn" id="btnNewCp">+ CP</button>
+      <button type="button" class="run-btn" id="btnNewCp">+ New CP</button>
     </div>
   </div>
   <div id="listEmpty" class="empty-state" hidden>No CPs found</div>
@@ -650,14 +604,14 @@ body {
     <table class="summary-table" id="listTable">
       <thead>
         <tr>
-          <th data-sort="vessel">Vessel</th>
-          <th data-sort="charterer">Charterer</th>
-          <th data-sort="cp_date">CP Date</th>
-          <th data-sort="voyage_type">Type</th>
-          <th data-sort="duration_desc">Duration</th>
-          <th data-sort="freight_rate">Rate</th>
-          <th data-sort="docs">Docs</th>
-          <th data-sort="status">Status</th>
+          <th>Vessel</th>
+          <th>Charterer</th>
+          <th>CP Date</th>
+          <th>Type</th>
+          <th>Duration</th>
+          <th>Rate</th>
+          <th>Docs</th>
+          <th>Status</th>
         </tr>
       </thead>
       <tbody id="listBody"></tbody>
@@ -721,7 +675,6 @@ body {
         <div class="detail-actions">
           <div class="toggle-group" id="statusToggle" role="group" aria-label="Status">
             <button type="button" class="toggle-btn" data-status="ACTIVE">Active</button>
-            <button type="button" class="toggle-btn" data-status="SUBS">Subs</button>
             <button type="button" class="toggle-btn" data-status="PAST">Past</button>
           </div>
         </div>
@@ -730,7 +683,6 @@ body {
         <div class="card-title" id="detailTitle">CP Detail</div>
         <button type="button" class="btn-quiet" id="btnEditCp">Edit details</button>
         <div class="edit-actions" id="editActions">
-          <button type="button" class="btn-quiet danger" id="btnDeleteCp">Delete CP</button>
           <button type="button" class="btn-quiet" id="btnEditCancel">Cancel</button>
           <button type="button" class="btn-quiet" id="btnEditSave">Save</button>
         </div>
@@ -747,16 +699,17 @@ body {
       </div>
       <div class="muted" style="margin-top:6px">max 25 MB per file</div>
       <div id="uploadError" class="inline-error"></div>
-      <div class="docs-files">
-        <div class="section-title">Files</div>
-        <div id="docsEmpty" class="empty-state" style="min-height:120px" hidden>No documents</div>
-        <div id="docsList"></div>
-      </div>
+      <div class="section-title">Files</div>
+      <div id="docsEmpty" class="empty-state" style="min-height:120px" hidden>No documents</div>
+      <div id="docsList"></div>
     </div>
   </div>
 </div>
 
 <script>
+/** Set false to re-lock (auth + live Supabase). true = open HTML alone with mock data. */
+const UI_UNLOCKED = true;
+
 const SUPABASE_URL = 'https://hxwahnackweyozhragli.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4d2FobmFja3dleW96aHJhZ2xpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NjA5MTMsImV4cCI6MjA5NDIzNjkxM30.FQEt55o70i1ogRc52rI05rMbfAGzvI_RT_7B0HT-EeA';
 const ADMIN_EMAIL = 'admin@arctium.so';
@@ -774,9 +727,74 @@ const DEFAULT_DOC_TYPE = 'OTHER';
 const ALLOWED_EXT = new Set(['pdf', 'doc', 'docx', 'xls', 'xlsx', 'msg', 'eml', 'txt']);
 const MAX_BYTES = 25 * 1024 * 1024;
 
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = UI_UNLOCKED ? null : supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-let isAdmin = false;
+const MOCK_USER = { id: 'local-dev-user', email: ADMIN_EMAIL };
+let mockCps = [
+  {
+    id: 'mock-cp-1',
+    vessel: 'ARCTIC SPIRIT',
+    charterer: 'Shell',
+    cp_date: '2026-03-12',
+    voyage_type: 'TC',
+    duration_desc: '12 mos +/- 30d',
+    freight_rate: '$18,500/d',
+    notes: 'Mock row for local UI work',
+    status: 'ACTIVE',
+    created_by: MOCK_USER.id,
+    created_at: '2026-03-12T10:00:00Z',
+    cp_documents: [{ count: 2 }]
+  },
+  {
+    id: 'mock-cp-2',
+    vessel: 'NORDIC STAR',
+    charterer: 'Trafigura',
+    cp_date: '2025-11-04',
+    voyage_type: 'SPOT',
+    duration_desc: 'MED–UKC',
+    freight_rate: 'WS 95',
+    notes: null,
+    status: 'PAST',
+    created_by: MOCK_USER.id,
+    created_at: '2025-11-04T09:00:00Z',
+    cp_documents: [{ count: 1 }]
+  }
+];
+let mockDocs = {
+  'mock-cp-1': [
+    {
+      id: 'mock-doc-1',
+      cp_id: 'mock-cp-1',
+      doc_type: 'RECAP',
+      label: 'Fixture recap',
+      file_path: 'mock-cp-1/recap.pdf',
+      uploaded_by: MOCK_USER.id,
+      uploaded_at: '2026-03-12T11:00:00Z'
+    },
+    {
+      id: 'mock-doc-2',
+      cp_id: 'mock-cp-1',
+      doc_type: 'CP_FORM',
+      label: 'Shelltime 4',
+      file_path: 'mock-cp-1/cp-form.pdf',
+      uploaded_by: MOCK_USER.id,
+      uploaded_at: '2026-03-12T12:00:00Z'
+    }
+  ],
+  'mock-cp-2': [
+    {
+      id: 'mock-doc-3',
+      cp_id: 'mock-cp-2',
+      doc_type: 'Q88',
+      label: null,
+      file_path: 'mock-cp-2/q88.pdf',
+      uploaded_by: MOCK_USER.id,
+      uploaded_at: '2025-11-05T08:00:00Z'
+    }
+  ]
+};
+
+let isAdmin = UI_UNLOCKED;
 let currentUser = null;
 let allCps = [];
 let currentCp = null;
@@ -784,11 +802,10 @@ let currentDocs = [];
 let uploaderEmailCache = {};
 let editingHeader = false;
 let editingDocId = null;
-let listSortKey = 'cp_date';
-let listSortDir = 'desc';
 
 const els = {
   errorBanner: document.getElementById('errorBanner'),
+  unlockBanner: document.getElementById('unlockBanner'),
   viewAuth: document.getElementById('viewAuth'),
   viewList: document.getElementById('viewList'),
   viewCreate: document.getElementById('viewCreate'),
@@ -809,7 +826,6 @@ const els = {
   btnEditCp: document.getElementById('btnEditCp'),
   btnEditSave: document.getElementById('btnEditSave'),
   btnEditCancel: document.getElementById('btnEditCancel'),
-  btnDeleteCp: document.getElementById('btnDeleteCp'),
   docsEmpty: document.getElementById('docsEmpty'),
   docsList: document.getElementById('docsList'),
   docFile: document.getElementById('docFile'),
@@ -817,6 +833,9 @@ const els = {
   dropzoneLabel: document.getElementById('dropzoneLabel'),
   uploadError: document.getElementById('uploadError')
 };
+
+if (UI_UNLOCKED) els.unlockBanner.classList.add('visible');
+else els.unlockBanner.classList.remove('visible');
 
 function showError(msg) {
   els.errorBanner.textContent = msg || 'Something went wrong';
@@ -916,6 +935,14 @@ function basenameFromPath(path) {
 /* ─── LIST ─── */
 async function loadCps() {
   clearError();
+  if (UI_UNLOCKED) {
+    allCps = mockCps.map((cp) => ({
+      ...cp,
+      cp_documents: [{ count: (mockDocs[cp.id] || []).length }]
+    }));
+    renderList();
+    return;
+  }
   const { data, error } = await sb
     .from('cp_base')
     .select('*, cp_documents(count)')
@@ -944,41 +971,8 @@ function filteredCps() {
   });
 }
 
-function sortValue(cp, key) {
-  if (key === 'docs') return docCount(cp);
-  if (key === 'cp_date') return String(cp.cp_date || '');
-  const v = cp?.[key];
-  if (v == null || v === '') return '';
-  return String(v).toLowerCase();
-}
-
-function sortedCps(rows) {
-  const dir = listSortDir === 'asc' ? 1 : -1;
-  const key = listSortKey;
-  return rows.slice().sort((a, b) => {
-    const av = sortValue(a, key);
-    const bv = sortValue(b, key);
-    if (typeof av === 'number' && typeof bv === 'number') {
-      if (av === bv) return 0;
-      return av < bv ? -dir : dir;
-    }
-    const cmp = String(av).localeCompare(String(bv), undefined, { numeric: true, sensitivity: 'base' });
-    return cmp * dir;
-  });
-}
-
-function setListSort(key) {
-  if (!key) return;
-  if (listSortKey === key) listSortDir = listSortDir === 'asc' ? 'desc' : 'asc';
-  else {
-    listSortKey = key;
-    listSortDir = key === 'cp_date' || key === 'docs' ? 'desc' : 'asc';
-  }
-  renderList();
-}
-
 function renderList() {
-  const rows = sortedCps(filteredCps());
+  const rows = filteredCps();
   if (!rows.length) {
     els.listEmpty.hidden = false;
     els.listTableWrap.hidden = true;
@@ -989,9 +983,6 @@ function renderList() {
   els.listTableWrap.hidden = false;
   els.listBody.innerHTML = rows.map((cp) => {
     const active = cp.status === 'ACTIVE';
-    const subs = cp.status === 'SUBS';
-    const past = cp.status === 'PAST';
-    const statusClass = active ? ' active' : subs ? ' subs' : past ? ' past' : '';
     return `<tr class="cp-row" data-id="${escapeHtml(cp.id)}">
       <td>${escapeHtml(cp.vessel || '—')}</td>
       <td>${escapeHtml(cp.charterer || '—')}</td>
@@ -1000,7 +991,7 @@ function renderList() {
       <td>${escapeHtml(cp.duration_desc || '—')}</td>
       <td>${escapeHtml(cp.freight_rate || '—')}</td>
       <td>${docCount(cp)}</td>
-      <td><span class="status-dot${statusClass}">${escapeHtml(cp.status || '—')}</span></td>
+      <td><span class="status-dot${active ? ' active' : ''}">${escapeHtml(cp.status || '—')}</span></td>
     </tr>`;
   }).join('');
 }
@@ -1037,6 +1028,27 @@ async function submitCreate(e) {
   const btn = document.getElementById('btnCreateSubmit');
   btn.disabled = true;
 
+  if (UI_UNLOCKED) {
+    const data = {
+      id: `mock-cp-${Date.now()}`,
+      vessel,
+      charterer,
+      cp_date,
+      voyage_type,
+      duration_desc,
+      freight_rate,
+      notes,
+      status: 'ACTIVE',
+      created_by: currentUser.id,
+      created_at: new Date().toISOString(),
+      cp_documents: [{ count: 0 }]
+    };
+    mockCps.unshift(data);
+    mockDocs[data.id] = [];
+    btn.disabled = false;
+    await openDetail(data.id);
+    return;
+  }
 
   const { data, error } = await sb
     .from('cp_base')
@@ -1048,7 +1060,7 @@ async function submitCreate(e) {
       duration_desc,
       freight_rate,
       notes,
-      status: 'SUBS',
+      status: 'ACTIVE',
       created_by: currentUser.id
     })
     .select()
@@ -1071,6 +1083,18 @@ async function openDetail(id) {
   editingHeader = false;
   editingDocId = null;
 
+  if (UI_UNLOCKED) {
+    const data = mockCps.find((c) => c.id === id);
+    if (!data) {
+      showError('Failed to load CP');
+      return;
+    }
+    currentCp = { ...data };
+    showView('viewDetail');
+    renderDetail();
+    await loadDocuments();
+    return;
+  }
 
   const { data, error } = await sb
     .from('cp_base')
@@ -1169,6 +1193,16 @@ async function setStatus(status) {
   clearInline(els.detailError);
   clearError();
 
+  if (UI_UNLOCKED) {
+    const data = { ...currentCp, status };
+    const idxMock = mockCps.findIndex((c) => c.id === data.id);
+    if (idxMock >= 0) mockCps[idxMock] = { ...mockCps[idxMock], ...data };
+    currentCp = data;
+    renderDetail();
+    const idx = allCps.findIndex((c) => c.id === data.id);
+    if (idx >= 0) allCps[idx] = { ...allCps[idx], ...data };
+    return;
+  }
 
   const { data, error } = await sb
     .from('cp_base')
@@ -1204,6 +1238,8 @@ function cancelEdit() {
 function applyCpUpdate(data) {
   currentCp = data;
   editingHeader = false;
+  const idxMock = mockCps.findIndex((c) => c.id === data.id);
+  if (idxMock >= 0) mockCps[idxMock] = { ...mockCps[idxMock], ...data };
   const idx = allCps.findIndex((c) => c.id === data.id);
   if (idx >= 0) allCps[idx] = { ...allCps[idx], ...data };
   renderDetail();
@@ -1229,6 +1265,20 @@ async function submitEdit() {
 
   els.btnEditSave.disabled = true;
 
+  if (UI_UNLOCKED) {
+    applyCpUpdate({
+      ...currentCp,
+      vessel,
+      charterer,
+      cp_date,
+      voyage_type,
+      duration_desc,
+      freight_rate,
+      notes
+    });
+    els.btnEditSave.disabled = false;
+    return;
+  }
 
   const { data, error } = await sb
     .from('cp_base')
@@ -1246,57 +1296,17 @@ async function submitEdit() {
   applyCpUpdate(data);
 }
 
-async function deleteCp() {
-  if (!currentCp || !canManageCp(currentCp) || !editingHeader) return;
-  clearInline(els.detailError);
-  clearError();
-
-  const label = `${currentCp.vessel || 'CP'} — ${currentCp.charterer || ''}`.trim();
-  if (!confirm(`Delete ${label}?\n\nThis permanently removes the CP and all its documents.`)) return;
-
-  els.btnDeleteCp.disabled = true;
-  els.btnEditSave.disabled = true;
-  els.btnEditCancel.disabled = true;
-  const cpId = currentCp.id;
-
-
-  try {
-    const { data: docs, error: docsErr } = await sb
-      .from('cp_documents')
-      .select('id, file_path')
-      .eq('cp_id', cpId);
-    if (docsErr) throw new Error(docsErr.message || 'Failed to load documents for delete');
-
-    const paths = (docs || []).map((d) => d.file_path).filter(Boolean);
-    if (paths.length) {
-      const { error: rmErr } = await sb.storage.from('cp-docs').remove(paths);
-      if (rmErr) throw new Error(rmErr.message || 'Failed to delete stored files');
-    }
-
-    const { error: delErr } = await sb.from('cp_base').delete().eq('id', cpId);
-    if (delErr) throw new Error(delErr.message || 'Failed to delete CP');
-
-    editingHeader = false;
-    editingDocId = null;
-    currentCp = null;
-    currentDocs = [];
-    showView('viewList');
-    await loadCps();
-  } catch (err) {
-    showInline(els.detailError, err.message || 'Failed to delete CP');
-    showError(err.message || 'Failed to delete CP');
-  } finally {
-    els.btnDeleteCp.disabled = false;
-    els.btnEditSave.disabled = false;
-    els.btnEditCancel.disabled = false;
-  }
-}
-
 /* ─── DOCUMENTS ─── */
 async function loadDocuments() {
   if (!currentCp) return;
   clearInline(els.uploadError);
 
+  if (UI_UNLOCKED) {
+    currentDocs = (mockDocs[currentCp.id] || []).map((d) => ({ ...d }));
+    uploaderEmailCache[MOCK_USER.id] = MOCK_USER.email;
+    renderDocuments();
+    return;
+  }
 
   const { data, error } = await sb
     .from('cp_documents')
@@ -1462,6 +1472,20 @@ function setDropzoneBusy(busy, label) {
 async function uploadOneFile(file) {
   const path = `${currentCp.id}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${sanitizeFilename(file.name)}`;
 
+  if (UI_UNLOCKED) {
+    const doc = {
+      id: `mock-doc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      cp_id: currentCp.id,
+      doc_type: DEFAULT_DOC_TYPE,
+      label: null,
+      file_path: path,
+      uploaded_by: currentUser.id,
+      uploaded_at: new Date().toISOString()
+    };
+    if (!mockDocs[currentCp.id]) mockDocs[currentCp.id] = [];
+    mockDocs[currentCp.id].push(doc);
+    return null;
+  }
 
   const { error: upErr } = await sb.storage.from('cp-docs').upload(path, file, {
     upsert: false,
@@ -1538,6 +1562,13 @@ async function updateDocMeta(docId, patch) {
   };
   if (!DOC_TYPE_ORDER.includes(next.doc_type)) next.doc_type = DEFAULT_DOC_TYPE;
 
+  if (UI_UNLOCKED) {
+    const list = mockDocs[currentCp.id] || [];
+    const idx = list.findIndex((d) => d.id === docId);
+    if (idx >= 0) list[idx] = { ...list[idx], ...next };
+    Object.assign(doc, next);
+    return true;
+  }
 
   const { data, error } = await sb
     .from('cp_documents')
@@ -1587,6 +1618,10 @@ async function downloadDoc(docId) {
   clearError();
   const doc = currentDocs.find((d) => d.id === docId);
   if (!doc) return;
+  if (UI_UNLOCKED) {
+    showError('Download disabled in unlocked UI mode (mock file)');
+    return;
+  }
   const { data, error } = await sb.storage.from('cp-docs').createSignedUrl(doc.file_path, 60);
   if (error) {
     showError(error.message || 'Failed to create download link');
@@ -1606,6 +1641,13 @@ async function deleteDoc(docId) {
   if (!doc) return;
   if (!confirm('Delete this document?')) return;
 
+  if (UI_UNLOCKED) {
+    mockDocs[currentCp.id] = (mockDocs[currentCp.id] || []).filter((d) => d.id !== doc.id);
+    if (editingDocId === docId) editingDocId = null;
+    await loadDocuments();
+    await loadCps();
+    return;
+  }
 
   const { error: rmErr } = await sb.storage.from('cp-docs').remove([doc.file_path]);
   if (rmErr) {
@@ -1638,6 +1680,11 @@ function onSignedOut() {
 }
 
 async function boot() {
+  if (UI_UNLOCKED) {
+    isAdmin = true;
+    await onAuthed(MOCK_USER);
+    return;
+  }
 
   const { data: { session }, error } = await sb.auth.getSession();
   if (error) showError(error.message || 'Auth error');
@@ -1667,11 +1714,6 @@ els.filterSearch.addEventListener('input', renderList);
 els.filterType.addEventListener('change', renderList);
 els.filterStatus.addEventListener('change', renderList);
 
-document.querySelector('#listTable thead')?.addEventListener('click', (e) => {
-  const th = e.target.closest('th[data-sort]');
-  if (th) setListSort(th.dataset.sort);
-});
-
 els.listBody.addEventListener('click', (e) => {
   const row = e.target.closest('tr.cp-row');
   if (!row) return;
@@ -1695,7 +1737,6 @@ els.statusToggle.addEventListener('click', (e) => {
 els.btnEditCp.addEventListener('click', openEdit);
 els.btnEditCancel.addEventListener('click', cancelEdit);
 els.btnEditSave.addEventListener('click', submitEdit);
-els.btnDeleteCp.addEventListener('click', deleteCp);
 
 els.dropzone.addEventListener('click', () => {
   if (els.dropzone.classList.contains('busy')) return;

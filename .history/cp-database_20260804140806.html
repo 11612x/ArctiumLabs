@@ -68,6 +68,11 @@ body {
   border-radius: 3px;
 }
 .banner.visible { display: block; }
+.banner.unlock {
+  background: rgba(184,152,88,0.15);
+  border-color: var(--amber);
+  color: var(--amber);
+}
 
 .card {
   background: var(--surface);
@@ -611,6 +616,7 @@ body {
 <body>
 
 <div id="errorBanner" class="banner" role="alert"></div>
+<div id="unlockBanner" class="banner unlock" role="status">UI unlocked — local mock data only. Set <code>UI_UNLOCKED = false</code> to lock again.</div>
 
 <!-- VIEW: AUTH GATE -->
 <div id="viewAuth" class="view">
@@ -757,6 +763,9 @@ body {
 </div>
 
 <script>
+/** Set false to re-lock (auth + live Supabase). true = open HTML alone with mock data. */
+const UI_UNLOCKED = true;
+
 const SUPABASE_URL = 'https://hxwahnackweyozhragli.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4d2FobmFja3dleW96aHJhZ2xpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NjA5MTMsImV4cCI6MjA5NDIzNjkxM30.FQEt55o70i1ogRc52rI05rMbfAGzvI_RT_7B0HT-EeA';
 const ADMIN_EMAIL = 'admin@arctium.so';
@@ -774,9 +783,89 @@ const DEFAULT_DOC_TYPE = 'OTHER';
 const ALLOWED_EXT = new Set(['pdf', 'doc', 'docx', 'xls', 'xlsx', 'msg', 'eml', 'txt']);
 const MAX_BYTES = 25 * 1024 * 1024;
 
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = UI_UNLOCKED ? null : supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-let isAdmin = false;
+const MOCK_USER = { id: 'local-dev-user', email: ADMIN_EMAIL };
+let mockCps = [
+  {
+    id: 'mock-cp-1',
+    vessel: 'ARCTIC SPIRIT',
+    charterer: 'Shell',
+    cp_date: '2026-03-12',
+    voyage_type: 'TC',
+    duration_desc: '12 mos +/- 30d',
+    freight_rate: '$18,500/d',
+    notes: 'Mock row for local UI work',
+    status: 'ACTIVE',
+    created_by: MOCK_USER.id,
+    created_at: '2026-03-12T10:00:00Z',
+    cp_documents: [{ count: 2 }]
+  },
+  {
+    id: 'mock-cp-3',
+    vessel: 'PACIFIC TRADER',
+    charterer: 'Vitol',
+    cp_date: '2026-07-20',
+    voyage_type: 'SPOT',
+    duration_desc: 'AG–East',
+    freight_rate: 'WS 110',
+    notes: 'Working / under subjects',
+    status: 'SUBS',
+    created_by: MOCK_USER.id,
+    created_at: '2026-07-20T14:00:00Z',
+    cp_documents: [{ count: 0 }]
+  },
+  {
+    id: 'mock-cp-2',
+    vessel: 'NORDIC STAR',
+    charterer: 'Trafigura',
+    cp_date: '2025-11-04',
+    voyage_type: 'SPOT',
+    duration_desc: 'MED–UKC',
+    freight_rate: 'WS 95',
+    notes: null,
+    status: 'PAST',
+    created_by: MOCK_USER.id,
+    created_at: '2025-11-04T09:00:00Z',
+    cp_documents: [{ count: 1 }]
+  }
+];
+let mockDocs = {
+  'mock-cp-1': [
+    {
+      id: 'mock-doc-1',
+      cp_id: 'mock-cp-1',
+      doc_type: 'RECAP',
+      label: 'Fixture recap',
+      file_path: 'mock-cp-1/recap.pdf',
+      uploaded_by: MOCK_USER.id,
+      uploaded_at: '2026-03-12T11:00:00Z'
+    },
+    {
+      id: 'mock-doc-2',
+      cp_id: 'mock-cp-1',
+      doc_type: 'CP_FORM',
+      label: 'Shelltime 4',
+      file_path: 'mock-cp-1/cp-form.pdf',
+      uploaded_by: MOCK_USER.id,
+      uploaded_at: '2026-03-12T12:00:00Z'
+    }
+  ],
+  'mock-cp-2': [
+    {
+      id: 'mock-doc-3',
+      cp_id: 'mock-cp-2',
+      doc_type: 'Q88',
+      label: null,
+      file_path: 'mock-cp-2/q88.pdf',
+      uploaded_by: MOCK_USER.id,
+      uploaded_at: '2025-11-05T08:00:00Z'
+    }
+  ],
+  'mock-cp-3': []
+};
+
+let isAdmin = UI_UNLOCKED;
 let currentUser = null;
 let allCps = [];
 let currentCp = null;
@@ -784,11 +873,10 @@ let currentDocs = [];
 let uploaderEmailCache = {};
 let editingHeader = false;
 let editingDocId = null;
-let listSortKey = 'cp_date';
-let listSortDir = 'desc';
 
 const els = {
   errorBanner: document.getElementById('errorBanner'),
+  unlockBanner: document.getElementById('unlockBanner'),
   viewAuth: document.getElementById('viewAuth'),
   viewList: document.getElementById('viewList'),
   viewCreate: document.getElementById('viewCreate'),
@@ -817,6 +905,9 @@ const els = {
   dropzoneLabel: document.getElementById('dropzoneLabel'),
   uploadError: document.getElementById('uploadError')
 };
+
+if (UI_UNLOCKED) els.unlockBanner.classList.add('visible');
+else els.unlockBanner.classList.remove('visible');
 
 function showError(msg) {
   els.errorBanner.textContent = msg || 'Something went wrong';
@@ -916,6 +1007,14 @@ function basenameFromPath(path) {
 /* ─── LIST ─── */
 async function loadCps() {
   clearError();
+  if (UI_UNLOCKED) {
+    allCps = mockCps.map((cp) => ({
+      ...cp,
+      cp_documents: [{ count: (mockDocs[cp.id] || []).length }]
+    }));
+    renderList();
+    return;
+  }
   const { data, error } = await sb
     .from('cp_base')
     .select('*, cp_documents(count)')
@@ -944,41 +1043,8 @@ function filteredCps() {
   });
 }
 
-function sortValue(cp, key) {
-  if (key === 'docs') return docCount(cp);
-  if (key === 'cp_date') return String(cp.cp_date || '');
-  const v = cp?.[key];
-  if (v == null || v === '') return '';
-  return String(v).toLowerCase();
-}
-
-function sortedCps(rows) {
-  const dir = listSortDir === 'asc' ? 1 : -1;
-  const key = listSortKey;
-  return rows.slice().sort((a, b) => {
-    const av = sortValue(a, key);
-    const bv = sortValue(b, key);
-    if (typeof av === 'number' && typeof bv === 'number') {
-      if (av === bv) return 0;
-      return av < bv ? -dir : dir;
-    }
-    const cmp = String(av).localeCompare(String(bv), undefined, { numeric: true, sensitivity: 'base' });
-    return cmp * dir;
-  });
-}
-
-function setListSort(key) {
-  if (!key) return;
-  if (listSortKey === key) listSortDir = listSortDir === 'asc' ? 'desc' : 'asc';
-  else {
-    listSortKey = key;
-    listSortDir = key === 'cp_date' || key === 'docs' ? 'desc' : 'asc';
-  }
-  renderList();
-}
-
 function renderList() {
-  const rows = sortedCps(filteredCps());
+  const rows = filteredCps();
   if (!rows.length) {
     els.listEmpty.hidden = false;
     els.listTableWrap.hidden = true;
@@ -1037,6 +1103,27 @@ async function submitCreate(e) {
   const btn = document.getElementById('btnCreateSubmit');
   btn.disabled = true;
 
+  if (UI_UNLOCKED) {
+    const data = {
+      id: `mock-cp-${Date.now()}`,
+      vessel,
+      charterer,
+      cp_date,
+      voyage_type,
+      duration_desc,
+      freight_rate,
+      notes,
+      status: 'SUBS',
+      created_by: currentUser.id,
+      created_at: new Date().toISOString(),
+      cp_documents: [{ count: 0 }]
+    };
+    mockCps.unshift(data);
+    mockDocs[data.id] = [];
+    btn.disabled = false;
+    await openDetail(data.id);
+    return;
+  }
 
   const { data, error } = await sb
     .from('cp_base')
@@ -1071,6 +1158,18 @@ async function openDetail(id) {
   editingHeader = false;
   editingDocId = null;
 
+  if (UI_UNLOCKED) {
+    const data = mockCps.find((c) => c.id === id);
+    if (!data) {
+      showError('Failed to load CP');
+      return;
+    }
+    currentCp = { ...data };
+    showView('viewDetail');
+    renderDetail();
+    await loadDocuments();
+    return;
+  }
 
   const { data, error } = await sb
     .from('cp_base')
@@ -1169,6 +1268,16 @@ async function setStatus(status) {
   clearInline(els.detailError);
   clearError();
 
+  if (UI_UNLOCKED) {
+    const data = { ...currentCp, status };
+    const idxMock = mockCps.findIndex((c) => c.id === data.id);
+    if (idxMock >= 0) mockCps[idxMock] = { ...mockCps[idxMock], ...data };
+    currentCp = data;
+    renderDetail();
+    const idx = allCps.findIndex((c) => c.id === data.id);
+    if (idx >= 0) allCps[idx] = { ...allCps[idx], ...data };
+    return;
+  }
 
   const { data, error } = await sb
     .from('cp_base')
@@ -1204,6 +1313,8 @@ function cancelEdit() {
 function applyCpUpdate(data) {
   currentCp = data;
   editingHeader = false;
+  const idxMock = mockCps.findIndex((c) => c.id === data.id);
+  if (idxMock >= 0) mockCps[idxMock] = { ...mockCps[idxMock], ...data };
   const idx = allCps.findIndex((c) => c.id === data.id);
   if (idx >= 0) allCps[idx] = { ...allCps[idx], ...data };
   renderDetail();
@@ -1229,6 +1340,20 @@ async function submitEdit() {
 
   els.btnEditSave.disabled = true;
 
+  if (UI_UNLOCKED) {
+    applyCpUpdate({
+      ...currentCp,
+      vessel,
+      charterer,
+      cp_date,
+      voyage_type,
+      duration_desc,
+      freight_rate,
+      notes
+    });
+    els.btnEditSave.disabled = false;
+    return;
+  }
 
   const { data, error } = await sb
     .from('cp_base')
@@ -1259,6 +1384,20 @@ async function deleteCp() {
   els.btnEditCancel.disabled = true;
   const cpId = currentCp.id;
 
+  if (UI_UNLOCKED) {
+    mockCps = mockCps.filter((c) => c.id !== cpId);
+    delete mockDocs[cpId];
+    editingHeader = false;
+    editingDocId = null;
+    currentCp = null;
+    currentDocs = [];
+    els.btnDeleteCp.disabled = false;
+    els.btnEditSave.disabled = false;
+    els.btnEditCancel.disabled = false;
+    showView('viewList');
+    await loadCps();
+    return;
+  }
 
   try {
     const { data: docs, error: docsErr } = await sb
@@ -1297,6 +1436,12 @@ async function loadDocuments() {
   if (!currentCp) return;
   clearInline(els.uploadError);
 
+  if (UI_UNLOCKED) {
+    currentDocs = (mockDocs[currentCp.id] || []).map((d) => ({ ...d }));
+    uploaderEmailCache[MOCK_USER.id] = MOCK_USER.email;
+    renderDocuments();
+    return;
+  }
 
   const { data, error } = await sb
     .from('cp_documents')
@@ -1462,6 +1607,20 @@ function setDropzoneBusy(busy, label) {
 async function uploadOneFile(file) {
   const path = `${currentCp.id}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${sanitizeFilename(file.name)}`;
 
+  if (UI_UNLOCKED) {
+    const doc = {
+      id: `mock-doc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      cp_id: currentCp.id,
+      doc_type: DEFAULT_DOC_TYPE,
+      label: null,
+      file_path: path,
+      uploaded_by: currentUser.id,
+      uploaded_at: new Date().toISOString()
+    };
+    if (!mockDocs[currentCp.id]) mockDocs[currentCp.id] = [];
+    mockDocs[currentCp.id].push(doc);
+    return null;
+  }
 
   const { error: upErr } = await sb.storage.from('cp-docs').upload(path, file, {
     upsert: false,
@@ -1538,6 +1697,13 @@ async function updateDocMeta(docId, patch) {
   };
   if (!DOC_TYPE_ORDER.includes(next.doc_type)) next.doc_type = DEFAULT_DOC_TYPE;
 
+  if (UI_UNLOCKED) {
+    const list = mockDocs[currentCp.id] || [];
+    const idx = list.findIndex((d) => d.id === docId);
+    if (idx >= 0) list[idx] = { ...list[idx], ...next };
+    Object.assign(doc, next);
+    return true;
+  }
 
   const { data, error } = await sb
     .from('cp_documents')
@@ -1587,6 +1753,10 @@ async function downloadDoc(docId) {
   clearError();
   const doc = currentDocs.find((d) => d.id === docId);
   if (!doc) return;
+  if (UI_UNLOCKED) {
+    showError('Download disabled in unlocked UI mode (mock file)');
+    return;
+  }
   const { data, error } = await sb.storage.from('cp-docs').createSignedUrl(doc.file_path, 60);
   if (error) {
     showError(error.message || 'Failed to create download link');
@@ -1606,6 +1776,13 @@ async function deleteDoc(docId) {
   if (!doc) return;
   if (!confirm('Delete this document?')) return;
 
+  if (UI_UNLOCKED) {
+    mockDocs[currentCp.id] = (mockDocs[currentCp.id] || []).filter((d) => d.id !== doc.id);
+    if (editingDocId === docId) editingDocId = null;
+    await loadDocuments();
+    await loadCps();
+    return;
+  }
 
   const { error: rmErr } = await sb.storage.from('cp-docs').remove([doc.file_path]);
   if (rmErr) {
@@ -1638,6 +1815,11 @@ function onSignedOut() {
 }
 
 async function boot() {
+  if (UI_UNLOCKED) {
+    isAdmin = true;
+    await onAuthed(MOCK_USER);
+    return;
+  }
 
   const { data: { session }, error } = await sb.auth.getSession();
   if (error) showError(error.message || 'Auth error');
@@ -1666,11 +1848,6 @@ els.createForm.addEventListener('submit', submitCreate);
 els.filterSearch.addEventListener('input', renderList);
 els.filterType.addEventListener('change', renderList);
 els.filterStatus.addEventListener('change', renderList);
-
-document.querySelector('#listTable thead')?.addEventListener('click', (e) => {
-  const th = e.target.closest('th[data-sort]');
-  if (th) setListSort(th.dataset.sort);
-});
 
 els.listBody.addEventListener('click', (e) => {
   const row = e.target.closest('tr.cp-row');
