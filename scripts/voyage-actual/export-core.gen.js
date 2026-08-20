@@ -357,6 +357,28 @@
       }
     }
 
+    /* Excel rows 6–7 from H → — KPI strip (titles on 6, values on 7), orange */
+    var kpiTitleR=5, kpiValR=6, kpiC=8;
+    var orange={ patternType:'solid', fgColor:{ rgb:'F4B183' } };
+    var COST='"$"#,##0.00;"$" -#,##0.00';
+    var DAYS='0.000" Days"';
+    var kpiPairs=[
+      ['Freight', A(fr,2), MONEY],
+      ['Demurrage', A(dr,2), MONEY],
+      ['Other Revenue', 'SUM('+A(orS,2)+':'+A(orE,2)+')', MONEY],
+      ['Total Commission costs', '-('+A(commTot,2)+')', COST],
+      ['Port Costs', '-('+A(pcTot,6)+')', COST],
+      ['Bunker Costs', '-('+bunkSum+')', COST],
+      ['Duration', nL?durCell:'0', DAYS]
+    ];
+    kpiPairs.forEach(function(p){
+      ws.L(kpiTitleR, kpiC, p[0]);
+      ws.F(kpiValR, kpiC, p[1], p[2]);
+      ws.style(kpiTitleR, kpiC, { fill:orange, font:{ bold:true, color:{ rgb:'000000' } } });
+      ws.style(kpiValR, kpiC, { fill:orange, font:{ color:{ rgb:'000000' } } });
+      kpiC += 1;
+    });
+
     var sheet=ws.done();
     sheet['!cols']=[{wch:26},{wch:18},{wch:18},{wch:18},{wch:18},{wch:12},{wch:11},{wch:12}].concat(
       grades.map(function(){return {wch:14};}),
@@ -364,6 +386,7 @@
       grades.map(function(){return {wch:15};}),
       grades.map(function(){return {wch:14};})
     );
+    for(var ci=7; ci<14; ci++) sheet['!cols'][ci] = { wch: 22 };
     var wb=XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, sheet, 'Voyage Actual');
     /* resumable snapshot — its own sheet so Import can restore exactly */
